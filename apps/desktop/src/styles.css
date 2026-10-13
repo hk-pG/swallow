@@ -66,6 +66,77 @@ body,
   color: var(--muted);
 }
 
+.grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  align-content: start;
+  gap: 12px;
+  padding: 12px;
+  overflow-y: auto;
+}
+
+.grid-item {
+  /* Skips layout and paint for off-screen cells in large libraries. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: center;
+  cursor: default;
+}
+
+.grid-item:hover {
+  background: color-mix(in srgb, currentColor 6%, transparent);
+}
+
+.grid-item[aria-pressed="true"] {
+  border-color: Highlight;
+  background: color-mix(in srgb, Highlight 15%, transparent);
+}
+
+.grid-thumb {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 4px;
+  background: color-mix(in srgb, currentColor 5%, transparent);
+}
+
+.grid-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.grid-thumb-placeholder {
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.grid-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inspector-name {
+  margin-top: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
 .app-info {
   color: var(--muted);
 }

@@ -24,6 +24,17 @@ export interface ItemMetadata {
   isDeleted: boolean;
 }
 
+/** Extensions the desktop app can preview in the grid. Mirrors `RASTER_EXTS` / `SVG_EXT` in `thumbnail.rs`. */
+export const THUMBNAIL_EXTS: readonly string[] = [
+  "png",
+  "jpg",
+  "jpeg",
+  "webp",
+  "gif",
+  "bmp",
+  "svg",
+];
+
 export interface Folder {
   id: FolderId;
   name: string;

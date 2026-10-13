@@ -1,4 +1,6 @@
+use crate::library::{self, ItemMetadata};
 use serde::Serialize;
+use std::path::PathBuf;
 
 /// Mirrors `AppInfo` in `packages/shared/src/api.ts`.
 #[derive(Debug, Serialize, PartialEq, Eq)]
@@ -14,6 +16,14 @@ pub fn app_info(app: tauri::AppHandle) -> AppInfo {
         name: pkg.name.clone(),
         version: pkg.version.to_string(),
     }
+}
+
+#[tauri::command]
+pub async fn list_items(library_path: PathBuf) -> Result<Vec<ItemMetadata>, String> {
+    tauri::async_runtime::spawn_blocking(move || library::read_items(&library_path))
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())
 }
 
 #[cfg(test)]
