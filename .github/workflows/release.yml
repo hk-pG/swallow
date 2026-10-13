@@ -22,7 +22,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
-            --draft --title "Torpedo $GITHUB_REF_NAME" --generate-notes
+            --draft --title "Swallow $GITHUB_REF_NAME" --generate-notes
           id=$(gh api "repos/$GITHUB_REPOSITORY/releases" \
             --jq ".[] | select(.tag_name == \"$GITHUB_REF_NAME\") | .id")
           echo "release_id=$id" >> "$GITHUB_OUTPUT"

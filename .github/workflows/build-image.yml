@@ -27,7 +27,7 @@ jobs:
             cat docker/build.Dockerfile rust-toolchain.toml .nvmrc
             node -p "require('./package.json').packageManager"
           } | sha256sum | cut -c1-16)
-          echo "image=ghcr.io/${owner}/torpedo-build:${hash}" >> "$GITHUB_OUTPUT"
+          echo "image=ghcr.io/${owner}/swallow-build:${hash}" >> "$GITHUB_OUTPUT"
 
       - uses: docker/login-action@v3
         with:

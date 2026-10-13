@@ -1,5 +1,5 @@
 {
-  "name": "torpedo",
+  "name": "swallow",
   "build": {
     "dockerfile": "../docker/build.Dockerfile",
     "context": ".."
@@ -8,12 +8,12 @@
   "workspaceFolder": "/workspace",
   "remoteUser": "builder",
   "mounts": [
-    "source=torpedo-node_modules,target=/workspace/node_modules,type=volume",
-    "source=torpedo-desktop_node_modules,target=/workspace/apps/desktop/node_modules,type=volume",
-    "source=torpedo-shared_node_modules,target=/workspace/packages/shared/node_modules,type=volume",
-    "source=torpedo-target,target=/workspace/target,type=volume",
-    "source=torpedo-cargo_registry,target=/usr/local/cargo/registry,type=volume",
-    "source=torpedo-pnpm_store,target=/pnpm-store,type=volume"
+    "source=swallow-node_modules,target=/workspace/node_modules,type=volume",
+    "source=swallow-desktop_node_modules,target=/workspace/apps/desktop/node_modules,type=volume",
+    "source=swallow-shared_node_modules,target=/workspace/packages/shared/node_modules,type=volume",
+    "source=swallow-target,target=/workspace/target,type=volume",
+    "source=swallow-cargo_registry,target=/usr/local/cargo/registry,type=volume",
+    "source=swallow-pnpm_store,target=/pnpm-store,type=volume"
   ],
   "postCreateCommand": "sudo chown builder /workspace/node_modules /workspace/apps/desktop/node_modules /workspace/packages/shared/node_modules /workspace/target /usr/local/cargo/registry /pnpm-store && pnpm install --frozen-lockfile",
   "customizations": {

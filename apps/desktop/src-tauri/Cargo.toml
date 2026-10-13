@@ -1,5 +1,5 @@
 [package]
-name = "torpedo"
+name = "swallow"
 description = "Asset library manager"
 version.workspace = true
 edition.workspace = true
@@ -8,7 +8,7 @@ license.workspace = true
 [lib]
 # The `_lib` suffix avoids a name clash with the bin target on Windows.
 # https://github.com/rust-lang/cargo/issues/8519
-name = "torpedo_lib"
+name = "swallow_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

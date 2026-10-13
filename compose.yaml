@@ -7,7 +7,7 @@ services:
     build:
       context: .
       dockerfile: docker/build.Dockerfile
-    image: torpedo-build:local
+    image: swallow-build:local
     working_dir: /workspace
     volumes:
       - .:/workspace

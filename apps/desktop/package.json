@@ -1,5 +1,5 @@
 {
-  "name": "@torpedo/desktop",
+  "name": "@swallow/desktop",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
-    "@torpedo/shared": "workspace:*",
+    "@swallow/shared": "workspace:*",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },

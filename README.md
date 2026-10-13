@@ -1,4 +1,4 @@
-# Torpedo
+# Swallow
 
 Eagle代替の素材管理アプリ。Tauri 2 + React + TypeScript のデスクトップアプリと Chrome 拡張で構成する。
 

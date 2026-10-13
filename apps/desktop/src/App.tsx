@@ -1,4 +1,4 @@
-import type { AppInfo } from "@torpedo/shared";
+import type { AppInfo } from "@swallow/shared";
 import { useEffect, useState } from "react";
 import { getAppInfo } from "./lib/commands";
 

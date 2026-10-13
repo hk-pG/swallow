@@ -14,12 +14,12 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@swallow/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@tauri-apps/api':
         specifier: ^2
         version: 2.12.3
-      '@torpedo/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
       react:
         specifier: ^19.1.0
         version: 19.3.0

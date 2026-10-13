@@ -23,13 +23,13 @@ mod tests {
     #[test]
     fn app_info_serializes_with_shared_field_names() {
         let info = AppInfo {
-            name: "Torpedo".into(),
+            name: "Swallow".into(),
             version: "0.1.0".into(),
         };
         let json = serde_json::to_value(&info).unwrap();
         assert_eq!(
             json,
-            serde_json::json!({ "name": "Torpedo", "version": "0.1.0" })
+            serde_json::json!({ "name": "Swallow", "version": "0.1.0" })
         );
     }
 }

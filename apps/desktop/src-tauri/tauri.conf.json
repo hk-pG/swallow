@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Torpedo",
+  "productName": "Swallow",
   "version": "../package.json",
-  "identifier": "dev.torpedo.app",
+  "identifier": "dev.swallow.app",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Torpedo",
+        "title": "Swallow",
         "width": 1280,
         "height": 800,
         "minWidth": 800,

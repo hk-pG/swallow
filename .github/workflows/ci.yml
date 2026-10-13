@@ -57,10 +57,10 @@ jobs:
         with:
           key: bundle
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @torpedo/desktop tauri build --ci --bundles deb
+      - run: pnpm --filter @swallow/desktop tauri build --ci --bundles deb
       - uses: actions/upload-artifact@v4
         with:
-          name: torpedo-linux-deb
+          name: swallow-linux-deb
           path: target/release/bundle/deb/*.deb
           retention-days: 7
 
@@ -82,4 +82,4 @@ jobs:
         run: rustup toolchain install
       - uses: Swatinem/rust-cache@v2
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @torpedo/desktop tauri build --ci --no-bundle
+      - run: pnpm --filter @swallow/desktop tauri build --ci --no-bundle
