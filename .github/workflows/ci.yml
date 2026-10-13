@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  image:
+    uses: ./.github/workflows/build-image.yml
+
+  checks:
+    needs: image
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ needs.image.outputs.image }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/cache@v4
+        with:
+          path: /pnpm-store
+          key: pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-store-
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: checks
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm ci:all
+
+  bundle-linux:
+    needs: image
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ needs.image.outputs.image }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/cache@v4
+        with:
+          path: /pnpm-store
+          key: pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-store-
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: bundle
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @torpedo/desktop tauri build --ci --bundles deb
+      - uses: actions/upload-artifact@v4
+        with:
+          name: torpedo-linux-deb
+          path: target/release/bundle/deb/*.deb
+          retention-days: 7
+
+  build-native:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - name: Install Rust toolchain from rust-toolchain.toml
+        shell: bash
+        run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @torpedo/desktop tauri build --ci --no-bundle

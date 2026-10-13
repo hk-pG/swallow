@@ -1,0 +1,30 @@
+# Usage:
+#   docker compose run --rm build pnpm install --frozen-lockfile
+#   docker compose run --rm build pnpm ci:all
+#   docker compose run --rm build pnpm bundle:linux
+services:
+  build:
+    build:
+      context: .
+      dockerfile: docker/build.Dockerfile
+    image: torpedo-build:local
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+      # Keep Linux-native artifacts out of the host checkout.
+      - node_modules:/workspace/node_modules
+      - desktop_node_modules:/workspace/apps/desktop/node_modules
+      - shared_node_modules:/workspace/packages/shared/node_modules
+      - target:/workspace/target
+      - cargo_registry:/usr/local/cargo/registry
+      - cargo_git:/usr/local/cargo/git
+      - pnpm_store:/pnpm-store
+
+volumes:
+  node_modules:
+  desktop_node_modules:
+  shared_node_modules:
+  target:
+  cargo_registry:
+  cargo_git:
+  pnpm_store:

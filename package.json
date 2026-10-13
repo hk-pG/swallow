@@ -1,0 +1,26 @@
+{
+  "name": "torpedo",
+  "private": true,
+  "packageManager": "pnpm@10.28.2",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @torpedo/desktop tauri dev",
+    "build": "pnpm -r build",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "rust:fmt": "cargo fmt --all --check",
+    "rust:clippy": "cargo clippy --workspace --all-targets --locked -- -D warnings",
+    "rust:test": "cargo test --workspace --locked",
+    "ci:js": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "ci:rust": "pnpm rust:fmt && pnpm rust:clippy && pnpm rust:test",
+    "ci:all": "pnpm ci:js && pnpm ci:rust",
+    "bundle:linux": "pnpm --filter @torpedo/desktop tauri build --bundles deb,rpm,appimage"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.15"
+  }
+}
