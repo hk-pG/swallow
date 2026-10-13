@@ -1,4 +1,8 @@
+use std::path::PathBuf;
+
 use serde::Serialize;
+
+use crate::import::{self, ImportReport};
 
 /// Mirrors `AppInfo` in `packages/shared/src/api.ts`.
 #[derive(Debug, Serialize, PartialEq, Eq)]
@@ -14,6 +18,16 @@ pub fn app_info(app: tauri::AppHandle) -> AppInfo {
         name: pkg.name.clone(),
         version: pkg.version.to_string(),
     }
+}
+
+#[tauri::command]
+pub async fn import_assets(
+    library_path: PathBuf,
+    paths: Vec<PathBuf>,
+) -> Result<ImportReport, String> {
+    tauri::async_runtime::spawn_blocking(move || import::import_files(&library_path, &paths))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[cfg(test)]

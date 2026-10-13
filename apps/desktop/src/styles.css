@@ -48,9 +48,42 @@ body,
   min-width: 0;
 }
 
+.content.drag-over {
+  outline: 2px dashed color-mix(in srgb, currentColor 40%, transparent);
+  outline-offset: -6px;
+}
+
 .toolbar {
+  display: flex;
+  gap: 8px;
   padding: 8px 12px;
   border-bottom: 1px solid var(--border);
+}
+
+.import-report {
+  margin: 8px 12px 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.import-report.failed {
+  border-color: color-mix(in srgb, #d33 60%, transparent);
+}
+
+.import-report-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.import-report-failures {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  max-height: 120px;
+  overflow-y: auto;
+  color: var(--muted);
 }
 
 .search {
