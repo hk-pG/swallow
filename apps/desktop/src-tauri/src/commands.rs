@@ -1,4 +1,8 @@
+use std::path::Path;
+
 use serde::Serialize;
+
+use crate::item::{self, ItemMetadata, ItemMetadataPatch};
 
 /// Mirrors `AppInfo` in `packages/shared/src/api.ts`.
 #[derive(Debug, Serialize, PartialEq, Eq)]
@@ -14,6 +18,21 @@ pub fn app_info(app: tauri::AppHandle) -> AppInfo {
         name: pkg.name.clone(),
         version: pkg.version.to_string(),
     }
+}
+
+#[tauri::command]
+pub fn get_item(library_path: String, id: String) -> Result<ItemMetadata, String> {
+    item::read_item(Path::new(&library_path), &id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn update_item(
+    library_path: String,
+    id: String,
+    patch: ItemMetadataPatch,
+) -> Result<ItemMetadata, String> {
+    item::update_item(Path::new(&library_path), &id, patch, item::now_millis())
+        .map_err(|e| e.to_string())
 }
 
 #[cfg(test)]

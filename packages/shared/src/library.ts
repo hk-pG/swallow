@@ -24,6 +24,14 @@ export interface ItemMetadata {
   isDeleted: boolean;
 }
 
+/** Editable fields of `ItemMetadata` for the `update_item` command. An empty `url` clears it. */
+export interface ItemMetadataPatch {
+  name?: string;
+  annotation?: string;
+  star?: number;
+  url?: string;
+}
+
 export interface Folder {
   id: FolderId;
   name: string;
