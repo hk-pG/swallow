@@ -5,3 +5,10 @@ export interface AppInfo {
   name: string;
   version: string;
 }
+
+/** A library opened by the desktop app */
+export interface LibraryInfo {
+  name: string;
+  /** Absolute path of the library root */
+  path: string;
+}
