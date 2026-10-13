@@ -1,4 +1,9 @@
 mod commands;
+#[expect(
+    dead_code,
+    reason = "exposed as commands once library open (#3) and item import (#4) land"
+)]
+mod folders;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
