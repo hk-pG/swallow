@@ -37,9 +37,30 @@ body,
   border-left: 1px solid var(--border);
 }
 
+nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .nav-item {
   padding: 6px 8px;
+  border: none;
   border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nav-item:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.nav-item[aria-current="page"] {
+  background: color-mix(in srgb, currentColor 15%, transparent);
+  font-weight: 600;
 }
 
 .content {
@@ -64,6 +85,13 @@ body,
   display: grid;
   place-items: center;
   color: var(--muted);
+}
+
+.item-list {
+  flex: 1;
+  margin: 0;
+  padding: 12px 12px 12px 32px;
+  overflow-y: auto;
 }
 
 .app-info {
