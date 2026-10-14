@@ -37,7 +37,7 @@ VS Code / Cursor の Dev Containers でも同じイメージを使える（`.dev
 
 ## AI エージェントでの開発
 
-規約と Issue から PR までの手順は `AGENTS.md` と `.agents/skills/issue-to-pr/SKILL.md` にある（Cursor と Codex は `.agents/skills` を直接読む。Claude Code 向けに `.claude/skills` をシンボリックリンクにしている）。補助スクリプトは `scripts/agent/`。Orca で Issue から worktree を作ると、`orca.yaml` で依存のインストールとエージェントへの指示が自動で行われる。
+規約と Issue から PR までの手順は `AGENTS.md` と `.agents/skills/issue-to-pr/SKILL.md` にある（Cursor と Codex はスキルとして読み込み、Claude Code は `CLAUDE.md` 経由で `AGENTS.md` から参照する）。補助スクリプトは `scripts/agent/`。Orca で Issue から worktree を作ると、`orca.yaml` で依存のインストールとエージェントへの指示が自動で行われる。
 
 ## CI
 
