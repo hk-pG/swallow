@@ -110,3 +110,8 @@ export function updateItem(
 ): Promise<ItemMetadata> {
   return invoke<ItemMetadata>("update_item", { libraryPath, id, patch });
 }
+
+/** Sets `isDeleted`; the files stay in the library. Fails without changes if any id is unknown. */
+export function trashItems(libraryPath: string, itemIds: ItemId[]): Promise<void> {
+  return invoke<void>("trash_items", { libraryPath, itemIds });
+}

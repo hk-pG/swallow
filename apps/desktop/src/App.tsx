@@ -21,8 +21,18 @@ import {
   listItems,
   openLibrary,
   restoreLibrary,
+  trashItems,
   updateItem,
 } from "./lib/commands";
+import {
+  EMPTY_SELECTION,
+  nextAfterRemoval,
+  retainVisible,
+  type Selection,
+  type SelectModifiers,
+  select,
+  selectAll,
+} from "./lib/selection";
 import { useAssetImport } from "./lib/useAssetImport";
 
 export function App() {
@@ -31,7 +41,7 @@ export function App() {
   const [recent, setRecent] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<ItemMetadata[]>([]);
-  const [selectedId, setSelectedId] = useState<ItemId | null>(null);
+  const [selection, setSelection] = useState<Selection>(EMPTY_SELECTION);
   const [view, setView] = useState<ItemView>({ kind: "all" });
   const [query, setQuery] = useState("");
   // TODO(#7): load from the library's folder tree.
@@ -102,8 +112,44 @@ export function App() {
   const disabled = library === null;
 
   const visibleItems = useMemo(() => filterItems(items, view, query), [items, view, query]);
+  const visibleIds = useMemo(() => visibleItems.map((item) => item.id), [visibleItems]);
 
-  const selected = items.find((item) => item.id === selectedId) ?? null;
+  useEffect(() => setSelection((current) => retainVisible(current, visibleIds)), [visibleIds]);
+
+  const handleSelect = useCallback(
+    (id: ItemId, modifiers: SelectModifiers) =>
+      setSelection((current) => select(current, visibleIds, id, modifiers)),
+    [visibleIds],
+  );
+  const handleSelectAll = useCallback(
+    () => setSelection((current) => selectAll(current, visibleIds)),
+    [visibleIds],
+  );
+  const clearSelection = useCallback(() => setSelection(EMPTY_SELECTION), []);
+
+  // Read through a ref so `handleTrash` stays stable and grid cells don't re-render on every selection change.
+  const selectionRef = useRef(selection);
+  selectionRef.current = selection;
+  const handleTrash = useCallback(async () => {
+    const selection = selectionRef.current;
+    if (!libraryPath || selection.ids.size === 0) return;
+    const ids = [...selection.ids];
+    try {
+      await trashItems(libraryPath, ids);
+      setError(null);
+    } catch (e) {
+      setError(`ゴミ箱に移動できませんでした: ${e}`);
+      return;
+    }
+    const next = nextAfterRemoval(visibleIds, selection.ids, selection.focus);
+    setSelection(next === null ? EMPTY_SELECTION : select(EMPTY_SELECTION, visibleIds, next));
+    await reloadItems();
+  }, [libraryPath, visibleIds, reloadItems]);
+
+  const selectedCount = selection.ids.size;
+  const [selectedId] = selection.ids;
+  const selected =
+    selectedCount === 1 ? (items.find((item) => item.id === selectedId) ?? null) : null;
 
   const saveItem = async (id: ItemId, patch: ItemMetadataPatch) => {
     if (!libraryPath) throw new Error("ライブラリが開かれていません");
@@ -166,8 +212,11 @@ export function App() {
             <ItemGrid
               libraryPath={libraryPath}
               items={visibleItems}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
+              selection={selection}
+              onSelect={handleSelect}
+              onSelectAll={handleSelectAll}
+              onClearSelection={clearSelection}
+              onDelete={view.kind === "trash" ? undefined : handleTrash}
             />
           )
         ) : (
@@ -201,7 +250,11 @@ export function App() {
         )}
       </main>
       <aside className="inspector">
-        <Inspector item={selected} folders={folders} onSave={saveItem} />
+        {selectedCount > 1 ? (
+          <p className="inspector-empty">{selectedCount} 件を選択中</p>
+        ) : (
+          <Inspector item={selected} folders={folders} onSave={saveItem} />
+        )}
         {info && (
           <p className="app-info">
             {info.name} v{info.version}

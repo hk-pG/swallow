@@ -25,6 +25,7 @@ pub fn run() {
             commands::list_items,
             commands::get_item,
             commands::update_item,
+            commands::trash_items,
             commands::get_library_tags,
             commands::add_tag,
             commands::remove_tag,

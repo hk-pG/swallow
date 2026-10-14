@@ -190,6 +190,16 @@ pub fn edit_all_items(
     Ok(())
 }
 
+/// Marks items as deleted. Their files stay in the library.
+pub fn trash_items(library: &Path, ids: &[String], now: i64) -> Result<(), ItemError> {
+    edit_items(library, ids, |item| {
+        if !item.is_deleted {
+            item.is_deleted = true;
+            item.modified_at = now;
+        }
+    })
+}
+
 pub fn apply_patch(
     item: &mut ItemMetadata,
     patch: ItemMetadataPatch,
@@ -533,6 +543,38 @@ pub(crate) mod tests {
             load_item(library.path(), &item.id).unwrap().folders.len(),
             8
         );
+    }
+
+    #[test]
+    fn trash_marks_items_deleted_and_keeps_files() {
+        let library = tempfile::tempdir().unwrap();
+        let item = sample();
+        let dir = write_item(library.path(), &item);
+        fs::write(dir.join("photo.png"), "x").unwrap();
+
+        trash_items(library.path(), std::slice::from_ref(&item.id), 42).unwrap();
+
+        let trashed = load_item(library.path(), &item.id).unwrap();
+        assert!(trashed.is_deleted);
+        assert_eq!(trashed.modified_at, 42);
+        assert!(dir.join("photo.png").exists());
+
+        trash_items(library.path(), std::slice::from_ref(&item.id), 99).unwrap();
+        assert_eq!(load_item(library.path(), &item.id).unwrap().modified_at, 42);
+    }
+
+    #[test]
+    fn trash_with_unknown_id_changes_nothing() {
+        let library = tempfile::tempdir().unwrap();
+        let item = sample();
+        write_item(library.path(), &item);
+        let ids = [item.id.clone(), "01HZMISSING".into()];
+
+        assert!(matches!(
+            trash_items(library.path(), &ids, 42),
+            Err(ItemError::NotFound(_))
+        ));
+        assert!(!load_item(library.path(), &item.id).unwrap().is_deleted);
     }
 
     #[test]

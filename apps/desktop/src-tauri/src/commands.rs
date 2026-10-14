@@ -218,6 +218,15 @@ pub fn update_item(
     )?)
 }
 
+#[tauri::command]
+pub fn trash_items(library_path: PathBuf, item_ids: Vec<String>) -> Result<(), CommandError> {
+    Ok(item::trash_items(
+        &library_path,
+        &item_ids,
+        item::now_millis(),
+    )?)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
