@@ -218,6 +218,33 @@ pub fn update_item(
     )?)
 }
 
+#[tauri::command]
+pub fn trash_items(library_path: PathBuf, item_ids: Vec<String>) -> Result<(), CommandError> {
+    Ok(item::set_items_deleted(
+        &library_path,
+        &item_ids,
+        true,
+        item::now_millis(),
+    )?)
+}
+
+#[tauri::command]
+pub fn restore_items(library_path: PathBuf, item_ids: Vec<String>) -> Result<(), CommandError> {
+    Ok(item::set_items_deleted(
+        &library_path,
+        &item_ids,
+        false,
+        item::now_millis(),
+    )?)
+}
+
+#[tauri::command]
+pub async fn purge_items(library_path: PathBuf, item_ids: Vec<String>) -> Result<(), CommandError> {
+    tauri::async_runtime::spawn_blocking(move || item::purge_items(&library_path, &item_ids))
+        .await??;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

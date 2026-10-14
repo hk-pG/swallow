@@ -375,3 +375,11 @@ textarea.inspector-input {
   text-align: right;
   overflow-wrap: anywhere;
 }
+
+.trash-actions {
+  margin-top: 12px;
+}
+
+.trash-actions .danger {
+  color: #d33;
+}
