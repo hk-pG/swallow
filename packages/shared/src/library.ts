@@ -1,3 +1,6 @@
+/** Format version written to `LibraryMetadata.version`. */
+export const LIBRARY_VERSION = 1;
+
 /** ULID */
 export type ItemId = string;
 export type FolderId = string;

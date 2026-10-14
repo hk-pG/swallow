@@ -1,156 +1,230 @@
-use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
-pub const IMAGES_DIR: &str = "images";
-pub const ITEM_DIR_EXT: &str = "info";
-pub const ITEM_METADATA_FILE: &str = "metadata.json";
+use serde::{Deserialize, Serialize};
 
-/// Mirrors `ItemMetadata` in `packages/shared/src/library.ts`.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct ItemMetadata {
+/// Mirrors `LIBRARY_VERSION` in `packages/shared/src/library.ts`.
+pub const LIBRARY_VERSION: u32 = 1;
+
+const METADATA_FILE: &str = "metadata.json";
+const TAGS_FILE: &str = "tags.json";
+pub const IMAGES_DIR: &str = "images";
+
+/// Mirrors `Folder` in `packages/shared/src/library.ts`.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct Folder {
     pub id: String,
     pub name: String,
-    pub ext: String,
-    pub size: u64,
-    pub width: Option<u32>,
-    pub height: Option<u32>,
+    pub children: Vec<Folder>,
+}
+
+/// Mirrors `LibraryMetadata` in `packages/shared/src/library.ts`.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct LibraryMetadata {
+    pub name: String,
+    pub version: u32,
+    pub folders: Vec<Folder>,
+}
+
+/// Mirrors `TagGroup` in `packages/shared/src/library.ts`.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct TagGroup {
+    pub id: String,
+    pub name: String,
     pub tags: Vec<String>,
-    pub folders: Vec<String>,
-    pub annotation: String,
-    pub star: u8,
-    pub url: Option<String>,
-    pub created_at: i64,
-    pub modified_at: i64,
-    pub is_deleted: bool,
 }
 
-/// `images/<id>.info`
-pub fn item_dir(library: &Path, id: &str) -> PathBuf {
-    library
-        .join(IMAGES_DIR)
-        .join(format!("{id}.{ITEM_DIR_EXT}"))
+/// Mirrors `LibraryTags` in `packages/shared/src/library.ts`.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct LibraryTags {
+    pub tags: Vec<String>,
+    pub groups: Vec<TagGroup>,
 }
 
-/// `images/<id>.info/<name>.<ext>`
-pub fn item_file(item_dir: &Path, item: &ItemMetadata) -> io::Result<PathBuf> {
-    let file_name = format!("{}.{}", item.name, item.ext);
-    if Path::new(&file_name).file_name() != Some(file_name.as_ref()) {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidData,
-            format!("invalid item file name: {file_name}"),
-        ));
+/// Mirrors `LibraryInfo` in `packages/shared/src/api.ts`.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct LibraryInfo {
+    pub name: String,
+    pub path: String,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum LibraryError {
+    #[error("フォルダが空ではありません: {0}")]
+    NotEmpty(PathBuf),
+    #[error("Swallow ライブラリではありません: {0}")]
+    NotALibrary(PathBuf),
+    #[error("ライブラリのバージョン {found} には対応していません（対応: {LIBRARY_VERSION}）")]
+    UnsupportedVersion { found: u32 },
+    #[error("ライブラリ名を決められません: {0}")]
+    InvalidName(PathBuf),
+    #[error("{path}: {source}")]
+    Io { path: PathBuf, source: io::Error },
+    #[error("{path}: {source}")]
+    Json {
+        path: PathBuf,
+        source: serde_json::Error,
+    },
+}
+
+impl Serialize for LibraryError {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(&self.to_string())
     }
-    Ok(item_dir.join(file_name))
 }
 
-pub fn read_item(item_dir: &Path) -> io::Result<ItemMetadata> {
-    let json = fs::read(item_dir.join(ITEM_METADATA_FILE))?;
-    serde_json::from_slice(&json).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+fn io_err(path: &Path) -> impl FnOnce(io::Error) -> LibraryError + '_ {
+    move |source| LibraryError::Io {
+        path: path.to_path_buf(),
+        source,
+    }
 }
 
-/// Items in the library, newest first. Unreadable item directories are skipped.
-pub fn read_items(library: &Path) -> io::Result<Vec<ItemMetadata>> {
-    let entries = match fs::read_dir(library.join(IMAGES_DIR)) {
-        Ok(entries) => entries,
-        Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
-        Err(e) => return Err(e),
+fn write_json<T: Serialize>(path: &Path, value: &T) -> Result<(), LibraryError> {
+    let json = serde_json::to_vec_pretty(value).map_err(|source| LibraryError::Json {
+        path: path.to_path_buf(),
+        source,
+    })?;
+    fs::write(path, json).map_err(io_err(path))
+}
+
+fn info(path: &Path, metadata: &LibraryMetadata) -> LibraryInfo {
+    LibraryInfo {
+        name: metadata.name.clone(),
+        path: path.to_string_lossy().into_owned(),
+    }
+}
+
+/// Initializes a new library in `path`, which must be missing or empty.
+/// The library is named after the directory.
+pub fn create(path: &Path) -> Result<LibraryInfo, LibraryError> {
+    let name = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .ok_or_else(|| LibraryError::InvalidName(path.to_path_buf()))?
+        .to_owned();
+
+    if path.exists() {
+        let mut entries = fs::read_dir(path).map_err(io_err(path))?;
+        if entries.next().is_some() {
+            return Err(LibraryError::NotEmpty(path.to_path_buf()));
+        }
+    }
+
+    let images = path.join(IMAGES_DIR);
+    fs::create_dir_all(&images).map_err(io_err(&images))?;
+
+    let metadata = LibraryMetadata {
+        name,
+        version: LIBRARY_VERSION,
+        folders: Vec::new(),
     };
-    let mut items = Vec::new();
-    for entry in entries {
-        let path = entry?.path();
-        if path.extension().is_none_or(|ext| ext != ITEM_DIR_EXT) {
-            continue;
-        }
-        match read_item(&path) {
-            Ok(item) => items.push(item),
-            Err(e) => eprintln!("skipping item {}: {e}", path.display()),
-        }
+    write_json(&path.join(METADATA_FILE), &metadata)?;
+    write_json(&path.join(TAGS_FILE), &LibraryTags::default())?;
+
+    Ok(info(path, &metadata))
+}
+
+/// Opens an existing library after validating its layout and format version.
+pub fn open(path: &Path) -> Result<LibraryInfo, LibraryError> {
+    let metadata_path = path.join(METADATA_FILE);
+    if !metadata_path.is_file()
+        || !path.join(TAGS_FILE).is_file()
+        || !path.join(IMAGES_DIR).is_dir()
+    {
+        return Err(LibraryError::NotALibrary(path.to_path_buf()));
     }
-    items.sort_by_key(|item| std::cmp::Reverse(item.created_at));
-    Ok(items)
+
+    let raw = fs::read(&metadata_path).map_err(io_err(&metadata_path))?;
+
+    #[derive(Deserialize)]
+    struct Versioned {
+        version: u32,
+    }
+    let versioned: Versioned =
+        serde_json::from_slice(&raw).map_err(|_| LibraryError::NotALibrary(path.to_path_buf()))?;
+    if versioned.version != LIBRARY_VERSION {
+        return Err(LibraryError::UnsupportedVersion {
+            found: versioned.version,
+        });
+    }
+
+    let metadata: LibraryMetadata =
+        serde_json::from_slice(&raw).map_err(|source| LibraryError::Json {
+            path: metadata_path,
+            source,
+        })?;
+    Ok(info(path, &metadata))
 }
 
 #[cfg(test)]
-pub(crate) mod tests {
+mod tests {
     use super::*;
 
-    pub fn sample_item(id: &str, name: &str, ext: &str) -> ItemMetadata {
-        ItemMetadata {
-            id: id.into(),
-            name: name.into(),
-            ext: ext.into(),
-            size: 0,
-            width: None,
-            height: None,
-            tags: Vec::new(),
-            folders: Vec::new(),
-            annotation: String::new(),
-            star: 0,
-            url: None,
-            created_at: 0,
-            modified_at: 0,
-            is_deleted: false,
-        }
+    #[test]
+    fn create_initializes_layout() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("My Library");
+
+        let created = create(&path).unwrap();
+
+        assert_eq!(created.name, "My Library");
+        assert!(path.join(IMAGES_DIR).is_dir());
+        let metadata: serde_json::Value =
+            serde_json::from_slice(&fs::read(path.join(METADATA_FILE)).unwrap()).unwrap();
+        assert_eq!(
+            metadata,
+            serde_json::json!({ "name": "My Library", "version": LIBRARY_VERSION, "folders": [] })
+        );
+        let tags: serde_json::Value =
+            serde_json::from_slice(&fs::read(path.join(TAGS_FILE)).unwrap()).unwrap();
+        assert_eq!(tags, serde_json::json!({ "tags": [], "groups": [] }));
     }
 
-    pub fn write_item(library: &Path, item: &ItemMetadata) -> PathBuf {
-        let dir = item_dir(library, &item.id);
-        fs::create_dir_all(&dir).unwrap();
+    #[test]
+    fn create_accepts_existing_empty_dir() {
+        let dir = tempfile::tempdir().unwrap();
+        assert!(create(dir.path()).is_ok());
+    }
+
+    #[test]
+    fn create_rejects_non_empty_dir() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(dir.path().join("a.txt"), "x").unwrap();
+        assert!(matches!(create(dir.path()), Err(LibraryError::NotEmpty(_))));
+    }
+
+    #[test]
+    fn open_returns_created_library() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("lib");
+        let created = create(&path).unwrap();
+        assert_eq!(open(&path).unwrap(), created);
+    }
+
+    #[test]
+    fn open_rejects_plain_dir() {
+        let dir = tempfile::tempdir().unwrap();
+        assert!(matches!(
+            open(dir.path()),
+            Err(LibraryError::NotALibrary(_))
+        ));
+    }
+
+    #[test]
+    fn open_rejects_unsupported_version() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("lib");
+        create(&path).unwrap();
         fs::write(
-            dir.join(ITEM_METADATA_FILE),
-            serde_json::to_vec(item).unwrap(),
+            path.join(METADATA_FILE),
+            r#"{ "name": "lib", "version": 999, "folders": [] }"#,
         )
         .unwrap();
-        dir
-    }
-
-    #[test]
-    fn serializes_with_shared_field_names() {
-        let json = serde_json::to_value(sample_item("01J", "cat", "png")).unwrap();
-        let keys: Vec<_> = json.as_object().unwrap().keys().cloned().collect();
-        for key in ["createdAt", "modifiedAt", "isDeleted"] {
-            assert!(keys.contains(&key.to_string()), "missing {key}");
-        }
-    }
-
-    #[test]
-    fn read_items_sorts_newest_first_and_skips_broken() {
-        let library = tempfile::tempdir().unwrap();
-        let mut old = sample_item("A", "old", "png");
-        old.created_at = 1;
-        let mut new = sample_item("B", "new", "png");
-        new.created_at = 2;
-        write_item(library.path(), &old);
-        write_item(library.path(), &new);
-        let broken = item_dir(library.path(), "C");
-        fs::create_dir_all(&broken).unwrap();
-        fs::write(broken.join(ITEM_METADATA_FILE), "{").unwrap();
-        fs::create_dir_all(library.path().join(IMAGES_DIR).join("unrelated")).unwrap();
-
-        let ids: Vec<_> = read_items(library.path())
-            .unwrap()
-            .into_iter()
-            .map(|item| item.id)
-            .collect();
-        assert_eq!(ids, ["B", "A"]);
-    }
-
-    #[test]
-    fn read_items_without_images_dir_is_empty() {
-        let library = tempfile::tempdir().unwrap();
-        assert!(read_items(library.path()).unwrap().is_empty());
-    }
-
-    #[test]
-    fn item_file_rejects_path_separators() {
-        let dir = Path::new("lib/images/A.info");
-        assert!(item_file(dir, &sample_item("A", "../evil", "png")).is_err());
-        assert_eq!(
-            item_file(dir, &sample_item("A", "cat", "png")).unwrap(),
-            dir.join("cat.png")
-        );
+        assert!(matches!(
+            open(&path),
+            Err(LibraryError::UnsupportedVersion { found: 999 })
+        ));
     }
 }

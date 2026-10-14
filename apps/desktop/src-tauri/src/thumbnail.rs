@@ -1,4 +1,5 @@
-use crate::library::{self, IMAGES_DIR, ITEM_DIR_EXT, ItemMetadata};
+use crate::item::{self, ITEM_DIR_EXT, ItemMetadata};
+use crate::library::IMAGES_DIR;
 use image::{DynamicImage, ImageDecoder, ImageFormat, ImageReader};
 use std::fs;
 use std::io;
@@ -25,7 +26,7 @@ pub fn ensure_thumbnail(item_dir: &Path, item: &ItemMetadata) -> io::Result<Opti
     if !is_raster(&item.ext) {
         return Ok(None);
     }
-    let source = library::item_file(item_dir, item)?;
+    let source = item::item_file(item_dir, item)?;
     let thumbnail = item_dir.join(THUMBNAIL_FILE);
     if is_fresh(&thumbnail, &source) {
         return Ok(Some(thumbnail));
@@ -58,10 +59,10 @@ pub fn ensure_thumbnail(item_dir: &Path, item: &ItemMetadata) -> io::Result<Opti
 /// Resolves what the grid should display for an item directory, generating
 /// the thumbnail on first access.
 pub fn preview(item_dir: &Path) -> io::Result<Option<Preview>> {
-    let item = library::read_item(item_dir)?;
+    let item = item::read_item(item_dir)?;
     if item.ext.eq_ignore_ascii_case(SVG_EXT) {
         return Ok(Some(Preview {
-            path: library::item_file(item_dir, &item)?,
+            path: item::item_file(item_dir, &item)?,
             mime: "image/svg+xml",
         }));
     }
@@ -107,7 +108,7 @@ fn decode(path: &Path) -> image::ImageResult<DynamicImage> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::library::tests::{sample_item, write_item};
+    use crate::item::tests::{sample_item, write_item};
     use image::{GenericImageView, RgbaImage};
 
     fn write_png(dir: &Path, name: &str, width: u32, height: u32) {
@@ -175,7 +176,7 @@ mod tests {
     #[test]
     fn only_item_dirs_are_accepted() {
         let library = tempfile::tempdir().unwrap();
-        assert!(is_item_dir(&library::item_dir(library.path(), "A")));
+        assert!(is_item_dir(&item::item_dir(library.path(), "A")));
         assert!(!is_item_dir(&library.path().join("images")));
         assert!(!is_item_dir(&library.path().join("other").join("A.info")));
         assert!(!is_item_dir(Path::new("images/A.info")));
