@@ -9,9 +9,10 @@ const SMART_VIEWS: { kind: SmartViewKind; label: string }[] = [
 interface Props {
   view: ItemView;
   onChange: (view: ItemView) => void;
+  disabled?: boolean;
 }
 
-export function SmartViewNav({ view, onChange }: Props) {
+export function SmartViewNav({ view, onChange, disabled }: Props) {
   return (
     <nav>
       {SMART_VIEWS.map(({ kind, label }) => (
@@ -20,6 +21,7 @@ export function SmartViewNav({ view, onChange }: Props) {
           type="button"
           className="nav-item"
           aria-current={view.kind === kind ? "page" : undefined}
+          disabled={disabled}
           onClick={() => onChange({ kind })}
         >
           {label}
