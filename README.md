@@ -35,6 +35,10 @@ docker compose run --rm build pnpm bundle:linux  # deb / rpm / AppImage
 
 VS Code / Cursor の Dev Containers でも同じイメージを使える（`.devcontainer/devcontainer.json`）。
 
+## AI エージェントでの開発
+
+規約と Issue から PR までの手順は `AGENTS.md` と `.agents/skills/issue-to-pr/SKILL.md` にある（Cursor と Codex はスキルとして読み込み、Claude Code は `CLAUDE.md` 経由で `AGENTS.md` から参照する）。補助スクリプトは `scripts/agent/`。Orca で Issue から worktree を作ると、`orca.yaml` で依存のインストールとエージェントへの指示が自動で行われる。
+
 ## CI
 
 | ワークフロー | 内容 |
