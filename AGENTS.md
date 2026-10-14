@@ -12,7 +12,7 @@ scripts/agent/check.sh                          # CI と同じ pnpm ci:all。通
 scripts/agent/open-pr.sh --title "<title>" --body-file <path>
 ```
 
-Orca で Issue を紐付けて worktree を作ると、`orca.yaml` により依存のインストールとこの手順の指示が自動で行われる。
+Orca で作った worktree では手元で実装せず、`scripts/agent/cloud-run.sh <N>` で Cloud Agent に依頼する。`.cursor/cli.json` で書き込みやビルドが禁止されているのはそのため。
 
 ## 構成
 

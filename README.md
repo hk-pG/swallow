@@ -48,7 +48,14 @@ VS Code / Cursor の Dev Containers でも同じイメージを使える（`.dev
 
 ## AI エージェントでの開発
 
-規約と Issue から PR までの手順は `AGENTS.md` と `.agents/skills/issue-to-pr/SKILL.md` にある（Cursor と Codex はスキルとして読み込み、Claude Code は `CLAUDE.md` 経由で `AGENTS.md` から参照する）。補助スクリプトは `scripts/agent/`。Orca で Issue から worktree を作ると、`orca.yaml` で依存のインストールとエージェントへの指示が自動で行われる。
+規約と Issue から PR までの手順は `AGENTS.md` と `.agents/skills/issue-to-pr/SKILL.md` にある（Cursor と Codex はスキルとして読み込み、Claude Code は `CLAUDE.md` 経由で `AGENTS.md` から参照する）。補助スクリプトは `scripts/agent/`。
+
+Orca で作った worktree では、実装を Cursor の Cloud Agent に任せる。`orca.yaml` の setup が `scripts/agent/cloud-only.cli.json` を `.cursor/cli.json` に置き、手元の `cursor-agent` のファイル書き込み、ビルド、テスト、コミット、push を禁止する。Issue を紐付けて作ると、エージェントは `scripts/agent/cloud-run.sh` で Cloud Agent に依頼し、その URL を報告する。
+
+- Cloud Agent は `.cursor/environment.json` により CI と同じ `docker/build.Dockerfile` のイメージで動く
+- `CURSOR_API_KEY`（Cursor Dashboard の API Keys で発行）を Orca から起動するシェルに設定しておく
+- Cloud Agent に `gh` を使わせるなら、このリポジトリに限定した fine-grained token を `SWALLOW_CLOUD_GH_TOKEN` に設定する。未設定でも Cursor が PR を自動で作る
+- 禁止は主要なコマンドを列挙したもので、シェル経由の書き込みまでは防げない
 
 ## CI
 

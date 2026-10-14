@@ -1,5 +1,6 @@
 scripts:
   setup: |
-    pnpm install --frozen-lockfile
+    mkdir -p .cursor
+    cp scripts/agent/cloud-only.cli.json .cursor/cli.json
 issueCommand: |
-  .agents/skills/issue-to-pr/SKILL.md の手順に従い、{{artifact_url}} を PR 作成まで進めてください。
+  この worktree では手元で実装しない。scripts/agent/cloud-run.sh {{artifact_url}} を実行して Cloud Agent に依頼し、表示された URL を報告してください。

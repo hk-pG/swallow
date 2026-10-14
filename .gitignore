@@ -8,6 +8,7 @@ dist-ssr/
 *.log
 
 /target/
+.cursor/cli.json
 apps/desktop/src-tauri/gen/schemas/
 
 .DS_Store
