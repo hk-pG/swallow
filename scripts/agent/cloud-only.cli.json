@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Shell(scripts/agent/cloud-run.sh)",
+      "Shell(gh:issue view*)",
+      "Shell(gh:issue list*)",
+      "Shell(gh:pr view*)",
+      "Shell(gh:pr list*)"
+    ],
+    "deny": [
+      "Write(**)",
+      "Shell(scripts/agent/start-issue.sh)",
+      "Shell(scripts/agent/check.sh)",
+      "Shell(scripts/agent/open-pr.sh)",
+      "Shell(pnpm)",
+      "Shell(npm)",
+      "Shell(npx)",
+      "Shell(node)",
+      "Shell(corepack)",
+      "Shell(cargo)",
+      "Shell(rustc)",
+      "Shell(rustup)",
+      "Shell(docker)",
+      "Shell(git:add*)",
+      "Shell(git:commit*)",
+      "Shell(git:push*)",
+      "Shell(git:switch*)",
+      "Shell(git:checkout*)",
+      "Shell(git:stash*)",
+      "Shell(git:reset*)",
+      "Shell(git:rebase*)",
+      "Shell(git:merge*)",
+      "Shell(git:worktree*)",
+      "Shell(gh:pr create*)",
+      "Shell(gh:pr merge*)",
+      "Shell(gh:pr edit*)",
+      "Shell(gh:issue edit*)",
+      "Shell(gh:issue close*)",
+      "Shell(gh:api*)"
+    ]
+  }
+}

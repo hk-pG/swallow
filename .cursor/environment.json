@@ -1,0 +1,7 @@
+{
+  "build": {
+    "dockerfile": "../docker/build.Dockerfile",
+    "context": ".."
+  },
+  "install": "pnpm install --frozen-lockfile"
+}
