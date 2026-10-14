@@ -1,0 +1,5 @@
+scripts:
+  setup: |
+    pnpm install --frozen-lockfile
+issueCommand: |
+  .agents/skills/issue-to-pr/SKILL.md の手順に従い、{{artifact_url}} を PR 作成まで進めてください。

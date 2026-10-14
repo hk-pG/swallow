@@ -7,10 +7,12 @@ Eagle 代替の素材管理アプリ。Tauri 2（Rust）+ React + TypeScript の
 Issue を 1 件担当するときは `.agents/skills/issue-to-pr/SKILL.md` の手順に従い、PR 作成まで人に確認せず進める。
 
 ```sh
-scripts/agent/start-issue.sh <N> [--worktree]   # origin/main から issue-<N> ブランチを作り Issue を表示（worktree の置き場所は $SWALLOW_WORKTREE_DIR）
+scripts/agent/start-issue.sh <N> [--worktree]   # 重複確認、ブランチ準備、Issue の表示（worktree の置き場所は $SWALLOW_WORKTREE_DIR）
 scripts/agent/check.sh                          # CI と同じ pnpm ci:all。通ると PR 作成が許可される
 scripts/agent/open-pr.sh --title "<title>" --body-file <path>
 ```
+
+Orca で Issue を紐付けて worktree を作ると、`orca.yaml` により依存のインストールとこの手順の指示が自動で行われる。
 
 ## 構成
 

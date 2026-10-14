@@ -25,10 +25,11 @@ description: >-
 ## 1. 着手
 
 ```sh
-scripts/agent/start-issue.sh <N>              # 今のチェックアウトで作業する場合
-scripts/agent/start-issue.sh <N> --worktree   # 他のエージェントと並行する場合
+scripts/agent/start-issue.sh <N>              # main なら issue-<N> を作る。他のブランチ上ならそのまま使う
+scripts/agent/start-issue.sh <N> --worktree   # main のチェックアウトから並行作業用の worktree を作る
 ```
 
+- Orca が Issue から作った worktree ではブランチができているので、オプションなしで実行する（依存も `orca.yaml` の setup で入っている）
 - 既存のブランチや PR があると止まる。自分が続きを担当すると明示されていなければ `--force` せず中断する
 - `--worktree` のときは表示されたパスに移動し、`pnpm install --frozen-lockfile` を実行する
 
