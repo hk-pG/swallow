@@ -4,11 +4,11 @@ use std::sync::Mutex;
 use serde::Serialize;
 use tauri::Manager;
 
-use crate::import::{self, ImportReport};
-use crate::item::{self, ItemMetadata, ItemMetadataPatch};
-use crate::library::{self, LibraryError, LibraryInfo};
+use crate::import::{self, ImportError, ImportReport};
+use crate::item::{self, ItemError, ItemMetadata, ItemMetadataPatch};
+use crate::library::{self, LibraryError, LibraryInfo, LibraryTags};
 use crate::settings::{SETTINGS_FILE, Settings};
-use crate::tags::{self, LibraryTags, TagError};
+use crate::tags::{self, TagError};
 
 /// Mirrors `AppInfo` in `packages/shared/src/api.ts`.
 #[derive(Debug, Serialize, PartialEq, Eq)]
@@ -26,8 +26,14 @@ pub struct AppState {
 pub enum CommandError {
     #[error(transparent)]
     Library(#[from] LibraryError),
+    #[error(transparent)]
+    Item(#[from] ItemError),
+    #[error(transparent)]
+    Tag(#[from] TagError),
+    #[error(transparent)]
+    Import(#[from] ImportError),
     #[error("設定を保存できません: {0}")]
-    Settings(#[from] std::io::Error),
+    Settings(#[source] std::io::Error),
     #[error(transparent)]
     Tauri(#[from] tauri::Error),
 }
@@ -48,28 +54,31 @@ pub fn app_info(app: tauri::AppHandle) -> AppInfo {
 }
 
 #[tauri::command]
-pub fn get_library_tags(library_path: PathBuf) -> Result<LibraryTags, TagError> {
-    tags::load(&library_path)
+pub fn get_library_tags(library_path: PathBuf) -> Result<LibraryTags, CommandError> {
+    Ok(tags::load(&library_path)?)
 }
 
 #[tauri::command]
-pub fn add_tag(library_path: PathBuf, tag: String) -> Result<LibraryTags, TagError> {
-    tags::add_tag(&library_path, &tag)
+pub fn add_tag(library_path: PathBuf, tag: String) -> Result<LibraryTags, CommandError> {
+    Ok(tags::add_tag(&library_path, &tag)?)
 }
 
 #[tauri::command]
-pub fn remove_tag(library_path: PathBuf, tag: String) -> Result<LibraryTags, TagError> {
-    tags::remove_tag(&library_path, &tag)
+pub fn remove_tag(library_path: PathBuf, tag: String) -> Result<LibraryTags, CommandError> {
+    Ok(tags::remove_tag(&library_path, &tag)?)
 }
 
 #[tauri::command]
-pub fn create_tag_group(library_path: PathBuf, name: String) -> Result<LibraryTags, TagError> {
-    tags::create_tag_group(&library_path, &name)
+pub fn create_tag_group(library_path: PathBuf, name: String) -> Result<LibraryTags, CommandError> {
+    Ok(tags::create_tag_group(&library_path, &name)?)
 }
 
 #[tauri::command]
-pub fn delete_tag_group(library_path: PathBuf, group_id: String) -> Result<LibraryTags, TagError> {
-    tags::delete_tag_group(&library_path, &group_id)
+pub fn delete_tag_group(
+    library_path: PathBuf,
+    group_id: String,
+) -> Result<LibraryTags, CommandError> {
+    Ok(tags::delete_tag_group(&library_path, &group_id)?)
 }
 
 #[tauri::command]
@@ -77,8 +86,12 @@ pub fn set_tag_group(
     library_path: PathBuf,
     tag: String,
     group_id: Option<String>,
-) -> Result<LibraryTags, TagError> {
-    tags::set_tag_group(&library_path, &tag, group_id.as_deref())
+) -> Result<LibraryTags, CommandError> {
+    Ok(tags::set_tag_group(
+        &library_path,
+        &tag,
+        group_id.as_deref(),
+    )?)
 }
 
 #[tauri::command]
@@ -86,8 +99,8 @@ pub fn add_item_tags(
     library_path: PathBuf,
     item_ids: Vec<String>,
     tags: Vec<String>,
-) -> Result<LibraryTags, TagError> {
-    tags::add_item_tags(&library_path, &item_ids, &tags)
+) -> Result<LibraryTags, CommandError> {
+    Ok(tags::add_item_tags(&library_path, &item_ids, &tags)?)
 }
 
 #[tauri::command]
@@ -95,8 +108,8 @@ pub fn remove_item_tags(
     library_path: PathBuf,
     item_ids: Vec<String>,
     tags: Vec<String>,
-) -> Result<(), TagError> {
-    tags::remove_item_tags(&library_path, &item_ids, &tags)
+) -> Result<(), CommandError> {
+    Ok(tags::remove_item_tags(&library_path, &item_ids, &tags)?)
 }
 
 fn settings_path(app: &tauri::AppHandle) -> Result<PathBuf, CommandError> {
@@ -111,7 +124,7 @@ fn activate(
     let path = settings_path(app)?;
     let mut settings = Settings::load(&path);
     settings.push_recent_library(&library.path);
-    settings.save(&path)?;
+    settings.save(&path).map_err(CommandError::Settings)?;
     *state.library.lock().unwrap() = Some(library.clone());
     Ok(library)
 }
@@ -156,7 +169,7 @@ pub fn restore_library(
         Ok(library) => activate(&app, &state, library).map(Some),
         Err(err) => {
             settings.remove_recent_library(&last);
-            settings.save(&path)?;
+            settings.save(&path).map_err(CommandError::Settings)?;
             Err(err.into())
         }
     }
@@ -171,33 +184,38 @@ pub fn recent_libraries(app: tauri::AppHandle) -> Result<Vec<String>, CommandErr
 pub async fn import_assets(
     library_path: PathBuf,
     paths: Vec<PathBuf>,
-) -> Result<ImportReport, String> {
-    tauri::async_runtime::spawn_blocking(move || import::import_files(&library_path, &paths))
-        .await
-        .map_err(|e| e.to_string())?
+) -> Result<ImportReport, CommandError> {
+    let report =
+        tauri::async_runtime::spawn_blocking(move || import::import_files(&library_path, &paths))
+            .await??;
+    Ok(report)
 }
 
 #[tauri::command]
-pub async fn list_items(library_path: PathBuf) -> Result<Vec<ItemMetadata>, String> {
-    tauri::async_runtime::spawn_blocking(move || item::read_items(&library_path))
-        .await
-        .map_err(|e| e.to_string())?
-        .map_err(|e| e.to_string())
+pub async fn list_items(library_path: PathBuf) -> Result<Vec<ItemMetadata>, CommandError> {
+    let items = tauri::async_runtime::spawn_blocking(move || item::read_items(&library_path))
+        .await?
+        .map_err(ItemError::from)?;
+    Ok(items)
 }
 
 #[tauri::command]
-pub fn get_item(library_path: String, id: String) -> Result<ItemMetadata, String> {
-    item::load_item(Path::new(&library_path), &id).map_err(|e| e.to_string())
+pub fn get_item(library_path: PathBuf, id: String) -> Result<ItemMetadata, CommandError> {
+    Ok(item::load_item(&library_path, &id)?)
 }
 
 #[tauri::command]
 pub fn update_item(
-    library_path: String,
+    library_path: PathBuf,
     id: String,
     patch: ItemMetadataPatch,
-) -> Result<ItemMetadata, String> {
-    item::update_item(Path::new(&library_path), &id, patch, item::now_millis())
-        .map_err(|e| e.to_string())
+) -> Result<ItemMetadata, CommandError> {
+    Ok(item::update_item(
+        &library_path,
+        &id,
+        patch,
+        item::now_millis(),
+    )?)
 }
 
 #[cfg(test)]

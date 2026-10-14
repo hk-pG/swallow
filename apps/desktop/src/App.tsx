@@ -38,7 +38,28 @@ export function App() {
   const [folders] = useState<Folder[]>([]);
   const contentRef = useRef<HTMLElement>(null);
   const libraryPath = library?.path ?? null;
-  const assetImport = useAssetImport(libraryPath, contentRef);
+
+  // Only the latest request may update `items`, so a slow reload for a previous library is dropped.
+  const reloadSeq = useRef(0);
+  const reloadItems = useCallback(async () => {
+    const seq = ++reloadSeq.current;
+    if (!libraryPath) {
+      setItems([]);
+      return;
+    }
+    try {
+      const all = await listItems(libraryPath);
+      if (seq === reloadSeq.current) setItems(all);
+    } catch (e) {
+      console.error(e);
+    }
+  }, [libraryPath]);
+
+  useEffect(() => {
+    void reloadItems();
+  }, [reloadItems]);
+
+  const assetImport = useAssetImport(libraryPath, contentRef, reloadItems);
 
   const refreshRecent = useCallback(() => {
     getRecentLibraries().then(setRecent).catch(console.error);
@@ -79,25 +100,6 @@ export function App() {
   };
 
   const disabled = library === null;
-
-  // Re-reads the library after each import so new items appear in the grid.
-  const importReport = assetImport.report;
-  useEffect(() => {
-    void importReport;
-    if (!libraryPath) {
-      setItems([]);
-      return;
-    }
-    let cancelled = false;
-    listItems(libraryPath)
-      .then((all) => {
-        if (!cancelled) setItems(all);
-      })
-      .catch(console.error);
-    return () => {
-      cancelled = true;
-    };
-  }, [libraryPath, importReport]);
 
   const visibleItems = useMemo(() => filterItems(items, view, query), [items, view, query]);
 

@@ -1,14 +1,15 @@
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
+use std::sync::{Mutex, MutexGuard, PoisonError};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 
-use crate::library::IMAGES_DIR;
+use crate::library::{IMAGES_DIR, METADATA_FILE, write_json_atomic};
 
 pub const ITEM_DIR_EXT: &str = "info";
-pub const ITEM_METADATA_FILE: &str = "metadata.json";
+pub const ITEM_METADATA_FILE: &str = METADATA_FILE;
 pub const MAX_STAR: u8 = 5;
 
 /// Mirrors `ItemMetadata` in `packages/shared/src/library.ts`.
@@ -42,41 +43,30 @@ pub struct ItemMetadataPatch {
     pub url: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum ItemError {
+    #[error("invalid item id: {0}")]
     InvalidId(String),
+    #[error("name must not be empty or contain path separators")]
     InvalidName,
+    #[error("star must be 0-{MAX_STAR}, got {0}")]
     InvalidStar(u8),
+    #[error("item not found: {0}")]
     NotFound(String),
-    Io(io::Error),
-    Json(serde_json::Error),
+    #[error(transparent)]
+    Io(#[from] io::Error),
+    #[error("invalid metadata.json: {0}")]
+    Json(#[from] serde_json::Error),
 }
 
-impl std::fmt::Display for ItemError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::InvalidId(id) => write!(f, "invalid item id: {id}"),
-            Self::InvalidName => write!(f, "name must not be empty or contain path separators"),
-            Self::InvalidStar(star) => write!(f, "star must be 0-{MAX_STAR}, got {star}"),
-            Self::NotFound(id) => write!(f, "item not found: {id}"),
-            Self::Io(e) => write!(f, "{e}"),
-            Self::Json(e) => write!(f, "invalid metadata.json: {e}"),
-        }
-    }
-}
+/// Every read-modify-write of an item's `metadata.json` holds this, so concurrent
+/// updates to the same item cannot overwrite each other.
+static ITEM_WRITE_LOCK: Mutex<()> = Mutex::new(());
 
-impl std::error::Error for ItemError {}
-
-impl From<io::Error> for ItemError {
-    fn from(e: io::Error) -> Self {
-        Self::Io(e)
-    }
-}
-
-impl From<serde_json::Error> for ItemError {
-    fn from(e: serde_json::Error) -> Self {
-        Self::Json(e)
-    }
+fn lock_items() -> MutexGuard<'static, ()> {
+    ITEM_WRITE_LOCK
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
 }
 
 /// `images/<id>.info`
@@ -103,19 +93,27 @@ pub fn read_item(item_dir: &Path) -> io::Result<ItemMetadata> {
     serde_json::from_slice(&json).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
 }
 
-/// Items in the library, newest first. Unreadable item directories are skipped.
-pub fn read_items(library: &Path) -> io::Result<Vec<ItemMetadata>> {
+/// Every `images/*.info` directory, whether or not its metadata is readable.
+fn item_dirs(library: &Path) -> io::Result<Vec<PathBuf>> {
     let entries = match fs::read_dir(library.join(IMAGES_DIR)) {
         Ok(entries) => entries,
         Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
         Err(e) => return Err(e),
     };
-    let mut items = Vec::new();
+    let mut dirs = Vec::new();
     for entry in entries {
         let path = entry?.path();
-        if path.extension().is_none_or(|ext| ext != ITEM_DIR_EXT) {
-            continue;
+        if path.extension().is_some_and(|ext| ext == ITEM_DIR_EXT) {
+            dirs.push(path);
         }
+    }
+    Ok(dirs)
+}
+
+/// Items in the library, newest first. Unreadable item directories are skipped.
+pub fn read_items(library: &Path) -> io::Result<Vec<ItemMetadata>> {
+    let mut items = Vec::new();
+    for path in item_dirs(library)? {
         match read_item(&path) {
             Ok(item) => items.push(item),
             Err(e) => eprintln!("skipping item {}: {e}", path.display()),
@@ -142,11 +140,53 @@ pub fn load_item(library: &Path, id: &str) -> Result<ItemMetadata, ItemError> {
     Ok(serde_json::from_str(&json)?)
 }
 
-fn save_item(library: &Path, item: &ItemMetadata) -> Result<(), ItemError> {
-    let path = checked_item_dir(library, &item.id)?.join(ITEM_METADATA_FILE);
-    let tmp = path.with_extension("json.tmp");
-    fs::write(&tmp, serde_json::to_string_pretty(item)?)?;
-    fs::rename(&tmp, &path)?;
+fn save_item(item_dir: &Path, item: &ItemMetadata) -> io::Result<()> {
+    write_json_atomic(&item_dir.join(ITEM_METADATA_FILE), item)
+}
+
+fn edit_and_save(
+    item_dir: &Path,
+    mut item: ItemMetadata,
+    edit: &mut impl FnMut(&mut ItemMetadata),
+) -> io::Result<()> {
+    let before = item.clone();
+    edit(&mut item);
+    if item == before {
+        return Ok(());
+    }
+    save_item(item_dir, &item)
+}
+
+/// Applies `edit` to each item and saves the ones it changed. Every item is loaded before
+/// any is written, so an invalid or unknown id leaves all items untouched.
+pub fn edit_items(
+    library: &Path,
+    ids: &[String],
+    mut edit: impl FnMut(&mut ItemMetadata),
+) -> Result<(), ItemError> {
+    let _lock = lock_items();
+    let items = ids
+        .iter()
+        .map(|id| Ok((load_item(library, id)?, item_dir(library, id))))
+        .collect::<Result<Vec<_>, ItemError>>()?;
+    for (item, dir) in items {
+        edit_and_save(&dir, item, &mut edit)?;
+    }
+    Ok(())
+}
+
+/// Applies `edit` to every item in the library and saves the ones it changed.
+pub fn edit_all_items(
+    library: &Path,
+    mut edit: impl FnMut(&mut ItemMetadata),
+) -> Result<(), ItemError> {
+    let _lock = lock_items();
+    for dir in item_dirs(library)? {
+        if dir.join(ITEM_METADATA_FILE).is_file() {
+            let item = read_item(&dir)?;
+            edit_and_save(&dir, item, &mut edit)?;
+        }
+    }
     Ok(())
 }
 
@@ -211,6 +251,7 @@ pub fn update_item(
     patch: ItemMetadataPatch,
     now: i64,
 ) -> Result<ItemMetadata, ItemError> {
+    let _lock = lock_items();
     let mut item = load_item(library, id)?;
     let before = item.clone();
     apply_patch(&mut item, patch, now)?;
@@ -223,11 +264,11 @@ pub fn update_item(
     if renamed {
         fs::rename(&from, &to)?;
     }
-    if let Err(e) = save_item(library, &item) {
+    if let Err(e) = save_item(&dir, &item) {
         if renamed {
             let _ = fs::rename(&to, &from);
         }
-        return Err(e);
+        return Err(e.into());
     }
     Ok(item)
 }
@@ -470,6 +511,28 @@ pub(crate) mod tests {
         assert!(!dir.join("photo.png").exists());
         assert_eq!(fs::read_to_string(dir.join("sunset.png")).unwrap(), "x");
         assert_eq!(read_item(&dir).unwrap().name, "sunset");
+    }
+
+    #[test]
+    fn concurrent_edits_to_one_item_are_not_lost() {
+        let library = tempfile::tempdir().unwrap();
+        let item = sample();
+        write_item(library.path(), &item);
+        let ids = [item.id.clone()];
+
+        std::thread::scope(|s| {
+            for i in 0..8 {
+                let (library, ids) = (library.path(), &ids);
+                s.spawn(move || {
+                    edit_items(library, ids, |item| item.folders.push(format!("F{i}"))).unwrap();
+                });
+            }
+        });
+
+        assert_eq!(
+            load_item(library.path(), &item.id).unwrap().folders.len(),
+            8
+        );
     }
 
     #[test]

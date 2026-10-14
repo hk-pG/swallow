@@ -3,20 +3,10 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-const METADATA_FILE: &str = "metadata.json";
-const IMAGES_DIR: &str = "images";
-const ITEM_DIR_SUFFIX: &str = ".info";
-
-/// Mirrors `Folder` in `packages/shared/src/library.ts`.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct Folder {
-    pub id: String,
-    pub name: String,
-    pub children: Vec<Folder>,
-}
+use crate::item::{self, ItemError};
+use crate::library::{Folder, METADATA_FILE, write_json_atomic};
 
 #[derive(Debug, thiserror::Error)]
 pub enum FolderError {
@@ -24,10 +14,10 @@ pub enum FolderError {
     EmptyName,
     #[error("フォルダが見つかりません: {0}")]
     FolderNotFound(String),
-    #[error("アイテムが見つかりません: {0}")]
-    ItemNotFound(String),
     #[error("フォルダを自身またはその配下には移動できません")]
     MoveIntoSelf,
+    #[error(transparent)]
+    Item(#[from] ItemError),
     #[error("{path}: {source}")]
     Io { path: PathBuf, source: io::Error },
     #[error("{path}: {source}")]
@@ -35,12 +25,6 @@ pub enum FolderError {
         path: PathBuf,
         source: serde_json::Error,
     },
-}
-
-impl Serialize for FolderError {
-    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_str(&self.to_string())
-    }
 }
 
 fn io_err(path: &Path) -> impl FnOnce(io::Error) -> FolderError + '_ {
@@ -60,14 +44,6 @@ fn json_err(path: &Path) -> impl FnOnce(serde_json::Error) -> FolderError + '_ {
 fn read_json(path: &Path) -> Result<Value, FolderError> {
     let raw = fs::read(path).map_err(io_err(path))?;
     serde_json::from_slice(&raw).map_err(json_err(path))
-}
-
-/// Writes through a temporary file so a crash never leaves a truncated `metadata.json`.
-fn write_json(path: &Path, value: &Value) -> Result<(), FolderError> {
-    let json = serde_json::to_vec_pretty(value).map_err(json_err(path))?;
-    let tmp = path.with_extension("json.tmp");
-    fs::write(&tmp, json).map_err(io_err(&tmp))?;
-    fs::rename(&tmp, path).map_err(io_err(path))
 }
 
 fn normalize_name(name: &str) -> Result<String, FolderError> {
@@ -149,7 +125,7 @@ impl LibraryDoc {
             }
             None => self.raw = serde_json::json!({ "folders": folders }),
         }
-        write_json(&self.path, &self.raw)?;
+        write_json_atomic(&self.path, &self.raw).map_err(io_err(&self.path))?;
         Ok(self.folders)
     }
 }
@@ -235,59 +211,10 @@ pub fn delete(root: &Path, id: &str) -> Result<Vec<Folder>, FolderError> {
     let folders = doc.save()?;
 
     let removed: HashSet<&str> = removed.iter().map(String::as_str).collect();
-    let images = root.join(IMAGES_DIR);
-    if images.is_dir() {
-        for entry in fs::read_dir(&images).map_err(io_err(&images))? {
-            let dir = entry.map_err(io_err(&images))?.path();
-            let is_item = dir
-                .file_name()
-                .and_then(|n| n.to_str())
-                .is_some_and(|n| n.ends_with(ITEM_DIR_SUFFIX));
-            let path = dir.join(METADATA_FILE);
-            if is_item && path.is_file() {
-                update_item_folders(&path, |ids| ids.retain(|f| !removed.contains(f.as_str())))?;
-            }
-        }
-    }
+    item::edit_all_items(root, |item| {
+        item.folders.retain(|f| !removed.contains(f.as_str()));
+    })?;
     Ok(folders)
-}
-
-/// Item IDs are ULIDs; rejecting anything else keeps the path inside `images/`.
-fn item_metadata_path(root: &Path, item_id: &str) -> Result<PathBuf, FolderError> {
-    let path = root
-        .join(IMAGES_DIR)
-        .join(format!("{item_id}{ITEM_DIR_SUFFIX}"))
-        .join(METADATA_FILE);
-    if item_id.is_empty() || !item_id.chars().all(|c| c.is_ascii_alphanumeric()) || !path.is_file()
-    {
-        return Err(FolderError::ItemNotFound(item_id.to_owned()));
-    }
-    Ok(path)
-}
-
-/// Rewrites the item's `folders`, preserving every other field. Skips the write when unchanged.
-fn update_item_folders(
-    path: &Path,
-    update: impl FnOnce(&mut Vec<String>),
-) -> Result<(), FolderError> {
-    let mut item = read_json(path)?;
-    let current: Vec<String> = match item.get("folders") {
-        Some(v) => serde_json::from_value(v.clone()).map_err(json_err(path))?,
-        None => Vec::new(),
-    };
-    let mut next = current.clone();
-    update(&mut next);
-    if next == current {
-        return Ok(());
-    }
-    let Some(obj) = item.as_object_mut() else {
-        return Err(FolderError::Json {
-            path: path.to_path_buf(),
-            source: serde::de::Error::custom("item metadata is not an object"),
-        });
-    };
-    obj.insert("folders".into(), serde_json::json!(next));
-    write_json(path, &item)
 }
 
 /// Adds `folder_id` to each item's folders. An item can belong to any number of folders.
@@ -295,17 +222,11 @@ pub fn assign_items(root: &Path, item_ids: &[String], folder_id: &str) -> Result
     if find(&LibraryDoc::load(root)?.folders, folder_id).is_none() {
         return Err(FolderError::FolderNotFound(folder_id.to_owned()));
     }
-    let paths = item_ids
-        .iter()
-        .map(|id| item_metadata_path(root, id))
-        .collect::<Result<Vec<_>, _>>()?;
-    for path in paths {
-        update_item_folders(&path, |ids| {
-            if !ids.iter().any(|f| f == folder_id) {
-                ids.push(folder_id.to_owned());
-            }
-        })?;
-    }
+    item::edit_items(root, item_ids, |item| {
+        if !item.folders.iter().any(|f| f == folder_id) {
+            item.folders.push(folder_id.to_owned());
+        }
+    })?;
     Ok(())
 }
 
@@ -314,19 +235,18 @@ pub fn unassign_items(
     item_ids: &[String],
     folder_id: &str,
 ) -> Result<(), FolderError> {
-    let paths = item_ids
-        .iter()
-        .map(|id| item_metadata_path(root, id))
-        .collect::<Result<Vec<_>, _>>()?;
-    for path in paths {
-        update_item_folders(&path, |ids| ids.retain(|f| f != folder_id))?;
-    }
+    item::edit_items(root, item_ids, |item| {
+        item.folders.retain(|f| f != folder_id);
+    })?;
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::item::ItemMetadata;
+    use crate::item::tests::{sample_item, write_item};
+    use crate::library::IMAGES_DIR;
 
     fn library() -> tempfile::TempDir {
         let dir = tempfile::tempdir().unwrap();
@@ -340,18 +260,16 @@ mod tests {
     }
 
     fn add_item(root: &Path, id: &str, folders: &[&str]) {
-        let dir = root.join(IMAGES_DIR).join(format!("{id}{ITEM_DIR_SUFFIX}"));
-        fs::create_dir(&dir).unwrap();
-        let item = serde_json::json!({ "id": id, "name": "a", "folders": folders, "star": 3 });
-        fs::write(dir.join(METADATA_FILE), item.to_string()).unwrap();
+        let item = ItemMetadata {
+            folders: folders.iter().map(|f| f.to_string()).collect(),
+            star: 3,
+            ..sample_item(id, "a", "png")
+        };
+        write_item(root, &item);
     }
 
-    fn item_folders(root: &Path, id: &str) -> Value {
-        let path = root
-            .join(IMAGES_DIR)
-            .join(format!("{id}{ITEM_DIR_SUFFIX}"))
-            .join(METADATA_FILE);
-        read_json(&path).unwrap()["folders"].clone()
+    fn item_folders(root: &Path, id: &str) -> Vec<String> {
+        item::load_item(root, id).unwrap().folders
     }
 
     fn names(folders: &[Folder]) -> Vec<&str> {
@@ -438,10 +356,7 @@ mod tests {
         let folders = delete(lib.path(), &a.id).unwrap();
 
         assert_eq!(names(&folders), ["keep"]);
-        assert_eq!(
-            item_folders(lib.path(), "ITEM1"),
-            serde_json::json!([keep.id])
-        );
+        assert_eq!(item_folders(lib.path(), "ITEM1"), [keep.id]);
     }
 
     #[test]
@@ -457,18 +372,12 @@ mod tests {
         assign_items(lib.path(), &items, &a.id).unwrap();
         assert_eq!(
             item_folders(lib.path(), "ITEM1"),
-            serde_json::json!([a.id, b.id])
+            [a.id.clone(), b.id.clone()]
         );
 
         unassign_items(lib.path(), &items, &a.id).unwrap();
-        assert_eq!(item_folders(lib.path(), "ITEM1"), serde_json::json!([b.id]));
-
-        let path = lib
-            .path()
-            .join(IMAGES_DIR)
-            .join("ITEM1.info")
-            .join(METADATA_FILE);
-        assert_eq!(read_json(&path).unwrap()["star"], 3);
+        assert_eq!(item_folders(lib.path(), "ITEM1"), [b.id]);
+        assert_eq!(item::load_item(lib.path(), "ITEM1").unwrap().star, 3);
     }
 
     #[test]
@@ -481,10 +390,14 @@ mod tests {
             assign_items(lib.path(), &["ITEM1".into()], "nope"),
             Err(FolderError::FolderNotFound(_))
         ));
-        for bad in ["MISSING", "../ITEM1", ""] {
+        assert!(matches!(
+            assign_items(lib.path(), &["MISSING".into()], &a.id),
+            Err(FolderError::Item(ItemError::NotFound(_)))
+        ));
+        for bad in ["../ITEM1", ""] {
             assert!(matches!(
                 assign_items(lib.path(), &[bad.into()], &a.id),
-                Err(FolderError::ItemNotFound(_))
+                Err(FolderError::Item(ItemError::InvalidId(_)))
             ));
         }
     }
