@@ -5,6 +5,7 @@ use serde::Serialize;
 use tauri::Manager;
 
 use crate::import::{self, ImportReport};
+use crate::item::{self, ItemMetadata};
 use crate::library::{self, LibraryError, LibraryInfo};
 use crate::settings::{SETTINGS_FILE, Settings};
 
@@ -121,6 +122,14 @@ pub async fn import_assets(
     tauri::async_runtime::spawn_blocking(move || import::import_files(&library_path, &paths))
         .await
         .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn list_items(library_path: PathBuf) -> Result<Vec<ItemMetadata>, String> {
+    tauri::async_runtime::spawn_blocking(move || item::read_items(&library_path))
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())
 }
 
 #[cfg(test)]

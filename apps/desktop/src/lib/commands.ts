@@ -1,6 +1,7 @@
 import {
   type AppInfo,
   type ImportReport,
+  type ItemMetadata,
   type LibraryInfo,
   SUPPORTED_IMPORT_EXTENSIONS,
 } from "@swallow/shared";
@@ -42,4 +43,8 @@ export async function pickImportFiles(): Promise<string[]> {
     filters: [{ name: "Assets", extensions: [...SUPPORTED_IMPORT_EXTENSIONS] }],
   });
   return selected ?? [];
+}
+
+export function listItems(libraryPath: string): Promise<ItemMetadata[]> {
+  return invoke<ItemMetadata[]>("list_items", { libraryPath });
 }

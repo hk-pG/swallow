@@ -9,7 +9,7 @@ pub const LIBRARY_VERSION: u32 = 1;
 
 const METADATA_FILE: &str = "metadata.json";
 const TAGS_FILE: &str = "tags.json";
-const IMAGES_DIR: &str = "images";
+pub const IMAGES_DIR: &str = "images";
 
 /// Mirrors `Folder` in `packages/shared/src/library.ts`.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

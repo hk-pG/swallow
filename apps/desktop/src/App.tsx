@@ -1,11 +1,13 @@
-import type { AppInfo, LibraryInfo } from "@swallow/shared";
+import type { AppInfo, ItemId, ItemMetadata, LibraryInfo } from "@swallow/shared";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ItemGrid } from "./components/ItemGrid";
 import { ImportReportBanner } from "./ImportReportBanner";
 import {
   createLibrary,
   getAppInfo,
   getRecentLibraries,
+  listItems,
   openLibrary,
   restoreLibrary,
 } from "./lib/commands";
@@ -16,8 +18,11 @@ export function App() {
   const [library, setLibrary] = useState<LibraryInfo | null>(null);
   const [recent, setRecent] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [items, setItems] = useState<ItemMetadata[]>([]);
+  const [selectedId, setSelectedId] = useState<ItemId | null>(null);
   const contentRef = useRef<HTMLElement>(null);
-  const assetImport = useAssetImport(library?.path ?? null, contentRef);
+  const libraryPath = library?.path ?? null;
+  const assetImport = useAssetImport(libraryPath, contentRef);
 
   const refreshRecent = useCallback(() => {
     getRecentLibraries().then(setRecent).catch(console.error);
@@ -58,6 +63,27 @@ export function App() {
   };
 
   const disabled = library === null;
+
+  // Re-reads the library after each import so new items appear in the grid.
+  const importReport = assetImport.report;
+  useEffect(() => {
+    void importReport;
+    if (!libraryPath) {
+      setItems([]);
+      return;
+    }
+    let cancelled = false;
+    listItems(libraryPath)
+      .then((all) => {
+        if (!cancelled) setItems(all.filter((item) => !item.isDeleted));
+      })
+      .catch(console.error);
+    return () => {
+      cancelled = true;
+    };
+  }, [libraryPath, importReport]);
+
+  const selected = items.find((item) => item.id === selectedId) ?? null;
 
   return (
     <div className="layout">
@@ -108,8 +134,17 @@ export function App() {
           error={assetImport.error}
           onDismiss={assetImport.dismiss}
         />
-        {library ? (
-          <section className="grid-placeholder">ファイルをドロップして取り込み</section>
+        {libraryPath ? (
+          items.length > 0 ? (
+            <ItemGrid
+              libraryPath={libraryPath}
+              items={items}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+            />
+          ) : (
+            <section className="grid-placeholder">ファイルをドロップして取り込み</section>
+          )
         ) : (
           <section className="grid-placeholder">
             <div className="empty-library">
@@ -141,6 +176,11 @@ export function App() {
         )}
       </main>
       <aside className="inspector">
+        {selected && (
+          <p className="inspector-name">
+            {selected.name}.{selected.ext}
+          </p>
+        )}
         {info && (
           <p className="app-info">
             {info.name} v{info.version}
