@@ -163,7 +163,7 @@ pub fn create(root: &Path, parent_id: Option<&str>, name: &str) -> Result<Folder
     let name = normalize_name(name)?;
     let mut doc = LibraryDoc::load(root)?;
     let folder = Folder {
-        id: ulid::Ulid::new().to_string(),
+        id: ulid::Ulid::generate().to_string(),
         name,
         children: Vec::new(),
     };
@@ -183,8 +183,8 @@ pub fn create(root: &Path, parent_id: Option<&str>, name: &str) -> Result<Folder
 pub fn rename(root: &Path, id: &str, name: &str) -> Result<Folder, FolderError> {
     let name = normalize_name(name)?;
     let mut doc = LibraryDoc::load(root)?;
-    let folder = find_mut(&mut doc.folders, id)
-        .ok_or_else(|| FolderError::FolderNotFound(id.to_owned()))?;
+    let folder =
+        find_mut(&mut doc.folders, id).ok_or_else(|| FolderError::FolderNotFound(id.to_owned()))?;
     folder.name = name;
     let renamed = folder.clone();
     doc.save()?;
@@ -200,8 +200,8 @@ pub fn move_to(
     index: Option<usize>,
 ) -> Result<Vec<Folder>, FolderError> {
     let mut doc = LibraryDoc::load(root)?;
-    let subtree = subtree_ids(&doc.folders, id)
-        .ok_or_else(|| FolderError::FolderNotFound(id.to_owned()))?;
+    let subtree =
+        subtree_ids(&doc.folders, id).ok_or_else(|| FolderError::FolderNotFound(id.to_owned()))?;
     if let Some(pid) = parent_id {
         if subtree.iter().any(|s| s == pid) {
             return Err(FolderError::MoveIntoSelf);
@@ -228,8 +228,8 @@ pub fn move_to(
 /// themselves are kept.
 pub fn delete(root: &Path, id: &str) -> Result<Vec<Folder>, FolderError> {
     let mut doc = LibraryDoc::load(root)?;
-    let folder = take(&mut doc.folders, id)
-        .ok_or_else(|| FolderError::FolderNotFound(id.to_owned()))?;
+    let folder =
+        take(&mut doc.folders, id).ok_or_else(|| FolderError::FolderNotFound(id.to_owned()))?;
     let mut removed = Vec::new();
     collect_ids(&folder, &mut removed);
     let folders = doc.save()?;
@@ -438,7 +438,10 @@ mod tests {
         let folders = delete(lib.path(), &a.id).unwrap();
 
         assert_eq!(names(&folders), ["keep"]);
-        assert_eq!(item_folders(lib.path(), "ITEM1"), serde_json::json!([keep.id]));
+        assert_eq!(
+            item_folders(lib.path(), "ITEM1"),
+            serde_json::json!([keep.id])
+        );
     }
 
     #[test]

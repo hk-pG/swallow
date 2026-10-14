@@ -1,3 +1,6 @@
+/** Format version written to `LibraryMetadata.version`. */
+export const LIBRARY_VERSION = 1;
+
 /** ULID */
 export type ItemId = string;
 export type FolderId = string;
@@ -23,6 +26,25 @@ export interface ItemMetadata {
   modifiedAt: number;
   isDeleted: boolean;
 }
+
+/** Editable fields of `ItemMetadata` for the `update_item` command. An empty `url` clears it. */
+export interface ItemMetadataPatch {
+  name?: string;
+  annotation?: string;
+  star?: number;
+  url?: string;
+}
+
+/** Extensions the desktop app can preview in the grid. Mirrors `RASTER_EXTS` / `SVG_EXT` in `thumbnail.rs`. */
+export const THUMBNAIL_EXTS: readonly string[] = [
+  "png",
+  "jpg",
+  "jpeg",
+  "webp",
+  "gif",
+  "bmp",
+  "svg",
+];
 
 export interface Folder {
   id: FolderId;
