@@ -7,8 +7,8 @@ use serde::{Deserialize, Serialize};
 /// Mirrors `LIBRARY_VERSION` in `packages/shared/src/library.ts`.
 pub const LIBRARY_VERSION: u32 = 1;
 
-const METADATA_FILE: &str = "metadata.json";
-const TAGS_FILE: &str = "tags.json";
+pub const METADATA_FILE: &str = "metadata.json";
+pub const TAGS_FILE: &str = "tags.json";
 pub const IMAGES_DIR: &str = "images";
 
 /// Mirrors `Folder` in `packages/shared/src/library.ts`.
@@ -68,12 +68,6 @@ pub enum LibraryError {
     },
 }
 
-impl Serialize for LibraryError {
-    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_str(&self.to_string())
-    }
-}
-
 fn io_err(path: &Path) -> impl FnOnce(io::Error) -> LibraryError + '_ {
     move |source| LibraryError::Io {
         path: path.to_path_buf(),
@@ -81,12 +75,12 @@ fn io_err(path: &Path) -> impl FnOnce(io::Error) -> LibraryError + '_ {
     }
 }
 
-fn write_json<T: Serialize>(path: &Path, value: &T) -> Result<(), LibraryError> {
-    let json = serde_json::to_vec_pretty(value).map_err(|source| LibraryError::Json {
-        path: path.to_path_buf(),
-        source,
-    })?;
-    fs::write(path, json).map_err(io_err(path))
+/// Writes through a temporary file so a crash never leaves a truncated JSON file.
+pub fn write_json_atomic<T: Serialize + ?Sized>(path: &Path, value: &T) -> io::Result<()> {
+    let json = serde_json::to_vec_pretty(value).map_err(io::Error::other)?;
+    let tmp = path.with_extension("json.tmp");
+    fs::write(&tmp, json)?;
+    fs::rename(&tmp, path)
 }
 
 fn info(path: &Path, metadata: &LibraryMetadata) -> LibraryInfo {
@@ -120,8 +114,10 @@ pub fn create(path: &Path) -> Result<LibraryInfo, LibraryError> {
         version: LIBRARY_VERSION,
         folders: Vec::new(),
     };
-    write_json(&path.join(METADATA_FILE), &metadata)?;
-    write_json(&path.join(TAGS_FILE), &LibraryTags::default())?;
+    let metadata_path = path.join(METADATA_FILE);
+    write_json_atomic(&metadata_path, &metadata).map_err(io_err(&metadata_path))?;
+    let tags_path = path.join(TAGS_FILE);
+    write_json_atomic(&tags_path, &LibraryTags::default()).map_err(io_err(&tags_path))?;
 
     Ok(info(path, &metadata))
 }

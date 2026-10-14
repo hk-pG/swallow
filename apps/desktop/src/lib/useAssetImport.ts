@@ -13,15 +13,22 @@ export interface AssetImport {
   dismiss: () => void;
 }
 
-/** Imports via the file dialog or by dropping files onto `dropTarget`. Inactive while `libraryPath` is null. */
+/**
+ * Imports via the file dialog or by dropping files onto `dropTarget`. Inactive while `libraryPath` is null.
+ * `onImported` runs after every import that reached the library, even if some files failed.
+ */
 export function useAssetImport(
   libraryPath: string | null,
   dropTarget: RefObject<HTMLElement | null>,
+  onImported?: () => void,
 ): AssetImport {
   const [importing, setImporting] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [report, setReport] = useState<ImportReport | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const onImportedRef = useRef(onImported);
+  onImportedRef.current = onImported;
 
   const importPaths = useCallback(
     async (paths: string[]) => {
@@ -32,6 +39,7 @@ export function useAssetImport(
       setError(null);
       try {
         setReport(await importAssets(libraryPath, paths));
+        onImportedRef.current?.();
       } catch (e) {
         setReport(null);
         setError(String(e));

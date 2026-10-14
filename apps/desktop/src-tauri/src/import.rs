@@ -1,12 +1,12 @@
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::Serialize;
 use ulid::Ulid;
 
-use crate::item::ItemMetadata;
+use crate::item::{ITEM_DIR_EXT, ITEM_METADATA_FILE, ItemMetadata, now_millis};
+use crate::library::IMAGES_DIR;
 
 /// Mirrors `SUPPORTED_IMPORT_EXTENSIONS` in `packages/shared/src/import.ts`.
 pub const SUPPORTED_EXTENSIONS: &[&str] = &["png", "jpg", "jpeg", "webp", "gif", "svg", "pdf"];
@@ -36,6 +36,12 @@ pub enum ImportFailureReason {
     Io,
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum ImportError {
+    #[error("not a library: {} does not exist", .0.display())]
+    NotALibrary(PathBuf),
+}
+
 impl ImportFailure {
     fn new(path: &Path, reason: ImportFailureReason, message: impl Into<String>) -> Self {
         Self {
@@ -58,13 +64,10 @@ impl ImportFailure {
 /// Copies each file into `<library>/images/<id>.info/` alongside its `metadata.json`.
 ///
 /// Per-file failures are collected in the report; only an invalid library aborts the whole call.
-pub fn import_files(library: &Path, paths: &[PathBuf]) -> Result<ImportReport, String> {
-    let images_dir = library.join("images");
+pub fn import_files(library: &Path, paths: &[PathBuf]) -> Result<ImportReport, ImportError> {
+    let images_dir = library.join(IMAGES_DIR);
     if !images_dir.is_dir() {
-        return Err(format!(
-            "not a library: {} does not exist",
-            images_dir.display()
-        ));
+        return Err(ImportError::NotALibrary(images_dir));
     }
 
     let now = now_millis();
@@ -128,9 +131,9 @@ fn import_one(images_dir: &Path, source: &Path, now: i64) -> Result<ItemMetadata
     };
 
     // Staged under a different name so readers never see a half-written item directory.
-    let staging = images_dir.join(format!("{id}.info.tmp"));
+    let staging = images_dir.join(format!("{id}.{ITEM_DIR_EXT}.tmp"));
     let result = write_item(&staging, source, &format!("{name}.{ext}"), &item)
-        .and_then(|()| fs::rename(&staging, images_dir.join(format!("{id}.info"))));
+        .and_then(|()| fs::rename(&staging, images_dir.join(format!("{id}.{ITEM_DIR_EXT}"))));
     if let Err(err) = result {
         let _ = fs::remove_dir_all(&staging);
         return Err(ImportFailure::io(source, &err));
@@ -142,7 +145,7 @@ fn write_item(dir: &Path, source: &Path, file_name: &str, item: &ItemMetadata) -
     fs::create_dir(dir)?;
     fs::copy(source, dir.join(file_name))?;
     let json = serde_json::to_vec_pretty(item).map_err(io::Error::other)?;
-    fs::write(dir.join("metadata.json"), json)
+    fs::write(dir.join(ITEM_METADATA_FILE), json)
 }
 
 fn dimensions(path: &Path, ext: &str) -> Option<(u32, u32)> {
@@ -212,13 +215,6 @@ fn to_px(value: f64) -> Option<u32> {
     (value.is_finite() && value > 0.0 && value <= f64::from(u32::MAX)).then(|| value.round() as u32)
 }
 
-fn now_millis() -> i64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_millis() as i64)
-        .unwrap_or_default()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -233,7 +229,7 @@ mod tests {
 
     fn library() -> tempfile::TempDir {
         let dir = tempfile::tempdir().unwrap();
-        fs::create_dir(dir.path().join("images")).unwrap();
+        fs::create_dir(dir.path().join(IMAGES_DIR)).unwrap();
         dir
     }
 
@@ -256,11 +252,9 @@ mod tests {
         assert!(item.created_at > 0);
         assert_eq!(item.created_at, item.modified_at);
 
-        let item_dir = lib.path().join("images").join(format!("{}.info", item.id));
+        let item_dir = crate::item::item_dir(lib.path(), &item.id);
         assert_eq!(fs::read(item_dir.join("Photo.png")).unwrap(), png(640, 480));
-        let saved: ItemMetadata =
-            serde_json::from_slice(&fs::read(item_dir.join("metadata.json")).unwrap()).unwrap();
-        assert_eq!(&saved, item);
+        assert_eq!(&crate::item::read_item(&item_dir).unwrap(), item);
     }
 
     #[test]
@@ -287,7 +281,10 @@ mod tests {
                 ImportFailureReason::NotAFile,
             ]
         );
-        assert_eq!(fs::read_dir(lib.path().join("images")).unwrap().count(), 1);
+        assert_eq!(
+            fs::read_dir(lib.path().join(IMAGES_DIR)).unwrap().count(),
+            1
+        );
     }
 
     #[test]
