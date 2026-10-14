@@ -8,18 +8,22 @@ import {
   type ItemView,
   type LibraryInfo,
 } from "@swallow/shared";
-import { open } from "@tauri-apps/plugin-dialog";
+import { ask, open } from "@tauri-apps/plugin-dialog";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Inspector } from "./components/Inspector";
 import { ItemGrid } from "./components/ItemGrid";
 import { SmartViewNav } from "./components/SmartViewNav";
+import { TrashActions } from "./components/TrashActions";
 import { ImportReportBanner } from "./ImportReportBanner";
 import {
   createLibrary,
   getAppInfo,
   getRecentLibraries,
   listItems,
+  onItemImported,
   openLibrary,
+  purgeItems,
+  restoreItems,
   restoreLibrary,
   trashItems,
   updateItem,
@@ -33,6 +37,7 @@ import {
   select,
   selectAll,
 } from "./lib/selection";
+import { purgeConfirmMessage } from "./lib/trash";
 import { useAssetImport } from "./lib/useAssetImport";
 
 export function App() {
@@ -67,6 +72,13 @@ export function App() {
 
   useEffect(() => {
     void reloadItems();
+  }, [reloadItems]);
+
+  useEffect(() => {
+    const unlisten = onItemImported(() => void reloadItems());
+    return () => {
+      void unlisten.then((stop) => stop());
+    };
   }, [reloadItems]);
 
   const assetImport = useAssetImport(libraryPath, contentRef, reloadItems);
@@ -156,6 +168,37 @@ export function App() {
     const updated = await updateItem(libraryPath, id, patch);
     setItems((current) => current.map((item) => (item.id === updated.id ? updated : item)));
   };
+
+  const withSelected =
+    (action: (path: string, item: ItemMetadata) => Promise<void>) => async () => {
+      if (!libraryPath || !selected) throw new Error("アイテムが選択されていません");
+      await action(libraryPath, selected);
+    };
+
+  const trashSelected = withSelected(async (path, item) => {
+    await trashItems(path, [item.id]);
+    clearSelection();
+    await reloadItems();
+  });
+
+  const restoreSelected = withSelected(async (path, item) => {
+    await restoreItems(path, [item.id]);
+    clearSelection();
+    await reloadItems();
+  });
+
+  const purgeSelected = withSelected(async (path, item) => {
+    const confirmed = await ask(purgeConfirmMessage([item]), {
+      title: "完全に削除",
+      kind: "warning",
+      okLabel: "完全に削除",
+      cancelLabel: "キャンセル",
+    });
+    if (!confirmed) return;
+    await purgeItems(path, [item.id]);
+    clearSelection();
+    await reloadItems();
+  });
 
   return (
     <div className="layout">
@@ -253,7 +296,16 @@ export function App() {
         {selectedCount > 1 ? (
           <p className="inspector-empty">{selectedCount} 件を選択中</p>
         ) : (
-          <Inspector item={selected} folders={folders} onSave={saveItem} />
+          <>
+            <Inspector item={selected} folders={folders} onSave={saveItem} />
+            <TrashActions
+              key={selected?.id}
+              item={selected}
+              onTrash={trashSelected}
+              onRestore={restoreSelected}
+              onPurge={purgeSelected}
+            />
+          </>
         )}
         {info && (
           <p className="app-info">

@@ -1,6 +1,7 @@
 mod commands;
 #[expect(dead_code, reason = "not yet exposed as commands (#7)")]
 mod folders;
+mod http_api;
 mod import;
 pub mod item;
 mod library;
@@ -15,6 +16,10 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .register_asynchronous_uri_scheme_protocol(protocol::THUMBNAIL_SCHEME, protocol::thumbnail)
         .manage(commands::AppState::default())
+        .setup(|app| {
+            http_api::start(app.handle().clone());
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             commands::app_info,
             commands::create_library,
@@ -26,6 +31,8 @@ pub fn run() {
             commands::get_item,
             commands::update_item,
             commands::trash_items,
+            commands::restore_items,
+            commands::purge_items,
             commands::get_library_tags,
             commands::add_tag,
             commands::remove_tag,
