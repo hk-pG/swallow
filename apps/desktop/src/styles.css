@@ -215,6 +215,16 @@ nav {
   font: inherit;
   text-align: center;
   cursor: default;
+  user-select: none;
+}
+
+.grid-item:focus {
+  outline: none;
+}
+
+.grid-item:focus-visible {
+  outline: 2px solid color-mix(in srgb, Highlight 70%, currentColor);
+  outline-offset: 2px;
 }
 
 .grid-item:hover {
