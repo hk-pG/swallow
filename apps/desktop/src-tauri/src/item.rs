@@ -53,6 +53,8 @@ pub enum ItemError {
     InvalidStar(u8),
     #[error("item not found: {0}")]
     NotFound(String),
+    #[error("item is not in the trash: {0}")]
+    NotInTrash(String),
     #[error(transparent)]
     Io(#[from] io::Error),
     #[error("invalid metadata.json: {0}")]
@@ -271,6 +273,39 @@ pub fn update_item(
         return Err(e.into());
     }
     Ok(item)
+}
+
+/// Moves items to the trash (`deleted = true`) or restores them. Stored files are kept.
+pub fn set_items_deleted(
+    library: &Path,
+    ids: &[String],
+    deleted: bool,
+    now: i64,
+) -> Result<(), ItemError> {
+    edit_items(library, ids, |item| {
+        if item.is_deleted != deleted {
+            item.is_deleted = deleted;
+            item.modified_at = now;
+        }
+    })
+}
+
+/// Removes `images/<id>.info/` of items in the trash. Every item is checked before any is
+/// removed, so an unknown id or an item outside the trash leaves all items untouched.
+pub fn purge_items(library: &Path, ids: &[String]) -> Result<(), ItemError> {
+    let _lock = lock_items();
+    for id in ids {
+        if !load_item(library, id)?.is_deleted {
+            return Err(ItemError::NotInTrash(id.clone()));
+        }
+    }
+    for id in ids {
+        match fs::remove_dir_all(item_dir(library, id)) {
+            Err(e) if e.kind() != io::ErrorKind::NotFound => return Err(e.into()),
+            _ => {}
+        }
+    }
+    Ok(())
 }
 
 pub fn now_millis() -> i64 {
@@ -533,6 +568,78 @@ pub(crate) mod tests {
             load_item(library.path(), &item.id).unwrap().folders.len(),
             8
         );
+    }
+
+    #[test]
+    fn trash_and_restore_keep_stored_file() {
+        let library = tempfile::tempdir().unwrap();
+        let item = sample();
+        let dir = write_item(library.path(), &item);
+        fs::write(dir.join("photo.png"), "x").unwrap();
+        let ids = [item.id.clone()];
+
+        set_items_deleted(library.path(), &ids, true, 42).unwrap();
+        let trashed = load_item(library.path(), &item.id).unwrap();
+        assert!(trashed.is_deleted);
+        assert_eq!(trashed.modified_at, 42);
+        assert!(dir.join("photo.png").is_file());
+
+        set_items_deleted(library.path(), &ids, false, 43).unwrap();
+        let restored = load_item(library.path(), &item.id).unwrap();
+        assert!(!restored.is_deleted);
+        assert_eq!(restored.modified_at, 43);
+    }
+
+    #[test]
+    fn trashing_unknown_id_changes_nothing() {
+        let library = tempfile::tempdir().unwrap();
+        let item = sample();
+        write_item(library.path(), &item);
+        let ids = [item.id.clone(), "01HZMISSING".into()];
+        assert!(matches!(
+            set_items_deleted(library.path(), &ids, true, 42),
+            Err(ItemError::NotFound(_))
+        ));
+        assert_eq!(load_item(library.path(), &item.id).unwrap(), item);
+    }
+
+    #[test]
+    fn purge_removes_item_dir_of_trashed_items() {
+        let library = tempfile::tempdir().unwrap();
+        let item = ItemMetadata {
+            is_deleted: true,
+            ..sample()
+        };
+        let dir = write_item(library.path(), &item);
+        fs::write(dir.join("photo.png"), "x").unwrap();
+
+        purge_items(library.path(), std::slice::from_ref(&item.id)).unwrap();
+        assert!(!dir.exists());
+        assert!(read_items(library.path()).unwrap().is_empty());
+    }
+
+    #[test]
+    fn purge_refuses_items_outside_trash() {
+        let library = tempfile::tempdir().unwrap();
+        let trashed = ItemMetadata {
+            is_deleted: true,
+            ..sample_item("A", "a", "png")
+        };
+        let kept = sample_item("B", "b", "png");
+        let trashed_dir = write_item(library.path(), &trashed);
+        let kept_dir = write_item(library.path(), &kept);
+
+        let ids = [trashed.id.clone(), kept.id.clone()];
+        assert!(matches!(
+            purge_items(library.path(), &ids),
+            Err(ItemError::NotInTrash(id)) if id == "B"
+        ));
+        assert!(trashed_dir.exists());
+        assert!(kept_dir.exists());
+        assert!(matches!(
+            purge_items(library.path(), &["../x".into()]),
+            Err(ItemError::InvalidId(_))
+        ));
     }
 
     #[test]

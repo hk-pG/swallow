@@ -8,11 +8,12 @@ import {
   type ItemView,
   type LibraryInfo,
 } from "@swallow/shared";
-import { open } from "@tauri-apps/plugin-dialog";
+import { ask, open } from "@tauri-apps/plugin-dialog";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Inspector } from "./components/Inspector";
 import { ItemGrid } from "./components/ItemGrid";
 import { SmartViewNav } from "./components/SmartViewNav";
+import { TrashActions } from "./components/TrashActions";
 import { ImportReportBanner } from "./ImportReportBanner";
 import {
   createLibrary,
@@ -20,9 +21,13 @@ import {
   getRecentLibraries,
   listItems,
   openLibrary,
+  purgeItems,
+  restoreItems,
   restoreLibrary,
+  trashItems,
   updateItem,
 } from "./lib/commands";
+import { purgeConfirmMessage } from "./lib/trash";
 import { useAssetImport } from "./lib/useAssetImport";
 
 export function App() {
@@ -110,6 +115,37 @@ export function App() {
     const updated = await updateItem(libraryPath, id, patch);
     setItems((current) => current.map((item) => (item.id === updated.id ? updated : item)));
   };
+
+  const withSelected =
+    (action: (path: string, item: ItemMetadata) => Promise<void>) => async () => {
+      if (!libraryPath || !selected) throw new Error("アイテムが選択されていません");
+      await action(libraryPath, selected);
+    };
+
+  const trashSelected = withSelected(async (path, item) => {
+    await trashItems(path, [item.id]);
+    setSelectedId(null);
+    await reloadItems();
+  });
+
+  const restoreSelected = withSelected(async (path, item) => {
+    await restoreItems(path, [item.id]);
+    setSelectedId(null);
+    await reloadItems();
+  });
+
+  const purgeSelected = withSelected(async (path, item) => {
+    const confirmed = await ask(purgeConfirmMessage([item]), {
+      title: "完全に削除",
+      kind: "warning",
+      okLabel: "完全に削除",
+      cancelLabel: "キャンセル",
+    });
+    if (!confirmed) return;
+    await purgeItems(path, [item.id]);
+    setSelectedId(null);
+    await reloadItems();
+  });
 
   return (
     <div className="layout">
@@ -202,6 +238,13 @@ export function App() {
       </main>
       <aside className="inspector">
         <Inspector item={selected} folders={folders} onSave={saveItem} />
+        <TrashActions
+          key={selected?.id}
+          item={selected}
+          onTrash={trashSelected}
+          onRestore={restoreSelected}
+          onPurge={purgeSelected}
+        />
         {info && (
           <p className="app-info">
             {info.name} v{info.version}

@@ -110,3 +110,17 @@ export function updateItem(
 ): Promise<ItemMetadata> {
   return invoke<ItemMetadata>("update_item", { libraryPath, id, patch });
 }
+
+/** Sets `isDeleted`; the stored files are kept until `purgeItems`. */
+export function trashItems(libraryPath: string, itemIds: ItemId[]): Promise<void> {
+  return invoke<void>("trash_items", { libraryPath, itemIds });
+}
+
+export function restoreItems(libraryPath: string, itemIds: ItemId[]): Promise<void> {
+  return invoke<void>("restore_items", { libraryPath, itemIds });
+}
+
+/** Removes `images/<id>.info/`. Fails without removing anything unless every item is in the trash. */
+export function purgeItems(libraryPath: string, itemIds: ItemId[]): Promise<void> {
+  return invoke<void>("purge_items", { libraryPath, itemIds });
+}
