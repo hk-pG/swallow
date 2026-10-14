@@ -35,6 +35,10 @@ docker compose run --rm build pnpm bundle:linux  # deb / rpm / AppImage
 
 VS Code / Cursor の Dev Containers でも同じイメージを使える（`.devcontainer/devcontainer.json`）。
 
+## AI エージェントでの開発
+
+規約と Issue から PR までの手順は `AGENTS.md` と `.agents/skills/issue-to-pr/SKILL.md` にある（`.cursor/skills` と `.claude/skills` は同じ場所へのシンボリックリンク）。補助スクリプトは `scripts/agent/`。
+
 ## CI
 
 | ワークフロー | 内容 |
