@@ -1,15 +1,18 @@
-import type {
-  AppInfo,
-  Folder,
-  ItemId,
-  ItemMetadata,
-  ItemMetadataPatch,
-  LibraryInfo,
+import {
+  type AppInfo,
+  type Folder,
+  filterItems,
+  type ItemId,
+  type ItemMetadata,
+  type ItemMetadataPatch,
+  type ItemView,
+  type LibraryInfo,
 } from "@swallow/shared";
 import { open } from "@tauri-apps/plugin-dialog";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Inspector } from "./components/Inspector";
 import { ItemGrid } from "./components/ItemGrid";
+import { SmartViewNav } from "./components/SmartViewNav";
 import { ImportReportBanner } from "./ImportReportBanner";
 import {
   createLibrary,
@@ -29,6 +32,8 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<ItemMetadata[]>([]);
   const [selectedId, setSelectedId] = useState<ItemId | null>(null);
+  const [view, setView] = useState<ItemView>({ kind: "all" });
+  const [query, setQuery] = useState("");
   // TODO(#7): load from the library's folder tree.
   const [folders] = useState<Folder[]>([]);
   const contentRef = useRef<HTMLElement>(null);
@@ -86,13 +91,15 @@ export function App() {
     let cancelled = false;
     listItems(libraryPath)
       .then((all) => {
-        if (!cancelled) setItems(all.filter((item) => !item.isDeleted));
+        if (!cancelled) setItems(all);
       })
       .catch(console.error);
     return () => {
       cancelled = true;
     };
   }, [libraryPath, importReport]);
+
+  const visibleItems = useMemo(() => filterItems(items, view, query), [items, view, query]);
 
   const selected = items.find((item) => item.id === selectedId) ?? null;
 
@@ -118,21 +125,18 @@ export function App() {
             </button>
           </div>
         </div>
-        <nav>
-          <button type="button" className="nav-item" disabled={disabled}>
-            全アイテム
-          </button>
-          <button type="button" className="nav-item" disabled={disabled}>
-            未分類
-          </button>
-          <button type="button" className="nav-item" disabled={disabled}>
-            ゴミ箱
-          </button>
-        </nav>
+        <SmartViewNav view={view} onChange={setView} disabled={disabled} />
       </aside>
       <main ref={contentRef} className={assetImport.dragOver ? "content drag-over" : "content"}>
         <header className="toolbar">
-          <input className="search" type="search" placeholder="検索" disabled={disabled} />
+          <input
+            className="search"
+            type="search"
+            placeholder="名前・タグ・注釈で検索"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            disabled={disabled}
+          />
           <button
             type="button"
             onClick={() => void assetImport.pickAndImport()}
@@ -152,15 +156,17 @@ export function App() {
           onDismiss={assetImport.dismiss}
         />
         {libraryPath ? (
-          items.length > 0 ? (
+          items.length === 0 ? (
+            <section className="grid-placeholder">ファイルをドロップして取り込み</section>
+          ) : visibleItems.length === 0 ? (
+            <section className="grid-placeholder">該当するアイテムがありません</section>
+          ) : (
             <ItemGrid
               libraryPath={libraryPath}
-              items={items}
+              items={visibleItems}
               selectedId={selectedId}
               onSelect={setSelectedId}
             />
-          ) : (
-            <section className="grid-placeholder">ファイルをドロップして取り込み</section>
           )
         ) : (
           <section className="grid-placeholder">
