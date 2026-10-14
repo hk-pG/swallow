@@ -6,6 +6,7 @@ pub mod item;
 mod library;
 mod protocol;
 mod settings;
+mod tags;
 mod thumbnail;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -24,6 +25,14 @@ pub fn run() {
             commands::list_items,
             commands::get_item,
             commands::update_item,
+            commands::get_library_tags,
+            commands::add_tag,
+            commands::remove_tag,
+            commands::create_tag_group,
+            commands::delete_tag_group,
+            commands::set_tag_group,
+            commands::add_item_tags,
+            commands::remove_item_tags,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
