@@ -1,4 +1,6 @@
 mod commands;
+mod import;
+mod item;
 mod library;
 mod settings;
 
@@ -13,6 +15,7 @@ pub fn run() {
             commands::open_library,
             commands::restore_library,
             commands::recent_libraries,
+            commands::import_assets,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

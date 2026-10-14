@@ -4,6 +4,7 @@ use std::sync::Mutex;
 use serde::Serialize;
 use tauri::Manager;
 
+use crate::import::{self, ImportReport};
 use crate::library::{self, LibraryError, LibraryInfo};
 use crate::settings::{SETTINGS_FILE, Settings};
 
@@ -110,6 +111,16 @@ pub fn restore_library(
 #[tauri::command]
 pub fn recent_libraries(app: tauri::AppHandle) -> Result<Vec<String>, CommandError> {
     Ok(Settings::load(&settings_path(&app)?).recent_libraries)
+}
+
+#[tauri::command]
+pub async fn import_assets(
+    library_path: PathBuf,
+    paths: Vec<PathBuf>,
+) -> Result<ImportReport, String> {
+    tauri::async_runtime::spawn_blocking(move || import::import_files(&library_path, &paths))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[cfg(test)]

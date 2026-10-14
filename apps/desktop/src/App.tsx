@@ -1,6 +1,7 @@
 import type { AppInfo, LibraryInfo } from "@swallow/shared";
 import { open } from "@tauri-apps/plugin-dialog";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ImportReportBanner } from "./ImportReportBanner";
 import {
   createLibrary,
   getAppInfo,
@@ -8,12 +9,15 @@ import {
   openLibrary,
   restoreLibrary,
 } from "./lib/commands";
+import { useAssetImport } from "./lib/useAssetImport";
 
 export function App() {
   const [info, setInfo] = useState<AppInfo | null>(null);
   const [library, setLibrary] = useState<LibraryInfo | null>(null);
   const [recent, setRecent] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const contentRef = useRef<HTMLElement>(null);
+  const assetImport = useAssetImport(library?.path ?? null, contentRef);
 
   const refreshRecent = useCallback(() => {
     getRecentLibraries().then(setRecent).catch(console.error);
@@ -83,17 +87,29 @@ export function App() {
           </button>
         </nav>
       </aside>
-      <main className="content">
+      <main ref={contentRef} className={assetImport.dragOver ? "content drag-over" : "content"}>
         <header className="toolbar">
           <input className="search" type="search" placeholder="検索" disabled={disabled} />
+          <button
+            type="button"
+            onClick={() => void assetImport.pickAndImport()}
+            disabled={disabled || assetImport.importing}
+          >
+            {assetImport.importing ? "取り込み中…" : "取り込み"}
+          </button>
         </header>
         {error && (
           <div className="error" role="alert">
             {error}
           </div>
         )}
+        <ImportReportBanner
+          report={assetImport.report}
+          error={assetImport.error}
+          onDismiss={assetImport.dismiss}
+        />
         {library ? (
-          <section className="grid-placeholder">アイテムがありません</section>
+          <section className="grid-placeholder">ファイルをドロップして取り込み</section>
         ) : (
           <section className="grid-placeholder">
             <div className="empty-library">

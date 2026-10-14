@@ -1,5 +1,11 @@
-import type { AppInfo, LibraryInfo } from "@swallow/shared";
+import {
+  type AppInfo,
+  type ImportReport,
+  type LibraryInfo,
+  SUPPORTED_IMPORT_EXTENSIONS,
+} from "@swallow/shared";
 import { invoke } from "@tauri-apps/api/core";
+import { open } from "@tauri-apps/plugin-dialog";
 
 export function getAppInfo(): Promise<AppInfo> {
   return invoke<AppInfo>("app_info");
@@ -22,4 +28,18 @@ export function restoreLibrary(): Promise<LibraryInfo | null> {
 /** Most recently opened first. */
 export function getRecentLibraries(): Promise<string[]> {
   return invoke<string[]>("recent_libraries");
+}
+
+export function importAssets(libraryPath: string, paths: string[]): Promise<ImportReport> {
+  return invoke<ImportReport>("import_assets", { libraryPath, paths });
+}
+
+/** Resolves to an empty array when the dialog is cancelled. */
+export async function pickImportFiles(): Promise<string[]> {
+  const selected = await open({
+    multiple: true,
+    directory: false,
+    filters: [{ name: "Assets", extensions: [...SUPPORTED_IMPORT_EXTENSIONS] }],
+  });
+  return selected ?? [];
 }
