@@ -5,7 +5,7 @@ use serde::Serialize;
 use tauri::Manager;
 
 use crate::import::{self, ImportReport};
-use crate::item::{self, ItemMetadata};
+use crate::item::{self, ItemMetadata, ItemMetadataPatch};
 use crate::library::{self, LibraryError, LibraryInfo};
 use crate::settings::{SETTINGS_FILE, Settings};
 
@@ -129,6 +129,21 @@ pub async fn list_items(library_path: PathBuf) -> Result<Vec<ItemMetadata>, Stri
     tauri::async_runtime::spawn_blocking(move || item::read_items(&library_path))
         .await
         .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn get_item(library_path: String, id: String) -> Result<ItemMetadata, String> {
+    item::load_item(Path::new(&library_path), &id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn update_item(
+    library_path: String,
+    id: String,
+    patch: ItemMetadataPatch,
+) -> Result<ItemMetadata, String> {
+    item::update_item(Path::new(&library_path), &id, patch, item::now_millis())
         .map_err(|e| e.to_string())
 }
 

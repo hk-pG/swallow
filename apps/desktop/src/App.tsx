@@ -1,6 +1,14 @@
-import type { AppInfo, ItemId, ItemMetadata, LibraryInfo } from "@swallow/shared";
+import type {
+  AppInfo,
+  Folder,
+  ItemId,
+  ItemMetadata,
+  ItemMetadataPatch,
+  LibraryInfo,
+} from "@swallow/shared";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Inspector } from "./components/Inspector";
 import { ItemGrid } from "./components/ItemGrid";
 import { ImportReportBanner } from "./ImportReportBanner";
 import {
@@ -10,6 +18,7 @@ import {
   listItems,
   openLibrary,
   restoreLibrary,
+  updateItem,
 } from "./lib/commands";
 import { useAssetImport } from "./lib/useAssetImport";
 
@@ -20,6 +29,8 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<ItemMetadata[]>([]);
   const [selectedId, setSelectedId] = useState<ItemId | null>(null);
+  // TODO(#7): load from the library's folder tree.
+  const [folders] = useState<Folder[]>([]);
   const contentRef = useRef<HTMLElement>(null);
   const libraryPath = library?.path ?? null;
   const assetImport = useAssetImport(libraryPath, contentRef);
@@ -84,6 +95,12 @@ export function App() {
   }, [libraryPath, importReport]);
 
   const selected = items.find((item) => item.id === selectedId) ?? null;
+
+  const saveItem = async (id: ItemId, patch: ItemMetadataPatch) => {
+    if (!libraryPath) throw new Error("ライブラリが開かれていません");
+    const updated = await updateItem(libraryPath, id, patch);
+    setItems((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+  };
 
   return (
     <div className="layout">
@@ -176,11 +193,7 @@ export function App() {
         )}
       </main>
       <aside className="inspector">
-        {selected && (
-          <p className="inspector-name">
-            {selected.name}.{selected.ext}
-          </p>
-        )}
+        <Inspector item={selected} folders={folders} onSave={saveItem} />
         {info && (
           <p className="app-info">
             {info.name} v{info.version}

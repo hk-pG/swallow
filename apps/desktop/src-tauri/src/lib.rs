@@ -20,6 +20,8 @@ pub fn run() {
             commands::recent_libraries,
             commands::import_assets,
             commands::list_items,
+            commands::get_item,
+            commands::update_item,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

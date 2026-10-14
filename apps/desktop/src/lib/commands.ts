@@ -1,7 +1,9 @@
 import {
   type AppInfo,
   type ImportReport,
+  type ItemId,
   type ItemMetadata,
+  type ItemMetadataPatch,
   type LibraryInfo,
   SUPPORTED_IMPORT_EXTENSIONS,
 } from "@swallow/shared";
@@ -47,4 +49,16 @@ export async function pickImportFiles(): Promise<string[]> {
 
 export function listItems(libraryPath: string): Promise<ItemMetadata[]> {
   return invoke<ItemMetadata[]>("list_items", { libraryPath });
+}
+
+export function getItem(libraryPath: string, id: ItemId): Promise<ItemMetadata> {
+  return invoke<ItemMetadata>("get_item", { libraryPath, id });
+}
+
+export function updateItem(
+  libraryPath: string,
+  id: ItemId,
+  patch: ItemMetadataPatch,
+): Promise<ItemMetadata> {
+  return invoke<ItemMetadata>("update_item", { libraryPath, id, patch });
 }

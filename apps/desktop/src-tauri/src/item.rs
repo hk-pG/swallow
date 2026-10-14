@@ -1,6 +1,7 @@
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 
@@ -8,6 +9,7 @@ use crate::library::IMAGES_DIR;
 
 pub const ITEM_DIR_EXT: &str = "info";
 pub const ITEM_METADATA_FILE: &str = "metadata.json";
+pub const MAX_STAR: u8 = 5;
 
 /// Mirrors `ItemMetadata` in `packages/shared/src/library.ts`.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -27,6 +29,54 @@ pub struct ItemMetadata {
     pub created_at: i64,
     pub modified_at: i64,
     pub is_deleted: bool,
+}
+
+/// Mirrors `ItemMetadataPatch` in `packages/shared/src/library.ts`.
+/// An empty `url` clears it.
+#[derive(Debug, Default, Clone, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ItemMetadataPatch {
+    pub name: Option<String>,
+    pub annotation: Option<String>,
+    pub star: Option<u8>,
+    pub url: Option<String>,
+}
+
+#[derive(Debug)]
+pub enum ItemError {
+    InvalidId(String),
+    InvalidName,
+    InvalidStar(u8),
+    NotFound(String),
+    Io(io::Error),
+    Json(serde_json::Error),
+}
+
+impl std::fmt::Display for ItemError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::InvalidId(id) => write!(f, "invalid item id: {id}"),
+            Self::InvalidName => write!(f, "name must not be empty or contain path separators"),
+            Self::InvalidStar(star) => write!(f, "star must be 0-{MAX_STAR}, got {star}"),
+            Self::NotFound(id) => write!(f, "item not found: {id}"),
+            Self::Io(e) => write!(f, "{e}"),
+            Self::Json(e) => write!(f, "invalid metadata.json: {e}"),
+        }
+    }
+}
+
+impl std::error::Error for ItemError {}
+
+impl From<io::Error> for ItemError {
+    fn from(e: io::Error) -> Self {
+        Self::Io(e)
+    }
+}
+
+impl From<serde_json::Error> for ItemError {
+    fn from(e: serde_json::Error) -> Self {
+        Self::Json(e)
+    }
 }
 
 /// `images/<id>.info`
@@ -75,6 +125,120 @@ pub fn read_items(library: &Path) -> io::Result<Vec<ItemMetadata>> {
     Ok(items)
 }
 
+fn checked_item_dir(library: &Path, id: &str) -> Result<PathBuf, ItemError> {
+    // ULIDs are alphanumeric; rejecting anything else keeps `id` from escaping `images/`.
+    if id.is_empty() || !id.chars().all(|c| c.is_ascii_alphanumeric()) {
+        return Err(ItemError::InvalidId(id.to_owned()));
+    }
+    Ok(item_dir(library, id))
+}
+
+pub fn load_item(library: &Path, id: &str) -> Result<ItemMetadata, ItemError> {
+    let path = checked_item_dir(library, id)?.join(ITEM_METADATA_FILE);
+    let json = fs::read_to_string(&path).map_err(|e| match e.kind() {
+        io::ErrorKind::NotFound => ItemError::NotFound(id.to_owned()),
+        _ => ItemError::Io(e),
+    })?;
+    Ok(serde_json::from_str(&json)?)
+}
+
+fn save_item(library: &Path, item: &ItemMetadata) -> Result<(), ItemError> {
+    let path = checked_item_dir(library, &item.id)?.join(ITEM_METADATA_FILE);
+    let tmp = path.with_extension("json.tmp");
+    fs::write(&tmp, serde_json::to_string_pretty(item)?)?;
+    fs::rename(&tmp, &path)?;
+    Ok(())
+}
+
+pub fn apply_patch(
+    item: &mut ItemMetadata,
+    patch: ItemMetadataPatch,
+    now: i64,
+) -> Result<(), ItemError> {
+    if let Some(star) = patch.star
+        && star > MAX_STAR
+    {
+        return Err(ItemError::InvalidStar(star));
+    }
+    let name = match patch.name {
+        Some(name) => {
+            let name = name.trim().to_owned();
+            // The name doubles as the stored file name, see `item_file`.
+            if name.is_empty() || Path::new(&name).file_name() != Some(name.as_ref()) {
+                return Err(ItemError::InvalidName);
+            }
+            Some(name)
+        }
+        None => None,
+    };
+
+    let mut changed = false;
+    if let Some(name) = name
+        && name != item.name
+    {
+        item.name = name;
+        changed = true;
+    }
+    if let Some(annotation) = patch.annotation
+        && annotation != item.annotation
+    {
+        item.annotation = annotation;
+        changed = true;
+    }
+    if let Some(star) = patch.star
+        && star != item.star
+    {
+        item.star = star;
+        changed = true;
+    }
+    if let Some(url) = patch.url {
+        let url = Some(url.trim().to_owned()).filter(|u| !u.is_empty());
+        if url != item.url {
+            item.url = url;
+            changed = true;
+        }
+    }
+    if changed {
+        item.modified_at = now;
+    }
+    Ok(())
+}
+
+/// Applies `patch` and persists it. Renaming also renames the stored file.
+pub fn update_item(
+    library: &Path,
+    id: &str,
+    patch: ItemMetadataPatch,
+    now: i64,
+) -> Result<ItemMetadata, ItemError> {
+    let mut item = load_item(library, id)?;
+    let before = item.clone();
+    apply_patch(&mut item, patch, now)?;
+    if item == before {
+        return Ok(item);
+    }
+    let dir = item_dir(library, id);
+    let renamed = item.name != before.name;
+    let (from, to) = (item_file(&dir, &before)?, item_file(&dir, &item)?);
+    if renamed {
+        fs::rename(&from, &to)?;
+    }
+    if let Err(e) = save_item(library, &item) {
+        if renamed {
+            let _ = fs::rename(&to, &from);
+        }
+        return Err(e);
+    }
+    Ok(item)
+}
+
+pub fn now_millis() -> i64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis() as i64)
+        .unwrap_or_default()
+}
+
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
@@ -107,6 +271,18 @@ pub(crate) mod tests {
         )
         .unwrap();
         dir
+    }
+
+    fn sample() -> ItemMetadata {
+        ItemMetadata {
+            size: 1024,
+            width: Some(640),
+            height: Some(480),
+            tags: vec!["sky".into()],
+            created_at: 1,
+            modified_at: 1,
+            ..sample_item("01HZXAMPLE0000000000000000", "photo", "png")
+        }
     }
 
     #[test]
@@ -185,5 +361,123 @@ pub(crate) mod tests {
             item_file(dir, &sample_item("A", "cat", "png")).unwrap(),
             dir.join("cat.png")
         );
+    }
+
+    #[test]
+    fn patch_updates_fields_and_modified_at() {
+        let mut item = sample();
+        let patch = ItemMetadataPatch {
+            name: Some("  renamed ".into()),
+            annotation: Some("note".into()),
+            star: Some(4),
+            url: Some(" https://example.com ".into()),
+        };
+        apply_patch(&mut item, patch, 99).unwrap();
+        assert_eq!(item.name, "renamed");
+        assert_eq!(item.annotation, "note");
+        assert_eq!(item.star, 4);
+        assert_eq!(item.url.as_deref(), Some("https://example.com"));
+        assert_eq!(item.modified_at, 99);
+    }
+
+    #[test]
+    fn noop_patch_keeps_modified_at() {
+        let mut item = sample();
+        let patch = ItemMetadataPatch {
+            name: Some("photo".into()),
+            ..Default::default()
+        };
+        apply_patch(&mut item, patch, 99).unwrap();
+        assert_eq!(item.modified_at, 1);
+    }
+
+    #[test]
+    fn empty_url_clears_it() {
+        let mut item = ItemMetadata {
+            url: Some("https://example.com".into()),
+            ..sample()
+        };
+        let patch = ItemMetadataPatch {
+            url: Some("  ".into()),
+            ..Default::default()
+        };
+        apply_patch(&mut item, patch, 99).unwrap();
+        assert_eq!(item.url, None);
+    }
+
+    #[test]
+    fn rejects_invalid_patch_without_partial_update() {
+        let mut item = sample();
+        let patch = ItemMetadataPatch {
+            annotation: Some("note".into()),
+            star: Some(6),
+            ..Default::default()
+        };
+        assert!(matches!(
+            apply_patch(&mut item, patch, 99),
+            Err(ItemError::InvalidStar(6))
+        ));
+        for name in [" ", "a/b", ".."] {
+            let patch = ItemMetadataPatch {
+                name: Some(name.into()),
+                ..Default::default()
+            };
+            assert!(matches!(
+                apply_patch(&mut item, patch, 99),
+                Err(ItemError::InvalidName)
+            ));
+        }
+        assert_eq!(item, sample());
+    }
+
+    #[test]
+    fn rejects_path_traversal_ids() {
+        let library = tempfile::tempdir().unwrap();
+        for id in ["", "../x", "a/b", "a\\b", "a.b"] {
+            assert!(matches!(
+                load_item(library.path(), id),
+                Err(ItemError::InvalidId(_))
+            ));
+        }
+    }
+
+    #[test]
+    fn update_persists_to_metadata_json() {
+        let library = tempfile::tempdir().unwrap();
+        let item = sample();
+        let dir = write_item(library.path(), &item);
+        fs::write(dir.join("photo.png"), "x").unwrap();
+        let patch = ItemMetadataPatch {
+            star: Some(3),
+            ..Default::default()
+        };
+        let updated = update_item(library.path(), &item.id, patch, 42).unwrap();
+        assert_eq!(updated.star, 3);
+        assert_eq!(load_item(library.path(), &item.id).unwrap(), updated);
+    }
+
+    #[test]
+    fn rename_moves_stored_file() {
+        let library = tempfile::tempdir().unwrap();
+        let item = sample();
+        let dir = write_item(library.path(), &item);
+        fs::write(dir.join("photo.png"), "x").unwrap();
+        let patch = ItemMetadataPatch {
+            name: Some("sunset".into()),
+            ..Default::default()
+        };
+        update_item(library.path(), &item.id, patch, 42).unwrap();
+        assert!(!dir.join("photo.png").exists());
+        assert_eq!(fs::read_to_string(dir.join("sunset.png")).unwrap(), "x");
+        assert_eq!(read_item(&dir).unwrap().name, "sunset");
+    }
+
+    #[test]
+    fn missing_item_is_not_found() {
+        let library = tempfile::tempdir().unwrap();
+        assert!(matches!(
+            load_item(library.path(), "01HZMISSING"),
+            Err(ItemError::NotFound(_))
+        ));
     }
 }

@@ -27,6 +27,14 @@ export interface ItemMetadata {
   isDeleted: boolean;
 }
 
+/** Editable fields of `ItemMetadata` for the `update_item` command. An empty `url` clears it. */
+export interface ItemMetadataPatch {
+  name?: string;
+  annotation?: string;
+  star?: number;
+  url?: string;
+}
+
 /** Extensions the desktop app can preview in the grid. Mirrors `RASTER_EXTS` / `SVG_EXT` in `thumbnail.rs`. */
 export const THUMBNAIL_EXTS: readonly string[] = [
   "png",
