@@ -1,4 +1,6 @@
 mod commands;
+#[expect(dead_code, reason = "not yet exposed as commands (#7)")]
+mod folders;
 mod import;
 pub mod item;
 mod library;
