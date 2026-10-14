@@ -9,6 +9,7 @@ import {
   SUPPORTED_IMPORT_EXTENSIONS,
 } from "@swallow/shared";
 import { invoke } from "@tauri-apps/api/core";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
 
 export function getAppInfo(): Promise<AppInfo> {
@@ -97,6 +98,14 @@ export async function pickImportFiles(): Promise<string[]> {
 
 export function listItems(libraryPath: string): Promise<ItemMetadata[]> {
   return invoke<ItemMetadata[]>("list_items", { libraryPath });
+}
+
+/** Mirrors `ITEMS_IMPORTED_EVENT` in `src-tauri/src/http_api.rs`. */
+export const ITEMS_IMPORTED_EVENT = "items-imported";
+
+/** Called for each item added through the local HTTP API (e.g. from the Chrome extension). */
+export function onItemImported(handler: (item: ItemMetadata) => void): Promise<UnlistenFn> {
+  return listen<ItemMetadata>(ITEMS_IMPORTED_EVENT, (event) => handler(event.payload));
 }
 
 export function getItem(libraryPath: string, id: ItemId): Promise<ItemMetadata> {

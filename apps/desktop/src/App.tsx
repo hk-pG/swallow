@@ -20,6 +20,7 @@ import {
   getAppInfo,
   getRecentLibraries,
   listItems,
+  onItemImported,
   openLibrary,
   purgeItems,
   restoreItems,
@@ -62,6 +63,13 @@ export function App() {
 
   useEffect(() => {
     void reloadItems();
+  }, [reloadItems]);
+
+  useEffect(() => {
+    const unlisten = onItemImported(() => void reloadItems());
+    return () => {
+      void unlisten.then((stop) => stop());
+    };
   }, [reloadItems]);
 
   const assetImport = useAssetImport(libraryPath, contentRef, reloadItems);

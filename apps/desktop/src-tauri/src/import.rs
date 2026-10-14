@@ -40,6 +40,24 @@ pub enum ImportFailureReason {
 pub enum ImportError {
     #[error("not a library: {} does not exist", .0.display())]
     NotALibrary(PathBuf),
+    #[error("unsupported extension: {0:?}")]
+    UnsupportedExtension(String),
+    #[error(transparent)]
+    Io(#[from] io::Error),
+}
+
+/// An asset received as bytes rather than a file on disk, e.g. from the HTTP API.
+#[derive(Debug)]
+pub struct BytesImport<'a> {
+    pub name: &'a str,
+    pub ext: &'a str,
+    pub url: Option<&'a str>,
+    pub bytes: &'a [u8],
+}
+
+enum Content<'a> {
+    File(&'a Path),
+    Bytes(&'a [u8]),
 }
 
 impl ImportFailure {
@@ -65,11 +83,7 @@ impl ImportFailure {
 ///
 /// Per-file failures are collected in the report; only an invalid library aborts the whole call.
 pub fn import_files(library: &Path, paths: &[PathBuf]) -> Result<ImportReport, ImportError> {
-    let images_dir = library.join(IMAGES_DIR);
-    if !images_dir.is_dir() {
-        return Err(ImportError::NotALibrary(images_dir));
-    }
-
+    let images_dir = images_dir(library)?;
     let now = now_millis();
     let mut report = ImportReport::default();
     for path in paths {
@@ -81,12 +95,87 @@ pub fn import_files(library: &Path, paths: &[PathBuf]) -> Result<ImportReport, I
     Ok(report)
 }
 
+/// Stores `asset.bytes` as a new item. `name` must already be a valid file stem.
+pub fn import_bytes(library: &Path, asset: &BytesImport<'_>) -> Result<ItemMetadata, ImportError> {
+    let images_dir = images_dir(library)?;
+    let ext = asset.ext.to_lowercase();
+    if !is_supported(&ext) {
+        return Err(ImportError::UnsupportedExtension(ext));
+    }
+    let content = Content::Bytes(asset.bytes);
+    let dims = dimensions(&content, &ext);
+    let item = new_item(
+        asset.name.to_owned(),
+        ext,
+        asset.bytes.len() as u64,
+        dims,
+        asset.url.map(str::to_owned),
+        now_millis(),
+    );
+    store_item(&images_dir, content, &item)?;
+    Ok(item)
+}
+
+fn images_dir(library: &Path) -> Result<PathBuf, ImportError> {
+    let images_dir = library.join(IMAGES_DIR);
+    if !images_dir.is_dir() {
+        return Err(ImportError::NotALibrary(images_dir));
+    }
+    Ok(images_dir)
+}
+
+fn is_supported(ext: &str) -> bool {
+    SUPPORTED_EXTENSIONS.contains(&ext)
+}
+
+fn new_item(
+    name: String,
+    ext: String,
+    size: u64,
+    dimensions: Option<(u32, u32)>,
+    url: Option<String>,
+    now: i64,
+) -> ItemMetadata {
+    let (width, height) = dimensions.unzip();
+    ItemMetadata {
+        id: Ulid::generate().to_string(),
+        name,
+        ext,
+        size,
+        width,
+        height,
+        tags: Vec::new(),
+        folders: Vec::new(),
+        annotation: String::new(),
+        star: 0,
+        url,
+        created_at: now,
+        modified_at: now,
+        is_deleted: false,
+    }
+}
+
+fn store_item(images_dir: &Path, content: Content<'_>, item: &ItemMetadata) -> io::Result<()> {
+    // Staged under a different name so readers never see a half-written item directory.
+    let staging = images_dir.join(format!("{}.{ITEM_DIR_EXT}.tmp", item.id));
+    let result = write_item(&staging, content, item).and_then(|()| {
+        fs::rename(
+            &staging,
+            images_dir.join(format!("{}.{ITEM_DIR_EXT}", item.id)),
+        )
+    });
+    if result.is_err() {
+        let _ = fs::remove_dir_all(&staging);
+    }
+    result
+}
+
 fn import_one(images_dir: &Path, source: &Path, now: i64) -> Result<ItemMetadata, ImportFailure> {
     let ext = source
         .extension()
         .map(|e| e.to_string_lossy().to_lowercase())
         .unwrap_or_default();
-    if !SUPPORTED_EXTENSIONS.contains(&ext.as_str()) {
+    if !is_supported(&ext) {
         return Err(ImportFailure::new(
             source,
             ImportFailureReason::UnsupportedExtension,
@@ -107,56 +196,33 @@ fn import_one(images_dir: &Path, source: &Path, now: i64) -> Result<ItemMetadata
         .file_stem()
         .map(|s| s.to_string_lossy().into_owned())
         .unwrap_or_default();
-    let (width, height) = match dimensions(source, &ext) {
-        Some((w, h)) => (Some(w), Some(h)),
-        None => (None, None),
-    };
-
-    let id = Ulid::generate().to_string();
-    let item = ItemMetadata {
-        id: id.clone(),
-        name: name.clone(),
-        ext: ext.clone(),
-        size: meta.len(),
-        width,
-        height,
-        tags: Vec::new(),
-        folders: Vec::new(),
-        annotation: String::new(),
-        star: 0,
-        url: None,
-        created_at: now,
-        modified_at: now,
-        is_deleted: false,
-    };
-
-    // Staged under a different name so readers never see a half-written item directory.
-    let staging = images_dir.join(format!("{id}.{ITEM_DIR_EXT}.tmp"));
-    let result = write_item(&staging, source, &format!("{name}.{ext}"), &item)
-        .and_then(|()| fs::rename(&staging, images_dir.join(format!("{id}.{ITEM_DIR_EXT}"))));
-    if let Err(err) = result {
-        let _ = fs::remove_dir_all(&staging);
-        return Err(ImportFailure::io(source, &err));
-    }
+    let content = Content::File(source);
+    let dims = dimensions(&content, &ext);
+    let item = new_item(name, ext, meta.len(), dims, None, now);
+    store_item(images_dir, content, &item).map_err(|err| ImportFailure::io(source, &err))?;
     Ok(item)
 }
 
-fn write_item(dir: &Path, source: &Path, file_name: &str, item: &ItemMetadata) -> io::Result<()> {
+fn write_item(dir: &Path, content: Content<'_>, item: &ItemMetadata) -> io::Result<()> {
     fs::create_dir(dir)?;
-    fs::copy(source, dir.join(file_name))?;
+    let file = crate::item::item_file(dir, item)?;
+    match content {
+        Content::File(source) => fs::copy(source, file).map(drop)?,
+        Content::Bytes(bytes) => fs::write(file, bytes)?,
+    }
     let json = serde_json::to_vec_pretty(item).map_err(io::Error::other)?;
     fs::write(dir.join(ITEM_METADATA_FILE), json)
 }
 
-fn dimensions(path: &Path, ext: &str) -> Option<(u32, u32)> {
-    match ext {
-        "pdf" => None,
-        "svg" => svg_dimensions(&fs::read_to_string(path).ok()?),
-        _ => {
-            let size = imagesize::size(path).ok()?;
-            Some((size.width.try_into().ok()?, size.height.try_into().ok()?))
-        }
-    }
+fn dimensions(content: &Content<'_>, ext: &str) -> Option<(u32, u32)> {
+    let size = match (ext, content) {
+        ("pdf", _) => return None,
+        ("svg", Content::File(path)) => return svg_dimensions(&fs::read_to_string(path).ok()?),
+        ("svg", Content::Bytes(bytes)) => return svg_dimensions(std::str::from_utf8(bytes).ok()?),
+        (_, Content::File(path)) => imagesize::size(path).ok()?,
+        (_, Content::Bytes(bytes)) => imagesize::blob_size(bytes).ok()?,
+    };
+    Some((size.width.try_into().ok()?, size.height.try_into().ok()?))
 }
 
 /// Reads `width`/`height` (unitless or `px`) from the root `<svg>` tag, falling back to `viewBox`.
@@ -284,6 +350,57 @@ mod tests {
         assert_eq!(
             fs::read_dir(lib.path().join(IMAGES_DIR)).unwrap().count(),
             1
+        );
+    }
+
+    #[test]
+    fn imports_bytes_with_source_url() {
+        let lib = library();
+        let bytes = png(32, 16);
+        let item = import_bytes(
+            lib.path(),
+            &BytesImport {
+                name: "cat",
+                ext: "PNG",
+                url: Some("https://example.com/page"),
+                bytes: &bytes,
+            },
+        )
+        .unwrap();
+
+        assert_eq!((item.name.as_str(), item.ext.as_str()), ("cat", "png"));
+        assert_eq!(item.size, bytes.len() as u64);
+        assert_eq!((item.width, item.height), (Some(32), Some(16)));
+        assert_eq!(item.url.as_deref(), Some("https://example.com/page"));
+        let item_dir = crate::item::item_dir(lib.path(), &item.id);
+        assert_eq!(fs::read(item_dir.join("cat.png")).unwrap(), bytes);
+        assert_eq!(crate::item::read_item(&item_dir).unwrap(), item);
+    }
+
+    #[test]
+    fn import_bytes_rejects_unsupported_extension_and_bad_name() {
+        let lib = library();
+        let asset = |name, ext| BytesImport {
+            name,
+            ext,
+            url: None,
+            bytes: b"x",
+        };
+        assert!(matches!(
+            import_bytes(lib.path(), &asset("a", "exe")),
+            Err(ImportError::UnsupportedExtension(_))
+        ));
+        assert!(matches!(
+            import_bytes(lib.path(), &asset("../a", "png")),
+            Err(ImportError::Io(_))
+        ));
+        assert!(matches!(
+            import_bytes(tempfile::tempdir().unwrap().path(), &asset("a", "png")),
+            Err(ImportError::NotALibrary(_))
+        ));
+        assert_eq!(
+            fs::read_dir(lib.path().join(IMAGES_DIR)).unwrap().count(),
+            0
         );
     }
 
