@@ -139,13 +139,24 @@ nav {
   color: var(--muted);
 }
 
+.folder-move,
+select.inspector-input {
+  background-color: Canvas;
+  color: CanvasText;
+}
+
+/* A transparent select keeps the page text color in the native menu, which matches that menu's background until an item is focused. */
+.folder-move option,
+select.inspector-input option {
+  background-color: Canvas;
+  color: CanvasText;
+}
+
 .folder-move {
   max-width: 100%;
   padding: 2px 4px;
   border: 1px solid var(--border);
   border-radius: 4px;
-  background: transparent;
-  color: inherit;
   font: inherit;
 }
 
