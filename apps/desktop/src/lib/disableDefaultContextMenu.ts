@@ -8,9 +8,7 @@ function asHtmlLike(target: EventTarget | null): HtmlLike | null {
   if (!("tagName" in target)) return null;
   const tagName = (target as { tagName: unknown }).tagName;
   if (typeof tagName !== "string") return null;
-  const isContentEditable = Boolean(
-    (target as { isContentEditable?: unknown }).isContentEditable,
-  );
+  const isContentEditable = Boolean((target as { isContentEditable?: unknown }).isContentEditable);
   return { tagName, isContentEditable };
 }
 
@@ -33,9 +31,7 @@ export function suppressDefaultContextMenu(event: Event): void {
  * cannot open DevTools. Development keeps the menu for Inspect Element.
  * Returns an uninstall function.
  */
-export function installDisableDefaultContextMenu(
-  isDev = import.meta.env.DEV,
-): () => void {
+export function installDisableDefaultContextMenu(isDev = import.meta.env.DEV): () => void {
   if (isDev) return () => {};
   document.addEventListener("contextmenu", suppressDefaultContextMenu);
   return () => {
