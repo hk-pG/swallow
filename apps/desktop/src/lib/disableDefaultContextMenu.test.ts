@@ -17,12 +17,8 @@ function fakeEvent(target: object | null): Event {
 
 describe("isEditableContextTarget", () => {
   it("allows input, textarea, and contenteditable", () => {
-    expect(isEditableContextTarget({ tagName: "INPUT" } as EventTarget)).toBe(
-      true,
-    );
-    expect(
-      isEditableContextTarget({ tagName: "TEXTAREA" } as EventTarget),
-    ).toBe(true);
+    expect(isEditableContextTarget({ tagName: "INPUT" } as EventTarget)).toBe(true);
+    expect(isEditableContextTarget({ tagName: "TEXTAREA" } as EventTarget)).toBe(true);
     expect(
       isEditableContextTarget({
         tagName: "DIV",
@@ -32,9 +28,7 @@ describe("isEditableContextTarget", () => {
   });
 
   it("rejects non-editable elements and null", () => {
-    expect(isEditableContextTarget({ tagName: "DIV" } as EventTarget)).toBe(
-      false,
-    );
+    expect(isEditableContextTarget({ tagName: "DIV" } as EventTarget)).toBe(false);
     expect(isEditableContextTarget(null)).toBe(false);
   });
 });
@@ -72,15 +66,9 @@ describe("installDisableDefaultContextMenu", () => {
     vi.stubGlobal("document", { addEventListener, removeEventListener });
 
     const uninstall = installDisableDefaultContextMenu(false);
-    expect(addEventListener).toHaveBeenCalledWith(
-      "contextmenu",
-      suppressDefaultContextMenu,
-    );
+    expect(addEventListener).toHaveBeenCalledWith("contextmenu", suppressDefaultContextMenu);
 
     uninstall();
-    expect(removeEventListener).toHaveBeenCalledWith(
-      "contextmenu",
-      suppressDefaultContextMenu,
-    );
+    expect(removeEventListener).toHaveBeenCalledWith("contextmenu", suppressDefaultContextMenu);
   });
 });
