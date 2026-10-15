@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { filterItems, matchesQuery, matchesView, parseQuery } from "./filter";
-import type { ItemMetadata } from "./library";
+import type { Folder, ItemMetadata } from "./library";
 
 function item(overrides: Partial<ItemMetadata> & Pick<ItemMetadata, "id">): ItemMetadata {
   return {
@@ -47,6 +47,28 @@ describe("matchesView", () => {
     ]);
     expect(ids(items.filter((i) => matchesView(i, { kind: "tag", tag: "landscape" })))).toEqual([
       "filed",
+    ]);
+  });
+
+  it("folder view includes descendant folders when the tree is known", () => {
+    const tree: Folder[] = [
+      { id: "f1", name: "Photos", children: [{ id: "f2", name: "Cats", children: [] }] },
+    ];
+    const nested = item({ id: "nested", name: "kitten", folders: ["f2"] });
+    const direct = item({ id: "direct", name: "beach", folders: ["f1"] });
+    const other = item({ id: "other", folders: ["f9"] });
+    const deleted = item({ id: "deleted", folders: ["f2"], isDeleted: true });
+    const stale = item({ id: "stale", folders: ["missing"] });
+    const list = [nested, direct, other, deleted, stale];
+
+    expect(
+      ids(list.filter((i) => matchesView(i, { kind: "folder", folderId: "f1" }, tree))),
+    ).toEqual(["nested", "direct"]);
+    expect(ids(filterItems(list, { kind: "folder", folderId: "f1" }, "kit", tree))).toEqual([
+      "nested",
+    ]);
+    expect(ids(filterItems(list, { kind: "folder", folderId: "missing" }, "", tree))).toEqual([
+      "stale",
     ]);
   });
 });

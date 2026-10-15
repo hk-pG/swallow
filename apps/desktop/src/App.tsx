@@ -1,6 +1,7 @@
 import {
   type AppInfo,
   type Folder,
+  type FolderId,
   filterItems,
   type ItemId,
   type ItemMetadata,
@@ -10,24 +11,34 @@ import {
 } from "@swallow/shared";
 import { ask, open } from "@tauri-apps/plugin-dialog";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FolderAssignControl } from "./components/FolderAssignControl";
+import { FolderTree } from "./components/FolderTree";
 import { Inspector } from "./components/Inspector";
 import { ItemGrid } from "./components/ItemGrid";
 import { SmartViewNav } from "./components/SmartViewNav";
 import { TrashActions } from "./components/TrashActions";
 import { ImportReportBanner } from "./ImportReportBanner";
 import {
+  assignItems,
+  createFolder,
   createLibrary,
+  deleteFolder,
   getAppInfo,
   getRecentLibraries,
+  listFolders,
   listItems,
+  moveFolder,
   onItemImported,
   openLibrary,
   purgeItems,
+  renameFolder,
   restoreItems,
   restoreLibrary,
   trashItems,
+  unassignItems,
   updateItem,
 } from "./lib/commands";
+import { flattenFolderNames } from "./lib/folders";
 import {
   EMPTY_SELECTION,
   nextAfterRemoval,
@@ -49,8 +60,7 @@ export function App() {
   const [selection, setSelection] = useState<Selection>(EMPTY_SELECTION);
   const [view, setView] = useState<ItemView>({ kind: "all" });
   const [query, setQuery] = useState("");
-  // TODO(#7): load from the library's folder tree.
-  const [folders] = useState<Folder[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
   const contentRef = useRef<HTMLElement>(null);
   const libraryPath = library?.path ?? null;
 
@@ -73,6 +83,30 @@ export function App() {
   useEffect(() => {
     void reloadItems();
   }, [reloadItems]);
+
+  const folderReloadSeq = useRef(0);
+  const reloadFolders = useCallback(async (): Promise<Folder[] | null> => {
+    const seq = ++folderReloadSeq.current;
+    if (!libraryPath) {
+      setFolders([]);
+      return [];
+    }
+    try {
+      const next = await listFolders(libraryPath);
+      if (seq !== folderReloadSeq.current) return null;
+      setFolders(next);
+      return next;
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
+  }, [libraryPath]);
+
+  useEffect(() => {
+    setFolders([]);
+    setView((current) => (current.kind === "folder" ? { kind: "all" } : current));
+    void reloadFolders();
+  }, [reloadFolders]);
 
   useEffect(() => {
     const unlisten = onItemImported(() => void reloadItems());
@@ -123,7 +157,10 @@ export function App() {
 
   const disabled = library === null;
 
-  const visibleItems = useMemo(() => filterItems(items, view, query), [items, view, query]);
+  const visibleItems = useMemo(
+    () => filterItems(items, view, query, folders),
+    [items, view, query, folders],
+  );
   const visibleIds = useMemo(() => visibleItems.map((item) => item.id), [visibleItems]);
 
   useEffect(() => setSelection((current) => retainVisible(current, visibleIds)), [visibleIds]);
@@ -167,6 +204,69 @@ export function App() {
     if (!libraryPath) throw new Error("ライブラリが開かれていません");
     const updated = await updateItem(libraryPath, id, patch);
     setItems((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+  };
+
+  const refreshAfterFolderChange = async () => {
+    const next = await reloadFolders();
+    await reloadItems();
+    if (!next) return;
+    const ids = flattenFolderNames(next);
+    setView((current) =>
+      current.kind === "folder" && !ids.has(current.folderId) ? { kind: "all" } : current,
+    );
+  };
+
+  const requireLibrary = () => {
+    if (!libraryPath) throw new Error("ライブラリが開かれていません");
+    return libraryPath;
+  };
+
+  const handleCreateFolder = async (parentId: FolderId | null, name: string) => {
+    const path = requireLibrary();
+    const created = await createFolder(path, parentId, name);
+    await refreshAfterFolderChange();
+    setView({ kind: "folder", folderId: created.id });
+  };
+
+  const handleRenameFolder = async (id: FolderId, name: string) => {
+    await renameFolder(requireLibrary(), id, name);
+    await refreshAfterFolderChange();
+  };
+
+  const handleMoveFolder = async (
+    id: FolderId,
+    parentId: FolderId | null,
+    index: number | null,
+  ) => {
+    await moveFolder(requireLibrary(), id, parentId, index);
+    await refreshAfterFolderChange();
+  };
+
+  const handleDeleteFolder = async (id: FolderId) => {
+    const path = requireLibrary();
+    const name = flattenFolderNames(folders).get(id) ?? "フォルダ";
+    const confirmed = await ask(
+      `「${name}」と配下のフォルダを削除します。アイテム自体は残ります。`,
+      {
+        title: "フォルダを削除",
+        kind: "warning",
+        okLabel: "削除",
+        cancelLabel: "キャンセル",
+      },
+    );
+    if (!confirmed) return;
+    await deleteFolder(path, id);
+    await refreshAfterFolderChange();
+  };
+
+  const changeFolderMembership = async (
+    itemIds: ItemId[],
+    folderId: FolderId,
+    action: typeof assignItems,
+  ) => {
+    if (itemIds.length === 0) return;
+    await action(requireLibrary(), itemIds, folderId);
+    await refreshAfterFolderChange();
   };
 
   const withSelected =
@@ -217,6 +317,17 @@ export function App() {
           </div>
         </div>
         <SmartViewNav view={view} onChange={setView} disabled={disabled} />
+        <FolderTree
+          key={libraryPath ?? ""}
+          folders={folders}
+          selectedId={view.kind === "folder" ? view.folderId : null}
+          disabled={disabled}
+          onSelect={(id) => setView({ kind: "folder", folderId: id })}
+          onCreate={handleCreateFolder}
+          onRename={handleRenameFolder}
+          onDelete={handleDeleteFolder}
+          onMove={handleMoveFolder}
+        />
       </aside>
       <main ref={contentRef} className={assetImport.dragOver ? "content drag-over" : "content"}>
         <header className="toolbar">
@@ -294,10 +405,30 @@ export function App() {
       </main>
       <aside className="inspector">
         {selectedCount > 1 ? (
-          <p className="inspector-empty">{selectedCount} 件を選択中</p>
+          <div className="inspector-body">
+            <p className="inspector-muted">{selectedCount} 件を選択中</p>
+            <FolderAssignControl
+              key={[...selection.ids].sort().join("\n")}
+              folders={folders}
+              onAssign={(folderId) =>
+                changeFolderMembership([...selection.ids], folderId, assignItems)
+              }
+              onUnassign={(folderId) =>
+                changeFolderMembership([...selection.ids], folderId, unassignItems)
+              }
+            />
+          </div>
         ) : (
           <>
-            <Inspector item={selected} folders={folders} onSave={saveItem} />
+            <Inspector
+              item={selected}
+              folders={folders}
+              onSave={saveItem}
+              onAssignFolder={(id, folderId) => changeFolderMembership([id], folderId, assignItems)}
+              onUnassignFolder={(id, folderId) =>
+                changeFolderMembership([id], folderId, unassignItems)
+              }
+            />
             <TrashActions
               key={selected?.id}
               item={selected}
