@@ -5,30 +5,39 @@ import {
   suppressDefaultContextMenu,
 } from "./disableDefaultContextMenu";
 
+function asTarget(value: object): EventTarget {
+  return value as unknown as EventTarget;
+}
+
 function fakeEvent(target: object | null): Event {
+  let prevented = false;
   return {
     target,
-    defaultPrevented: false,
+    get defaultPrevented() {
+      return prevented;
+    },
     preventDefault() {
-      this.defaultPrevented = true;
+      prevented = true;
     },
   } as Event;
 }
 
 describe("isEditableContextTarget", () => {
   it("allows input, textarea, and contenteditable", () => {
-    expect(isEditableContextTarget({ tagName: "INPUT" } as EventTarget)).toBe(true);
-    expect(isEditableContextTarget({ tagName: "TEXTAREA" } as EventTarget)).toBe(true);
+    expect(isEditableContextTarget(asTarget({ tagName: "INPUT" }))).toBe(true);
+    expect(isEditableContextTarget(asTarget({ tagName: "TEXTAREA" }))).toBe(true);
     expect(
-      isEditableContextTarget({
-        tagName: "DIV",
-        isContentEditable: true,
-      } as EventTarget),
+      isEditableContextTarget(
+        asTarget({
+          tagName: "DIV",
+          isContentEditable: true,
+        }),
+      ),
     ).toBe(true);
   });
 
   it("rejects non-editable elements and null", () => {
-    expect(isEditableContextTarget({ tagName: "DIV" } as EventTarget)).toBe(false);
+    expect(isEditableContextTarget(asTarget({ tagName: "DIV" }))).toBe(false);
     expect(isEditableContextTarget(null)).toBe(false);
   });
 });
