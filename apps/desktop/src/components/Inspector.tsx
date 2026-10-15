@@ -1,7 +1,8 @@
 import type { Folder, ItemId, ItemMetadata, ItemMetadataPatch } from "@swallow/shared";
-import { type KeyboardEvent, useEffect, useId, useMemo, useState } from "react";
+import { type FormEvent, type KeyboardEvent, useEffect, useId, useMemo, useState } from "react";
 import { flattenFolderNames } from "../lib/folders";
 import { formatBytes, formatDateTime, formatResolution } from "../lib/format";
+import { suggestTags } from "../lib/tags";
 
 const MAX_STAR = 5;
 
@@ -9,10 +10,21 @@ interface InspectorProps {
   item: ItemMetadata | null;
   /** Library folder tree, used to resolve `item.folders` to names. */
   folders?: Folder[];
+  /** All tags registered in the library, used for suggestions. */
+  libraryTagNames?: string[];
   onSave: (id: ItemId, patch: ItemMetadataPatch) => Promise<void>;
+  onAddTags?: (id: ItemId, tags: string[]) => Promise<void>;
+  onRemoveTags?: (id: ItemId, tags: string[]) => Promise<void>;
 }
 
-export function Inspector({ item, folders = [], onSave }: InspectorProps) {
+export function Inspector({
+  item,
+  folders = [],
+  libraryTagNames = [],
+  onSave,
+  onAddTags,
+  onRemoveTags,
+}: InspectorProps) {
   const [error, setError] = useState<string | null>(null);
   const folderNames = useMemo(() => flattenFolderNames(folders), [folders]);
 
@@ -59,7 +71,32 @@ export function Inspector({ item, folders = [], onSave }: InspectorProps) {
 
       <section className="inspector-section">
         <h3>タグ</h3>
-        <ChipList values={item.tags} empty="タグなし" />
+        {onAddTags && onRemoveTags ? (
+          <EditableTagList
+            tags={item.tags}
+            suggestions={libraryTagNames}
+            onAdd={async (tags) => {
+              setError(null);
+              try {
+                await onAddTags(id, tags);
+              } catch (e) {
+                setError(String(e));
+                throw e;
+              }
+            }}
+            onRemove={async (tags) => {
+              setError(null);
+              try {
+                await onRemoveTags(id, tags);
+              } catch (e) {
+                setError(String(e));
+                throw e;
+              }
+            }}
+          />
+        ) : (
+          <ChipList values={item.tags} empty="タグなし" />
+        )}
       </section>
       <section className="inspector-section">
         <h3>フォルダ</h3>
@@ -183,5 +220,91 @@ function ChipList({ values, empty }: { values: string[]; empty: string }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+function EditableTagList({
+  tags,
+  suggestions,
+  onAdd,
+  onRemove,
+}: {
+  tags: string[];
+  suggestions: string[];
+  onAdd: (tags: string[]) => Promise<void>;
+  onRemove: (tags: string[]) => Promise<void>;
+}) {
+  const listId = useId();
+  const [draft, setDraft] = useState("");
+  const [busy, setBusy] = useState(false);
+  const matches = useMemo(() => suggestTags(suggestions, draft, tags), [suggestions, draft, tags]);
+
+  const add = async (raw: string) => {
+    const tag = raw.trim();
+    if (!tag || busy || tags.includes(tag)) {
+      setDraft("");
+      return;
+    }
+    setBusy(true);
+    try {
+      await onAdd([tag]);
+      setDraft("");
+    } catch {
+      // Parent surfaces the error.
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    void add(draft);
+  };
+
+  return (
+    <div className="editable-tags">
+      {tags.length === 0 ? (
+        <p className="inspector-muted">タグなし</p>
+      ) : (
+        <ul className="chip-list">
+          {tags.map((tag) => (
+            <li key={tag} className="chip editable-chip">
+              <span>{tag}</span>
+              <button
+                type="button"
+                className="chip-remove"
+                title={`${tag} を外す`}
+                disabled={busy}
+                onClick={() => {
+                  setBusy(true);
+                  void onRemove([tag]).finally(() => setBusy(false));
+                }}
+              >
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <form className="tag-add-form" onSubmit={submit}>
+        <input
+          className="inspector-input"
+          type="text"
+          list={listId}
+          placeholder="タグを追加"
+          value={draft}
+          disabled={busy}
+          onChange={(e) => setDraft(e.target.value)}
+        />
+        <datalist id={listId}>
+          {matches.map((tag) => (
+            <option key={tag} value={tag} />
+          ))}
+        </datalist>
+        <button type="submit" disabled={busy || draft.trim() === ""}>
+          追加
+        </button>
+      </form>
+    </div>
   );
 }

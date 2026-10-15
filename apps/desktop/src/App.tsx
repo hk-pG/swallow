@@ -7,24 +7,34 @@ import {
   type ItemMetadataPatch,
   type ItemView,
   type LibraryInfo,
+  type LibraryTags,
 } from "@swallow/shared";
 import { ask, open } from "@tauri-apps/plugin-dialog";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Inspector } from "./components/Inspector";
 import { ItemGrid } from "./components/ItemGrid";
 import { SmartViewNav } from "./components/SmartViewNav";
+import { TagNav } from "./components/TagNav";
 import { TrashActions } from "./components/TrashActions";
 import { ImportReportBanner } from "./ImportReportBanner";
 import {
+  addItemTags,
+  addTag,
   createLibrary,
+  createTagGroup,
+  deleteTagGroup,
   getAppInfo,
+  getLibraryTags,
   getRecentLibraries,
   listItems,
   onItemImported,
   openLibrary,
   purgeItems,
+  removeItemTags,
+  removeTag,
   restoreItems,
   restoreLibrary,
+  setTagGroup,
   trashItems,
   updateItem,
 } from "./lib/commands";
@@ -37,6 +47,7 @@ import {
   select,
   selectAll,
 } from "./lib/selection";
+import { nextViewAfterTagChange } from "./lib/tags";
 import { purgeConfirmMessage } from "./lib/trash";
 import { useAssetImport } from "./lib/useAssetImport";
 
@@ -49,6 +60,7 @@ export function App() {
   const [selection, setSelection] = useState<Selection>(EMPTY_SELECTION);
   const [view, setView] = useState<ItemView>({ kind: "all" });
   const [query, setQuery] = useState("");
+  const [libraryTags, setLibraryTags] = useState<LibraryTags | null>(null);
   // TODO(#7): load from the library's folder tree.
   const [folders] = useState<Folder[]>([]);
   const contentRef = useRef<HTMLElement>(null);
@@ -70,9 +82,32 @@ export function App() {
     }
   }, [libraryPath]);
 
+  const tagsSeq = useRef(0);
+  const applyLibraryTags = useCallback((tags: LibraryTags) => {
+    setLibraryTags(tags);
+    setView((current) => nextViewAfterTagChange(current, tags));
+  }, []);
+  const reloadTags = useCallback(async () => {
+    const seq = ++tagsSeq.current;
+    if (!libraryPath) {
+      setLibraryTags(null);
+      return;
+    }
+    try {
+      const tags = await getLibraryTags(libraryPath);
+      if (seq === tagsSeq.current) applyLibraryTags(tags);
+    } catch (e) {
+      console.error(e);
+    }
+  }, [libraryPath, applyLibraryTags]);
+
   useEffect(() => {
     void reloadItems();
   }, [reloadItems]);
+
+  useEffect(() => {
+    void reloadTags();
+  }, [reloadTags]);
 
   useEffect(() => {
     const unlisten = onItemImported(() => void reloadItems());
@@ -169,6 +204,38 @@ export function App() {
     setItems((current) => current.map((item) => (item.id === updated.id ? updated : item)));
   };
 
+  const requireLibraryPath = () => {
+    if (!libraryPath) throw new Error("ライブラリが開かれていません");
+    return libraryPath;
+  };
+
+  const withTagMutation = (action: (path: string) => Promise<LibraryTags>) => async () => {
+    const tags = await action(requireLibraryPath());
+    applyLibraryTags(tags);
+    await reloadItems();
+  };
+
+  const tagMutations = {
+    addTag: (tag: string) => withTagMutation((path) => addTag(path, tag))(),
+    removeTag: (tag: string) => withTagMutation((path) => removeTag(path, tag))(),
+    createGroup: (name: string) => withTagMutation((path) => createTagGroup(path, name))(),
+    deleteGroup: (groupId: string) => withTagMutation((path) => deleteTagGroup(path, groupId))(),
+    setTagGroup: (tag: string, groupId: string | null) =>
+      withTagMutation((path) => setTagGroup(path, tag, groupId))(),
+  };
+
+  const handleAddItemTags = async (id: ItemId, tags: string[]) => {
+    const path = requireLibraryPath();
+    applyLibraryTags(await addItemTags(path, [id], tags));
+    await reloadItems();
+  };
+
+  const handleRemoveItemTags = async (id: ItemId, tags: string[]) => {
+    const path = requireLibraryPath();
+    await removeItemTags(path, [id], tags);
+    await reloadItems();
+  };
+
   const withSelected =
     (action: (path: string, item: ItemMetadata) => Promise<void>) => async () => {
       if (!libraryPath || !selected) throw new Error("アイテムが選択されていません");
@@ -217,6 +284,13 @@ export function App() {
           </div>
         </div>
         <SmartViewNav view={view} onChange={setView} disabled={disabled} />
+        <TagNav
+          libraryTags={libraryTags}
+          view={view}
+          onChange={setView}
+          mutations={tagMutations}
+          disabled={disabled}
+        />
       </aside>
       <main ref={contentRef} className={assetImport.dragOver ? "content drag-over" : "content"}>
         <header className="toolbar">
@@ -297,7 +371,14 @@ export function App() {
           <p className="inspector-empty">{selectedCount} 件を選択中</p>
         ) : (
           <>
-            <Inspector item={selected} folders={folders} onSave={saveItem} />
+            <Inspector
+              item={selected}
+              folders={folders}
+              libraryTagNames={libraryTags?.tags ?? []}
+              onSave={saveItem}
+              onAddTags={handleAddItemTags}
+              onRemoveTags={handleRemoveItemTags}
+            />
             <TrashActions
               key={selected?.id}
               item={selected}
