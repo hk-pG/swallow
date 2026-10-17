@@ -1,4 +1,5 @@
-import type { FolderId, ItemMetadata } from "./library";
+import { subtreeIds } from "./folders";
+import type { Folder, FolderId, ItemMetadata } from "./library";
 
 export type SmartViewKind = "all" | "uncategorized" | "trash";
 
@@ -7,7 +8,15 @@ export type ItemView =
   | { kind: "folder"; folderId: FolderId }
   | { kind: "tag"; tag: string };
 
-export function matchesView(item: ItemMetadata, view: ItemView): boolean {
+/**
+ * A folder view matches items in that folder and, when `folders` contains it, its descendants.
+ * An id missing from `folders` matches only itself.
+ */
+export function matchesView(
+  item: ItemMetadata,
+  view: ItemView,
+  folders: readonly Folder[] = [],
+): boolean {
   switch (view.kind) {
     case "trash":
       return item.isDeleted;
@@ -16,10 +25,21 @@ export function matchesView(item: ItemMetadata, view: ItemView): boolean {
     case "uncategorized":
       return !item.isDeleted && item.folders.length === 0;
     case "folder":
-      return !item.isDeleted && item.folders.includes(view.folderId);
+      return matchesFolder(item, view.folderId, folders);
     case "tag":
       return !item.isDeleted && item.tags.includes(view.tag);
   }
+}
+
+function matchesFolder(
+  item: ItemMetadata,
+  folderId: FolderId,
+  folders: readonly Folder[],
+): boolean {
+  if (item.isDeleted) return false;
+  const ids = subtreeIds(folders, folderId);
+  if (ids === null) return item.folders.includes(folderId);
+  return item.folders.some((id) => ids.includes(id));
 }
 
 function normalize(text: string): string {
@@ -43,7 +63,8 @@ export function filterItems(
   items: readonly ItemMetadata[],
   view: ItemView,
   query: string,
+  folders: readonly Folder[] = [],
 ): ItemMetadata[] {
   const terms = parseQuery(query);
-  return items.filter((item) => matchesView(item, view) && matchesQuery(item, terms));
+  return items.filter((item) => matchesView(item, view, folders) && matchesQuery(item, terms));
 }

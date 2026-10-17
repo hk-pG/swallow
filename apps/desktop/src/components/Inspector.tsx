@@ -1,7 +1,8 @@
-import type { Folder, ItemId, ItemMetadata, ItemMetadataPatch } from "@swallow/shared";
+import type { Folder, FolderId, ItemId, ItemMetadata, ItemMetadataPatch } from "@swallow/shared";
 import { type KeyboardEvent, useEffect, useId, useMemo, useState } from "react";
 import { flattenFolderNames } from "../lib/folders";
 import { formatBytes, formatDateTime, formatResolution } from "../lib/format";
+import { FolderAssignControl } from "./FolderAssignControl";
 
 const MAX_STAR = 5;
 
@@ -10,9 +11,17 @@ interface InspectorProps {
   /** Library folder tree, used to resolve `item.folders` to names. */
   folders?: Folder[];
   onSave: (id: ItemId, patch: ItemMetadataPatch) => Promise<void>;
+  onAssignFolder?: (id: ItemId, folderId: FolderId) => Promise<void>;
+  onUnassignFolder?: (id: ItemId, folderId: FolderId) => Promise<void>;
 }
 
-export function Inspector({ item, folders = [], onSave }: InspectorProps) {
+export function Inspector({
+  item,
+  folders = [],
+  onSave,
+  onAssignFolder,
+  onUnassignFolder,
+}: InspectorProps) {
   const [error, setError] = useState<string | null>(null);
   const folderNames = useMemo(() => flattenFolderNames(folders), [folders]);
 
@@ -63,7 +72,19 @@ export function Inspector({ item, folders = [], onSave }: InspectorProps) {
       </section>
       <section className="inspector-section">
         <h3>フォルダ</h3>
-        <ChipList values={item.folders.map((id) => folderNames.get(id) ?? id)} empty="未分類" />
+        {onAssignFolder && onUnassignFolder ? (
+          <FolderAssignControl
+            folders={folders}
+            memberIds={item.folders}
+            onAssign={(folderId) => onAssignFolder(id, folderId)}
+            onUnassign={(folderId) => onUnassignFolder(id, folderId)}
+          />
+        ) : (
+          <ChipList
+            values={item.folders.map((fid) => folderNames.get(fid) ?? fid)}
+            empty="未分類"
+          />
+        )}
       </section>
 
       <section className="inspector-section">
