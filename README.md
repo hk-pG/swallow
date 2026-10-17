@@ -55,7 +55,7 @@ In a worktree created with Orca, implementation is handed to a Cursor Cloud Agen
 - The Cloud Agent runs in the same `docker/build.Dockerfile` image as CI, configured by `.cursor/environment.json`
 - Set `CURSOR_API_KEY` (created under API Keys on the Cursor Dashboard) in the shell that launches Orca
 - To let the Cloud Agent use `gh`, set a fine-grained token scoped to this repository as `SWALLOW_CLOUD_GH_TOKEN`. When it is unset, Cursor still opens the pull request automatically
-- The block lists the main commands. Writes made through the shell are outside that list
+- These restrictions list the main commands. Writes through the shell remain possible
 
 ## CI
 
