@@ -1,3 +1,4 @@
+mod color_label;
 mod commands;
 mod folders;
 mod http_api;

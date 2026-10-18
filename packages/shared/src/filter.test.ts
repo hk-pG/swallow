@@ -13,6 +13,7 @@ function item(overrides: Partial<ItemMetadata> & Pick<ItemMetadata, "id">): Item
     folders: [],
     annotation: "",
     star: 0,
+    colorLabel: null,
     url: null,
     createdAt: 0,
     modifiedAt: 0,
@@ -46,6 +47,19 @@ describe("matchesView", () => {
 
   it("trash shows only deleted items", () => {
     expect(ids(items.filter((i) => matchesView(i, { kind: "trash" })))).toEqual(["trashed"]);
+  });
+
+  it("colorLabel view matches items with that label and excludes deleted", () => {
+    const red = item({ id: "red", colorLabel: "red" });
+    const none = item({ id: "none", colorLabel: null });
+    const deleted = item({ id: "deleted", colorLabel: "blue", isDeleted: true });
+    const list = [red, none, deleted];
+    expect(
+      ids(list.filter((i) => matchesView(i, { kind: "colorLabel", colorLabel: "red" }))),
+    ).toEqual(["red"]);
+    expect(
+      ids(list.filter((i) => matchesView(i, { kind: "colorLabel", colorLabel: null }))),
+    ).toEqual(["none"]);
   });
 
   it("folder and tag views exclude deleted items", () => {

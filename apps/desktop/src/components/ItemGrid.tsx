@@ -1,4 +1,4 @@
-import type { ItemId, ItemMetadata } from "@swallow/shared";
+import { COLOR_LABEL_SWATCH, type ItemId, type ItemMetadata } from "@swallow/shared";
 import {
   type KeyboardEvent,
   type MouseEvent,
@@ -190,6 +190,14 @@ const ItemCell = memo(function ItemCell({
       onContextMenu={onContextMenu ? (e) => onContextMenu(e, item) : undefined}
     >
       <div className="grid-thumb">
+        {item.colorLabel ? (
+          <span
+            className="grid-color-label"
+            style={{ background: COLOR_LABEL_SWATCH[item.colorLabel] }}
+            aria-hidden="true"
+            title="カラーラベル"
+          />
+        ) : null}
         {src && !failed ? (
           <img
             src={src}

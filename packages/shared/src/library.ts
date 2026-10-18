@@ -1,6 +1,8 @@
 /** Format version written to `LibraryMetadata.version`. */
 export const LIBRARY_VERSION = 1;
 
+import type { ColorLabel } from "./colorLabel";
+
 /** ULID */
 export type ItemId = string;
 export type FolderId = string;
@@ -19,6 +21,7 @@ export interface ItemMetadata {
   annotation: string;
   /** 0-5 */
   star: number;
+  colorLabel: ColorLabel | null;
   url: string | null;
   /** Unix epoch milliseconds */
   createdAt: number;
@@ -32,6 +35,7 @@ export interface ItemMetadataPatch {
   name?: string;
   annotation?: string;
   star?: number;
+  colorLabel?: ColorLabel | null;
   url?: string;
 }
 
