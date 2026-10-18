@@ -2,6 +2,14 @@
 
 Eagle 代替の素材管理アプリ。Tauri 2（Rust）+ React + TypeScript のデスクトップアプリと Chrome 拡張の pnpm モノレポ。
 
+## 長期の予定・進捗
+
+正本は GitHub（Milestone / Label）。入口は [`docs/HANDOFF.md`](docs/HANDOFF.md)。
+
+```sh
+gh issue list --milestone beta --label P1 --state open   # 次に着手する作業
+```
+
 ## Issue から PR まで
 
 Issue を 1 件担当するときは `.agents/skills/issue-to-pr/SKILL.md` を読み、その手順に従って PR 作成まで人に確認せず進める（スキルとして読み込まれていなくても同じ）。
