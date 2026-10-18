@@ -1,5 +1,5 @@
 name: Agent 依頼
-description: 人から Agent への作業依頼。最低限だけ書いて着手できる形にする
+description: リファクタ・調査・ドキュメントなど、機能追加以外の作業依頼
 title: "[依頼] "
 labels: ["enhancement"]
 body:
@@ -7,7 +7,7 @@ body:
     attributes:
       value: |
         書くのは **やりたいこと** と **受け入れ条件** だけで十分です。
-        迷ったら空欄のままにしてください。Agent が不足分を Issue コメントで確認します。
+        プロダクトへの機能追加は「機能追加」テンプレートを使ってください。
 
   - type: textarea
     id: goal
