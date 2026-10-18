@@ -1,0 +1,89 @@
+name: バグ報告
+description: 不具合の記録。再現と受け入れ条件を残してから修正する（AGENTS.md のバグ扱い）
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        修正 PR の前にこの Issue を残します。分かる範囲だけで構いません。
+        **再現手順** と **受け入れ条件** があると Agent が着手しやすくなります。
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: 何が起きているか
+      description: 期待と実際の差を短く。
+      placeholder: |
+        例: タグを削除してもグリッドの絞り込みに残り、再読み込みするまで消えない。
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順
+      description: 手元で再現できる手順。環境が特殊ならそれも書く。
+      value: |
+        1. 
+        2. 
+        3. 
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待する結果
+      placeholder: |
+        例: タグ削除直後から、そのタグでの絞り込み対象に出ない。
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 実際の結果
+      placeholder: |
+        例: 削除後もグリッドに残り、アプリ再起動で消える。
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 受け入れ条件
+      description: 直ったと判断する条件。チェックリスト形式。
+      value: |
+        - [ ] 上記手順で再現しなくなる
+        - [ ] 
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 領域
+      options:
+        - 未定
+        - desktop（Tauri / React）
+        - extension（Chrome 拡張）
+        - ci（CI / エージェント基盤）
+        - docs / その他
+      default: 0
+    validations:
+      required: true
+
+  - type: textarea
+    id: hypothesis
+    attributes:
+      label: 原因仮説（任意）
+      description: 分かれば。調査メモやチャットでの所見もここに要約してよい。
+      placeholder: |
+        例: タグ削除後にフィルタ用のキャッシュを更新していないのでは。
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: 補足（任意）
+      description: OS、再現率、スクリーンショット、関連 Issue など。
