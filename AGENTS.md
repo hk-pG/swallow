@@ -22,6 +22,15 @@ scripts/agent/open-pr.sh --title "<title>" --body-file <path>
 
 Orca で作った worktree では手元で実装せず、`scripts/agent/cloud-run.sh <N>` で Cloud Agent に依頼する。`.cursor/cli.json` で書き込みやビルドが禁止されているのはそのため。
 
+## バグの扱い
+
+不具合対応は **先に GitHub Issue を作り、記録を残してから** 修正 PR に進む（口頭やチャットだけで直さない）。
+
+1. 既存 Issue を検索し、無ければ `gh issue create` で新規作成する（ラベル `bug`、領域 `area:*`、優先度 `P1`/`P2`/`P3`、Milestone を付ける）
+2. 本文に再現手順・受け入れ条件・原因仮説（分かれば）を書く。チャットでの調査結果もここに要約する
+3. その後 `scripts/agent/start-issue.sh <N>` から通常どおり PR まで進める（PR は `Closes #<N>`）
+4. ユーザーが「Issue にして」とだけ言った場合は Issue 作成で止め、修正は依頼があるまで着手しない
+
 ## 構成
 
 | パス | 内容 |
