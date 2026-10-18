@@ -8,9 +8,9 @@ use crate::folders::{self, FolderError};
 use crate::import::{self, ImportError, ImportReport};
 use crate::item::{self, ItemError, ItemMetadata, ItemMetadataPatch};
 use crate::library::{self, Folder, LibraryError, LibraryInfo, LibraryTags};
+use crate::reveal;
 use crate::settings::{SETTINGS_FILE, Settings, SettingsDocument, SettingsPatch};
 use crate::smart_folders::{self, SmartFolder, SmartFolderCriteria, SmartFolderError};
-use crate::reveal;
 use crate::tags::{self, TagError};
 
 /// Mirrors `AppInfo` in `packages/shared/src/api.ts`.

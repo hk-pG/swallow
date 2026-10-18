@@ -10,15 +10,15 @@ pub fn reveal_in_file_manager(path: &Path) -> std::io::Result<()> {
     }
     #[cfg(target_os = "macos")]
     {
-        Command::new("open")
-            .arg("-R")
-            .arg(path)
-            .spawn()?;
+        Command::new("open").arg("-R").arg(path).spawn()?;
     }
     #[cfg(target_os = "linux")]
     {
         let parent = path.parent().ok_or_else(|| {
-            std::io::Error::new(std::io::ErrorKind::NotFound, "item path has no parent directory")
+            std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "item path has no parent directory",
+            )
         })?;
         Command::new("xdg-open").arg(parent).spawn()?;
     }

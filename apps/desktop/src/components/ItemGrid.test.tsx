@@ -39,7 +39,7 @@ describe("ItemGrid context menu", () => {
       />,
     );
 
-    const cell = screen.getByRole("button", { name: /a\.png/i });
+    const cell = screen.getByRole("button", { name: "a" });
     fireEvent.contextMenu(cell);
 
     expect(onSelect).toHaveBeenCalledWith("a", {});
