@@ -1,6 +1,7 @@
 import { thumbnailSizePx } from "@swallow/shared";
 import { ask } from "@tauri-apps/plugin-dialog";
 import { type CSSProperties, useCallback, useRef } from "react";
+import { AdvancedSearch } from "./components/AdvancedSearch";
 import { AppInfo } from "./components/AppInfo";
 import { FolderAssignControl } from "./components/FolderAssignControl";
 import { Inspector } from "./components/Inspector";
@@ -174,6 +175,14 @@ export function App() {
                   placeholder="名前・タグ・注釈で検索"
                   value={browser.query}
                   onChange={(e) => browser.setQuery(e.target.value)}
+                  disabled={disabled}
+                />
+                <AdvancedSearch
+                  criteria={browser.searchCriteria}
+                  onChange={browser.setSearchCriteria}
+                  onClear={browser.clearAdvancedSearch}
+                  folders={folders.folders}
+                  libraryTags={tags.libraryTags?.tags ?? []}
                   disabled={disabled}
                 />
                 <ViewModeToolbar

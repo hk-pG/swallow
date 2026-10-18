@@ -2,9 +2,12 @@ import type { ColorLabel } from "./colorLabel";
 import { subtreeIds } from "./folders";
 import type { Folder, FolderId, ItemMetadata } from "./library";
 import {
+  EMPTY_SMART_FOLDER_CRITERIA,
   filterItemsBySmartFolder,
+  isSmartFolderCriteriaActive,
   matchesSmartFolderCriteria,
   type SmartFolder,
+  type SmartFolderCriteria,
 } from "./smartFolders";
 
 /** Minimum star (1–5) for the fixed favorites smart view. */
@@ -87,22 +90,37 @@ export function matchesQuery(item: ItemMetadata, terms: readonly string[]): bool
   return terms.every((term) => haystacks.some((text) => text.includes(term)));
 }
 
+function matchesAdvancedCriteria(
+  item: ItemMetadata,
+  criteria: SmartFolderCriteria,
+  folders: readonly Folder[],
+): boolean {
+  if (!isSmartFolderCriteriaActive(criteria)) return true;
+  return matchesSmartFolderCriteria(item, criteria, folders);
+}
+
 export function filterItems(
   items: readonly ItemMetadata[],
   view: ItemView,
   query: string,
   folders: readonly Folder[] = [],
   smartFolders: readonly SmartFolder[] = [],
+  searchCriteria: SmartFolderCriteria = EMPTY_SMART_FOLDER_CRITERIA,
 ): ItemMetadata[] {
   const terms = parseQuery(query);
   if (view.kind === "smartFolder") {
     const smart = findSmartFolder(smartFolders, view.smartFolderId);
     if (!smart) return [];
-    const base = filterItemsBySmartFolder(items, smart.criteria, folders);
+    const base = filterItemsBySmartFolder(items, smart.criteria, folders).filter((item) =>
+      matchesAdvancedCriteria(item, searchCriteria, folders),
+    );
     if (terms.length === 0) return base;
     return base.filter((item) => matchesQuery(item, terms));
   }
   return items.filter(
-    (item) => matchesView(item, view, folders, smartFolders) && matchesQuery(item, terms),
+    (item) =>
+      matchesView(item, view, folders, smartFolders) &&
+      matchesQuery(item, terms) &&
+      matchesAdvancedCriteria(item, searchCriteria, folders),
   );
 }

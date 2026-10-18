@@ -35,6 +35,16 @@ export const EMPTY_SMART_FOLDER_CRITERIA: SmartFolderCriteria = {
   minStar: null,
 };
 
+/** True when any criterion besides defaults is set (toolbar text search is separate). */
+export function isSmartFolderCriteriaActive(criteria: SmartFolderCriteria): boolean {
+  return (
+    criteria.query.trim() !== "" ||
+    criteria.tags.length > 0 ||
+    criteria.folderId !== null ||
+    criteria.minStar !== null
+  );
+}
+
 function normalize(text: string): string {
   return text.normalize("NFKC").toLowerCase();
 }

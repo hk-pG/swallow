@@ -1,10 +1,12 @@
 import {
+  EMPTY_SMART_FOLDER_CRITERIA,
   type Folder,
   filterItems,
   type ItemId,
   type ItemMetadata,
   type ItemView,
   type SmartFolder,
+  type SmartFolderCriteria,
 } from "@swallow/shared";
 import {
   type Dispatch,
@@ -28,6 +30,9 @@ export interface ItemBrowser {
   setView: Dispatch<SetStateAction<ItemView>>;
   query: string;
   setQuery: (query: string) => void;
+  searchCriteria: SmartFolderCriteria;
+  setSearchCriteria: Dispatch<SetStateAction<SmartFolderCriteria>>;
+  clearAdvancedSearch: () => void;
   selection: Selection;
   setSelection: Dispatch<SetStateAction<Selection>>;
   visibleItems: ItemMetadata[];
@@ -53,10 +58,13 @@ export function useItemBrowser(
   const [selection, setSelection] = useState<Selection>(EMPTY_SELECTION);
   const [view, setView] = useState<ItemView>({ kind: "all" });
   const [query, setQuery] = useState("");
+  const [searchCriteria, setSearchCriteria] = useState<SmartFolderCriteria>(
+    EMPTY_SMART_FOLDER_CRITERIA,
+  );
 
   const visibleItems = useMemo(
-    () => filterItems(items, view, query, folders, smartFolders),
-    [items, view, query, folders, smartFolders],
+    () => filterItems(items, view, query, folders, smartFolders, searchCriteria),
+    [items, view, query, folders, smartFolders, searchCriteria],
   );
   const visibleIds = useMemo(() => visibleItems.map((item) => item.id), [visibleItems]);
 
@@ -72,6 +80,7 @@ export function useItemBrowser(
     [visibleIds],
   );
   const clearSelection = useCallback(() => setSelection(EMPTY_SELECTION), []);
+  const clearAdvancedSearch = useCallback(() => setSearchCriteria(EMPTY_SMART_FOLDER_CRITERIA), []);
 
   const selectedCount = selection.ids.size;
   const [selectedId] = selection.ids;
@@ -83,6 +92,9 @@ export function useItemBrowser(
     setView,
     query,
     setQuery,
+    searchCriteria,
+    setSearchCriteria,
+    clearAdvancedSearch,
     selection,
     setSelection,
     visibleItems,

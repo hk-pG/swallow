@@ -4,12 +4,11 @@ import {
   type ItemView,
   type SmartFolder,
   type SmartFolderCriteria,
-  type SmartFolderTagMatch,
 } from "@swallow/shared";
 import { ask } from "@tauri-apps/plugin-dialog";
-import { type FormEvent, useEffect, useMemo, useState } from "react";
-import { flattenFolders } from "../lib/folders";
+import { type FormEvent, useEffect, useState } from "react";
 import type { SmartFoldersApi } from "../lib/useSmartFolders";
+import { SmartFolderCriteriaFields } from "./SmartFolderCriteriaFields";
 
 interface Props {
   smartFolders: SmartFolder[];
@@ -39,7 +38,6 @@ export function SmartFolderNav({
   );
 
   const selectedId = view.kind === "smartFolder" ? view.smartFolderId : null;
-  const flatFolders = useMemo(() => flattenFolders(folders), [folders]);
 
   useEffect(() => {
     if (disabled) setEditorId(null);
@@ -166,12 +164,13 @@ export function SmartFolderNav({
 
       {editorId && (
         <div className="smart-folder-editor">
-          <CriteriaEditor
+          <SmartFolderCriteriaFields
             criteria={criteriaDraft}
-            flatFolders={flatFolders}
+            folders={folders}
             libraryTags={libraryTags}
             disabled={disabled || busy}
             onChange={setCriteriaDraft}
+            datalistId="smart-folder-tag-suggestions"
           />
           <div className="smart-folder-editor-actions">
             <button type="button" disabled={disabled || busy} onClick={renameSelected}>
@@ -190,116 +189,5 @@ export function SmartFolderNav({
         </p>
       )}
     </section>
-  );
-}
-
-function CriteriaEditor({
-  criteria,
-  flatFolders,
-  libraryTags,
-  disabled,
-  onChange,
-}: {
-  criteria: SmartFolderCriteria;
-  flatFolders: ReturnType<typeof flattenFolders>;
-  libraryTags: string[];
-  disabled?: boolean;
-  onChange: (criteria: SmartFolderCriteria) => void;
-}) {
-  const tagsText = criteria.tags.join(", ");
-
-  return (
-    <div className="smart-folder-criteria">
-      <label className="smart-folder-field">
-        <span>検索テキスト</span>
-        <input
-          className="sidebar-input"
-          type="search"
-          value={criteria.query}
-          disabled={disabled}
-          placeholder="名前・タグ・注釈"
-          onChange={(e) => onChange({ ...criteria, query: e.target.value })}
-        />
-      </label>
-      <label className="smart-folder-field">
-        <span>タグ（カンマ区切り）</span>
-        <input
-          className="sidebar-input"
-          type="text"
-          list="smart-folder-tag-suggestions"
-          value={tagsText}
-          disabled={disabled}
-          onChange={(e) => {
-            const tags = e.target.value
-              .split(",")
-              .map((tag) => tag.trim())
-              .filter((tag) => tag.length > 0);
-            onChange({ ...criteria, tags });
-          }}
-        />
-        <datalist id="smart-folder-tag-suggestions">
-          {libraryTags.map((tag) => (
-            <option key={tag} value={tag} />
-          ))}
-        </datalist>
-      </label>
-      <label className="smart-folder-field">
-        <span>タグの一致</span>
-        <select
-          className="sidebar-input"
-          value={criteria.tagMatch}
-          disabled={disabled}
-          onChange={(e) =>
-            onChange({ ...criteria, tagMatch: e.target.value as SmartFolderTagMatch })
-          }
-        >
-          <option value="all">すべて含む</option>
-          <option value="any">いずれか</option>
-        </select>
-      </label>
-      <label className="smart-folder-field">
-        <span>フォルダ</span>
-        <select
-          className="sidebar-input"
-          value={criteria.folderId ?? ""}
-          disabled={disabled}
-          onChange={(e) =>
-            onChange({
-              ...criteria,
-              folderId: e.target.value === "" ? null : e.target.value,
-            })
-          }
-        >
-          <option value="">指定なし</option>
-          {flatFolders.map((folder) => (
-            <option key={folder.id} value={folder.id}>
-              {"　".repeat(folder.depth) + folder.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="smart-folder-field">
-        <span>星（以上）</span>
-        <select
-          className="sidebar-input"
-          value={criteria.minStar === null ? "" : String(criteria.minStar)}
-          disabled={disabled}
-          onChange={(e) => {
-            const raw = e.target.value;
-            onChange({
-              ...criteria,
-              minStar: raw === "" ? null : Number.parseInt(raw, 10),
-            });
-          }}
-        >
-          <option value="">指定なし</option>
-          {Array.from({ length: 6 }, (_, star) => star).map((star) => (
-            <option key={star} value={star}>
-              {star === 0 ? "0（未評価のみ）" : `${star} 以上`}
-            </option>
-          ))}
-        </select>
-      </label>
-    </div>
   );
 }
