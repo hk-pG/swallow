@@ -55,6 +55,10 @@ describe("FolderTree", () => {
     expect(html).toContain("削除");
     expect(html).toContain("移動…");
     expect(html).toContain("トップレベル");
+    expect(html).toContain('class="sidebar-section-header"');
+    // Icons だけが子。字下げはノードのクラスで一度だけ足し、操作パネルの padding ではずらさない。
+    expect(html.match(/folder-node-nested/g)).toHaveLength(1);
+    expect(html).not.toContain("padding-left");
   });
 });
 

@@ -11,6 +11,7 @@
   --space-3: 12px;
   --space-4: 16px;
   --space-5: 24px;
+  --tree-indent: var(--space-4);
   --sidebar-bg: color-mix(in srgb, currentColor 4%, canvas);
 }
 
@@ -240,9 +241,9 @@ nav {
 }
 
 .nav-item {
-  padding: var(--space-2) 10px;
+  padding: var(--space-2);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--space-2);
   background: none;
   color: inherit;
   font: inherit;
@@ -277,17 +278,13 @@ nav {
   border-top: none;
 }
 
-.sidebar-section-header,
-.folder-header {
+.sidebar-section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
   margin-bottom: var(--space-2);
-}
-
-.sidebar-section-header {
-  margin-bottom: var(--space-2);
+  padding-inline: var(--space-2);
 }
 
 .sidebar-section-title {
@@ -299,16 +296,16 @@ nav {
 
 .sidebar-form {
   display: flex;
-  gap: 4px;
-  margin-bottom: 6px;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
 }
 
 .sidebar-input {
   min-width: 0;
   flex: 1;
-  padding: 4px 6px;
+  padding: var(--space-1) var(--space-2);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--space-2);
   background: transparent;
   color: inherit;
   font: inherit;
@@ -344,14 +341,14 @@ nav {
 .smart-folder-list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-1);
 }
 
 .smart-folder-row {
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-1);
 }
 
 .smart-folder-editor {
@@ -382,15 +379,16 @@ nav {
 }
 
 .tag-group {
-  margin-top: 10px;
+  margin-top: var(--space-3);
 }
 
 .tag-group-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 4px;
-  margin-bottom: 2px;
+  gap: var(--space-1);
+  margin-bottom: var(--space-1);
+  padding-inline: var(--space-2);
 }
 
 .tag-group-name {
@@ -401,14 +399,14 @@ nav {
 
 .tag-group-empty {
   margin: 0;
-  padding: 4px 8px;
+  padding: var(--space-1) var(--space-2);
   color: var(--muted);
 }
 
 .tag-list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-1);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -491,14 +489,9 @@ nav {
   gap: var(--space-1);
 }
 
-.folder-header {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--muted);
-}
-
-.folder-header > span {
-  margin: 0;
+.folder-node-nested,
+.folder-line-nested {
+  margin-inline-start: var(--tree-indent);
 }
 
 .folder-line {
@@ -520,8 +513,9 @@ nav {
   align-items: center;
   gap: var(--space-1);
   margin: var(--space-1) 0 var(--space-2);
-  padding: var(--space-2);
-  border-radius: 6px;
+  /* 左余白は 0。ボタン自身の padding が .nav-item と同じ 8px になり、フォルダ名と先頭が揃う */
+  padding: var(--space-1) var(--space-1) var(--space-1) 0;
+  border-radius: var(--space-2);
   background: color-mix(in srgb, currentColor 6%, transparent);
 }
 
@@ -531,7 +525,7 @@ nav {
 }
 
 .folder-empty {
-  margin: 4px 8px;
+  margin: var(--space-1) var(--space-2);
   color: var(--muted);
 }
 
@@ -577,6 +571,18 @@ select.inspector-input option {
 
 .text-button.danger {
   color: #d33;
+}
+
+.folder-actions .text-button,
+.folder-actions .folder-move {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--space-1);
+  line-height: 1.2;
+}
+
+.folder-actions .folder-move {
+  border-color: var(--border);
 }
 
 .folder-assign {
@@ -1119,7 +1125,7 @@ textarea.inspector-input {
 .color-label-nav {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-1);
 }
 
 .color-label-nav-item {

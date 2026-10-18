@@ -53,9 +53,9 @@ export function FolderTree({
   };
 
   return (
-    <section className="folder-section" aria-label="フォルダ">
-      <div className="folder-header">
-        <span>フォルダ</span>
+    <section className="sidebar-section folder-section" aria-label="フォルダ">
+      <div className="sidebar-section-header">
+        <h2 className="sidebar-section-title">フォルダ</h2>
         <button
           type="button"
           className="text-button"
@@ -66,12 +66,14 @@ export function FolderTree({
         </button>
       </div>
       {creatingRoot && (
-        <FolderNameField
-          initial=""
-          placeholder="新しいフォルダ"
-          onCommit={(name) => run(() => onCreate(null, name))}
-          onCancel={() => setEditor(null)}
-        />
+        <div className="folder-line">
+          <FolderNameField
+            initial=""
+            placeholder="新しいフォルダ"
+            onCommit={(name) => run(() => onCreate(null, name))}
+            onCancel={() => setEditor(null)}
+          />
+        </div>
       )}
       {folders.length === 0 && !creatingRoot ? (
         <p className="folder-empty">フォルダはありません</p>
@@ -137,8 +139,8 @@ function FolderNodes({
     const renaming = editor?.kind === "rename" && editor.id === folder.id;
     const creatingChild = editor?.kind === "create" && editor.parentId === folder.id;
     return (
-      <div key={folder.id} className="folder-node">
-        <div className="folder-line" style={{ paddingLeft: `${depth * 12}px` }}>
+      <div key={folder.id} className={depth > 0 ? "folder-node folder-node-nested" : "folder-node"}>
+        <div className="folder-line">
           {renaming ? (
             <FolderNameField
               initial={folder.name}
@@ -158,7 +160,7 @@ function FolderNodes({
           )}
         </div>
         {selected && !renaming && !disabled && (
-          <div className="folder-actions" style={{ paddingLeft: `${depth * 12}px` }}>
+          <div className="folder-actions">
             <button
               type="button"
               className="text-button"
@@ -200,7 +202,7 @@ function FolderNodes({
           </div>
         )}
         {creatingChild && (
-          <div className="folder-line" style={{ paddingLeft: `${(depth + 1) * 12}px` }}>
+          <div className="folder-line folder-line-nested">
             <FolderNameField
               initial=""
               placeholder="新しいフォルダ"
