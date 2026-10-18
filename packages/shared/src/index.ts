@@ -2,6 +2,7 @@ export * from "./api";
 export * from "./filter";
 export * from "./folders";
 export * from "./import";
+export * from "./itemView";
 export * from "./library";
 export * from "./settings";
 export * from "./smartFolders";

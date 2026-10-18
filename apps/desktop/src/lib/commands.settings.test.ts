@@ -9,7 +9,7 @@ describe("settings command types", () => {
       version: 1,
       recentLibraries: [],
       shortcuts: {},
-      appearance: {},
+      appearance: { itemViewMode: "grid", thumbnailSizeIndex: 2 },
       behavior: {},
     });
   });
