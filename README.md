@@ -1,68 +1,68 @@
 # Swallow
 
-Eagle代替の素材管理アプリ。Tauri 2 + React + TypeScript のデスクトップアプリと Chrome 拡張で構成する。
+A material management application. It consists of a Tauri 2 + React + TypeScript desktop app and a Chrome extension.
 
-## 構成
+## Layout
 
-| パス | 内容 |
+| Path | Description |
 |---|---|
-| `apps/desktop` | Tauri 2 アプリ（`src` が React、`src-tauri` が Rust） |
-| `packages/shared` | デスクトップアプリと拡張で共有する型 |
-| `docker/build.Dockerfile` | CI / compose / devcontainer 共通のビルド環境 |
+| `apps/desktop` | Tauri 2 app (`src` is React, `src-tauri` is Rust) |
+| `packages/shared` | Types shared by the desktop app and the extension |
+| `docker/build.Dockerfile` | Build environment shared by CI, Compose, and Dev Containers |
 
-ツールのバージョンは `rust-toolchain.toml`、`.nvmrc`、`package.json` の `packageManager` で固定している。
+Tool versions are pinned in `rust-toolchain.toml`, `.nvmrc`, and the `packageManager` field of `package.json`.
 
-## ローカル開発（ホスト）
+## Local development (host)
 
 ```sh
 corepack enable
 pnpm install
-pnpm dev        # Tauri アプリを起動
+pnpm dev        # Launch the Tauri app
 ```
 
-Linux でホスト開発する場合は [Tauri の前提パッケージ](https://v2.tauri.app/start/prerequisites/) が必要。
+Developing on a Linux host requires the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/).
 
-## コンテナでのビルドとテスト
+## Build and test in a container
 
-CI と同じ環境でチェックやビルドを実行できる。GUI の起動はホスト側で行う。
+Checks and builds can run in the same environment as CI. Launch the GUI on the host.
 
 ```sh
 docker compose build
 docker compose run --rm build pnpm install --frozen-lockfile
-docker compose run --rm build pnpm ci:all        # Lint、型チェック、テスト、ビルド、fmt、clippy、cargo test
+docker compose run --rm build pnpm ci:all        # Lint, typecheck, test, build, fmt, clippy, and cargo test
 docker compose run --rm build pnpm bundle:linux  # deb / rpm / AppImage
 ```
 
-VS Code / Cursor の Dev Containers でも同じイメージを使える（`.devcontainer/devcontainer.json`）。
+VS Code and Cursor Dev Containers use the same image (`.devcontainer/devcontainer.json`).
 
-## ローカル HTTP API（拡張連携用）
+## Local HTTP API (extension integration)
 
-デスクトップアプリは起動中、`127.0.0.1:41600` で拡張向けの API を提供する。パスと型は `packages/shared/src/api.ts`。
+While the desktop app is running, it serves an API for the extension on `127.0.0.1:41600`. Paths and types are defined in `packages/shared/src/api.ts`.
 
-| エンドポイント | 内容 |
+| Endpoint | Description |
 |---|---|
-| `GET /api/app/info` | `AppInfo` を返す |
-| `POST /api/items?name=&ext=&url=` | 本文のバイナリを開いているライブラリに取り込み、`201` で `ItemMetadata` を返す。`ext` を省くと `Content-Type` から決める |
+| `GET /api/app/info` | Returns `AppInfo` |
+| `POST /api/items?name=&ext=&url=` | Imports the binary request body into the open library and returns `ItemMetadata` with status `201`. When `ext` is omitted, it is chosen from `Content-Type` |
 
-エラーは `{ "code", "message" }`（`ApiError`）で返し、ライブラリ未オープンは `503`。接続元が loopback 以外、`Host` が localhost 以外、`Origin` が `chrome-extension://` 以外のリクエストは `403` で拒否する。
+Errors are returned as `{ "code", "message" }` (`ApiError`). When no library is open, the status is `503`. A request is rejected with `403` when the client is outside loopback, `Host` is not localhost, or `Origin` is not a `chrome-extension://` URL.
 
-## AI エージェントでの開発
+## Developing with AI agents
 
-規約と Issue から PR までの手順は `AGENTS.md` と `.agents/skills/issue-to-pr/SKILL.md` にある（Cursor と Codex はスキルとして読み込み、Claude Code は `CLAUDE.md` 経由で `AGENTS.md` から参照する）。補助スクリプトは `scripts/agent/`。
+Conventions and the steps from an issue to a pull request are in `AGENTS.md` and `.agents/skills/issue-to-pr/SKILL.md`. Cursor and Codex load these as skills. Claude Code follows `CLAUDE.md`, which points at `AGENTS.md`. Helper scripts are under `scripts/agent/`.
 
-Orca で作った worktree では、実装を Cursor の Cloud Agent に任せる。`orca.yaml` の setup が `scripts/agent/cloud-only.cli.json` を `.cursor/cli.json` に置き、手元の `cursor-agent` のファイル書き込み、ビルド、テスト、コミット、push を禁止する。Issue を紐付けて作ると、エージェントは `scripts/agent/cloud-run.sh` で Cloud Agent に依頼し、その URL を報告する。
+In a worktree created with Orca, implementation is handed to a Cursor Cloud Agent. The setup in `orca.yaml` replaces `.cursor/cli.json` with `scripts/agent/cloud-only.cli.json`, which blocks the local `cursor-agent` from writing files, building, testing, committing, and pushing. When the worktree is created with a linked issue, the agent calls `scripts/agent/cloud-run.sh` to start a Cloud Agent and reports its URL.
 
-- Cloud Agent は `.cursor/environment.json` により CI と同じ `docker/build.Dockerfile` のイメージで動く
-- `CURSOR_API_KEY`（Cursor Dashboard の API Keys で発行）を Orca から起動するシェルに設定しておく
-- Cloud Agent に `gh` を使わせるなら、このリポジトリに限定した fine-grained token を `SWALLOW_CLOUD_GH_TOKEN` に設定する。未設定でも Cursor が PR を自動で作る
-- 禁止は主要なコマンドを列挙したもので、シェル経由の書き込みまでは防げない
+- The Cloud Agent runs in the same `docker/build.Dockerfile` image as CI, configured by `.cursor/environment.json`
+- Set `CURSOR_API_KEY` (created under API Keys on the Cursor Dashboard) in the shell that launches Orca
+- To let the Cloud Agent use `gh`, set a fine-grained token scoped to this repository as `SWALLOW_CLOUD_GH_TOKEN`. When it is unset, Cursor still opens the pull request automatically
+- These restrictions list the main commands. Writes through the shell remain possible
 
 ## CI
 
-| ワークフロー | 内容 |
+| Workflow | Description |
 |---|---|
-| `build-image.yml` | ビルド用イメージを入力ファイルのハッシュをタグにして GHCR へ push（既存なら再利用） |
-| `ci.yml` | コンテナで `pnpm ci:all` と deb のビルド、macOS / Windows ランナーでネイティブビルド |
-| `release.yml` | `v*` タグで Linux / macOS (arm64, x64) / Windows のインストーラーを下書きリリースに添付 |
+| `build-image.yml` | Pushes the build image to GHCR, tagged with a hash of its input files (an existing image is reused) |
+| `ci.yml` | Runs `pnpm ci:all` and a deb build in a container, plus native builds on macOS and Windows runners |
+| `release.yml` | On a `v*` tag, attaches Linux, macOS (arm64 and x64), and Windows installers to a draft release |
 
-Tauri はクロスコンパイルに対応していないため、macOS と Windows はコンテナではなく各 OS のランナーでビルドする。
+Tauri does not support cross-compilation, so macOS and Windows builds run on runners for those operating systems.
