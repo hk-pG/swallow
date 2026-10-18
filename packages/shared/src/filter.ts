@@ -6,7 +6,10 @@ import {
   type SmartFolder,
 } from "./smartFolders";
 
-export type SmartViewKind = "all" | "uncategorized" | "trash";
+/** Minimum star (1–5) for the fixed favorites smart view. */
+export const FAVORITES_MIN_STAR = 1;
+
+export type SmartViewKind = "all" | "favorites" | "uncategorized" | "trash";
 
 export type ItemView =
   | { kind: SmartViewKind }
@@ -36,6 +39,8 @@ export function matchesView(
       return item.isDeleted;
     case "all":
       return !item.isDeleted;
+    case "favorites":
+      return !item.isDeleted && item.star >= FAVORITES_MIN_STAR;
     case "uncategorized":
       return !item.isDeleted && item.folders.length === 0;
     case "folder":
