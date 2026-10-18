@@ -89,6 +89,106 @@ nav {
   cursor: default;
 }
 
+.folder-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.folder-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.folder-line {
+  display: flex;
+  min-width: 0;
+}
+
+.folder-line .nav-item {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.folder-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding-bottom: 4px;
+}
+
+.folder-name-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.folder-empty {
+  margin: 4px 8px;
+  color: var(--muted);
+}
+
+.folder-move,
+select.inspector-input {
+  background-color: Canvas;
+  color: CanvasText;
+}
+
+/* A transparent select keeps the page text color in the native menu, which matches that menu's background until an item is focused. */
+.folder-move option,
+select.inspector-input option {
+  background-color: Canvas;
+  color: CanvasText;
+}
+
+.folder-move {
+  max-width: 100%;
+  padding: 2px 4px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font: inherit;
+}
+
+.text-button {
+  padding: 2px 6px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.text-button:hover:not(:disabled) {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.text-button:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.text-button.danger {
+  color: #d33;
+}
+
+.folder-assign {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .error {
   margin: 8px 12px 0;
   padding: 8px 10px;
@@ -364,9 +464,22 @@ textarea.inspector-input {
 }
 
 .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   padding: 2px 8px;
   border-radius: 999px;
   background: var(--border);
+}
+
+.chip-remove {
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
 }
 
 .inspector-props {

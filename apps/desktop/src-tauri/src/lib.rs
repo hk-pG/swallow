@@ -1,5 +1,4 @@
 mod commands;
-#[expect(dead_code, reason = "not yet exposed as commands (#7)")]
 mod folders;
 mod http_api;
 mod import;
@@ -41,6 +40,13 @@ pub fn run() {
             commands::set_tag_group,
             commands::add_item_tags,
             commands::remove_item_tags,
+            commands::list_folders,
+            commands::create_folder,
+            commands::rename_folder,
+            commands::move_folder,
+            commands::delete_folder,
+            commands::assign_items,
+            commands::unassign_items,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
