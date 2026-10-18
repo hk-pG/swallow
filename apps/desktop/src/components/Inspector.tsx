@@ -308,6 +308,7 @@ function EditableTagList({
           className="inspector-input"
           type="text"
           list={listId}
+          data-inspector-tag-input="true"
           placeholder="タグを追加"
           value={draft}
           disabled={busy}

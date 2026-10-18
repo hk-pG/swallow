@@ -8,6 +8,7 @@ use crate::folders::{self, FolderError};
 use crate::import::{self, ImportError, ImportReport};
 use crate::item::{self, ItemError, ItemMetadata, ItemMetadataPatch};
 use crate::library::{self, Folder, LibraryError, LibraryInfo, LibraryTags};
+use crate::reveal;
 use crate::settings::{SETTINGS_FILE, Settings, SettingsDocument, SettingsPatch};
 use crate::smart_folders::{self, SmartFolder, SmartFolderCriteria, SmartFolderError};
 use crate::tags::{self, TagError};
@@ -42,6 +43,8 @@ pub enum CommandError {
     Settings(#[source] std::io::Error),
     #[error(transparent)]
     Tauri(#[from] tauri::Error),
+    #[error("ファイルマネージャーで表示できません: {0}")]
+    Reveal(#[source] std::io::Error),
 }
 
 impl Serialize for CommandError {
@@ -379,6 +382,15 @@ pub async fn purge_items(library_path: PathBuf, item_ids: Vec<String>) -> Result
     Ok(())
 }
 
+#[tauri::command]
+pub fn reveal_item_in_explorer(library_path: PathBuf, item_id: String) -> Result<(), CommandError> {
+    let meta = item::load_item(&library_path, &item_id)?;
+    let dir = item::item_dir(&library_path, &item_id);
+    let file = item::item_file(&dir, &meta).map_err(ItemError::from)?;
+    reveal::reveal_in_file_manager(&file).map_err(CommandError::Reveal)?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -453,5 +465,17 @@ mod tests {
             serde_json::to_value(&info).unwrap(),
             serde_json::json!({ "name": "lib", "path": "/libs/lib" })
         );
+    }
+
+    #[test]
+    fn reveal_item_in_explorer_resolves_stored_file_path() {
+        let dir = tempfile::tempdir().unwrap();
+        library::create(dir.path()).unwrap();
+        let path = dir.path().to_path_buf();
+        let item = item::tests::sample_item("ITEM1", "pic", "png");
+        let item_dir = item::tests::write_item(&path, &item);
+        std::fs::write(item_dir.join("pic.png"), b"x").unwrap();
+
+        reveal_item_in_explorer(path, "ITEM1".into()).expect("reveal should spawn");
     }
 }

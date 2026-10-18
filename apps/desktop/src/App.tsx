@@ -1,4 +1,5 @@
-import { useRef } from "react";
+import { ask } from "@tauri-apps/plugin-dialog";
+import { useCallback, useRef } from "react";
 import { AppInfo } from "./components/AppInfo";
 import { FolderAssignControl } from "./components/FolderAssignControl";
 import { Inspector } from "./components/Inspector";
@@ -6,6 +7,9 @@ import { ItemGrid } from "./components/ItemGrid";
 import { QuickLook } from "./components/QuickLook";
 import { TrashActions } from "./components/TrashActions";
 import { ImportReportBanner } from "./ImportReportBanner";
+import { purgeItems, restoreItems, revealItemInExplorer } from "./lib/commands";
+import { focusInspectorTagInput } from "./lib/focusInspector";
+import { purgeConfirmMessage } from "./lib/trash";
 import { useAssetImport } from "./lib/useAssetImport";
 import { useFolders } from "./lib/useFolders";
 import { useItemBrowser } from "./lib/useItemBrowser";
@@ -59,6 +63,68 @@ export function App() {
     invalidate,
     setError: session.setError,
   });
+
+  const isTrashView = browser.view.kind === "trash";
+
+  const handleContextRevealInExplorer = useCallback(
+    async (itemId: string) => {
+      if (!libraryPath) return;
+      try {
+        await revealItemInExplorer(libraryPath, itemId);
+        session.setError(null);
+      } catch (e) {
+        session.setError(`エクスプローラーで表示できませんでした: ${e}`);
+      }
+    },
+    [libraryPath, session.setError],
+  );
+
+  const handleContextEditTags = useCallback(
+    (itemId: string) => {
+      browser.handleSelect(itemId, {});
+      requestAnimationFrame(() => focusInspectorTagInput());
+    },
+    [browser.handleSelect],
+  );
+
+  const handleContextRestore = useCallback(
+    async (itemId: string) => {
+      if (!libraryPath) return;
+      try {
+        await restoreItems(libraryPath, [itemId]);
+        session.setError(null);
+        browser.clearSelection();
+        await invalidate();
+      } catch (e) {
+        session.setError(`復元できませんでした: ${e}`);
+      }
+    },
+    [libraryPath, browser.clearSelection, invalidate, session.setError],
+  );
+
+  const handleContextPurge = useCallback(
+    async (itemId: string) => {
+      if (!libraryPath) return;
+      const item = browser.visibleItems.find((entry) => entry.id === itemId);
+      if (!item) return;
+      const confirmed = await ask(purgeConfirmMessage([item]), {
+        title: "完全に削除",
+        kind: "warning",
+        okLabel: "完全に削除",
+        cancelLabel: "キャンセル",
+      });
+      if (!confirmed) return;
+      try {
+        await purgeItems(libraryPath, [itemId]);
+        session.setError(null);
+        browser.clearSelection();
+        await invalidate();
+      } catch (e) {
+        session.setError(`完全に削除できませんでした: ${e}`);
+      }
+    },
+    [libraryPath, browser.visibleItems, browser.clearSelection, invalidate, session.setError],
+  );
 
   const disabled = session.library === null;
 
@@ -149,6 +215,14 @@ export function App() {
                     onClearSelection={browser.clearSelection}
                     onDelete={trash.onDelete}
                     onQuickLook={quickLook.openAt}
+                    isTrashView={isTrashView}
+                    onContextTrash={isTrashView ? undefined : () => void trash.handleTrash()}
+                    onContextRestore={
+                      isTrashView ? (id) => void handleContextRestore(id) : undefined
+                    }
+                    onContextPurge={isTrashView ? (id) => void handleContextPurge(id) : undefined}
+                    onContextEditTags={isTrashView ? undefined : handleContextEditTags}
+                    onContextRevealInExplorer={(id) => void handleContextRevealInExplorer(id)}
                   />
                 )
               ) : (
