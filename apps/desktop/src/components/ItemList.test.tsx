@@ -21,6 +21,7 @@ describe("ItemList", () => {
       createdAt: 0,
       modifiedAt: 0,
       isDeleted: false,
+      colorLabel: null,
     };
     const html = renderToStaticMarkup(
       <ItemList
