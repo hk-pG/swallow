@@ -6,6 +6,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 
+use crate::color_label::ColorLabel;
 use crate::library::{IMAGES_DIR, METADATA_FILE, write_json_atomic};
 
 pub const ITEM_DIR_EXT: &str = "info";
@@ -26,6 +27,8 @@ pub struct ItemMetadata {
     pub folders: Vec<String>,
     pub annotation: String,
     pub star: u8,
+    #[serde(default)]
+    pub color_label: Option<ColorLabel>,
     pub url: Option<String>,
     pub created_at: i64,
     pub modified_at: i64,
@@ -40,6 +43,7 @@ pub struct ItemMetadataPatch {
     pub name: Option<String>,
     pub annotation: Option<String>,
     pub star: Option<u8>,
+    pub color_label: Option<Option<ColorLabel>>,
     pub url: Option<String>,
 }
 
@@ -233,6 +237,12 @@ pub fn apply_patch(
         item.star = star;
         changed = true;
     }
+    if let Some(color_label) = patch.color_label
+        && color_label != item.color_label
+    {
+        item.color_label = color_label;
+        changed = true;
+    }
     if let Some(url) = patch.url {
         let url = Some(url.trim().to_owned()).filter(|u| !u.is_empty());
         if url != item.url {
@@ -331,6 +341,7 @@ pub(crate) mod tests {
             folders: Vec::new(),
             annotation: String::new(),
             star: 0,
+            color_label: None,
             url: None,
             created_at: 0,
             modified_at: 0,
@@ -362,6 +373,28 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn deserializes_metadata_without_color_label() {
+        let json = r#"{
+            "id": "01J0000000000000000000000",
+            "name": "photo",
+            "ext": "png",
+            "size": 10,
+            "width": null,
+            "height": null,
+            "tags": [],
+            "folders": [],
+            "annotation": "",
+            "star": 0,
+            "url": null,
+            "createdAt": 1,
+            "modifiedAt": 2,
+            "isDeleted": false
+        }"#;
+        let item: ItemMetadata = serde_json::from_str(json).unwrap();
+        assert_eq!(item.color_label, None);
+    }
+
+    #[test]
     fn serializes_with_shared_field_names() {
         let item = ItemMetadata {
             id: "01J0000000000000000000000".into(),
@@ -374,6 +407,7 @@ pub(crate) mod tests {
             folders: vec![],
             annotation: String::new(),
             star: 0,
+            color_label: Some(ColorLabel::Blue),
             url: None,
             created_at: 1,
             modified_at: 2,
@@ -393,6 +427,7 @@ pub(crate) mod tests {
                 "folders": [],
                 "annotation": "",
                 "star": 0,
+                "colorLabel": "blue",
                 "url": null,
                 "createdAt": 1,
                 "modifiedAt": 2,
@@ -446,13 +481,30 @@ pub(crate) mod tests {
             name: Some("  renamed ".into()),
             annotation: Some("note".into()),
             star: Some(4),
+            color_label: Some(Some(ColorLabel::Green)),
             url: Some(" https://example.com ".into()),
         };
         apply_patch(&mut item, patch, 99).unwrap();
         assert_eq!(item.name, "renamed");
         assert_eq!(item.annotation, "note");
         assert_eq!(item.star, 4);
+        assert_eq!(item.color_label, Some(ColorLabel::Green));
         assert_eq!(item.url.as_deref(), Some("https://example.com"));
+        assert_eq!(item.modified_at, 99);
+    }
+
+    #[test]
+    fn patch_clears_color_label() {
+        let mut item = ItemMetadata {
+            color_label: Some(ColorLabel::Red),
+            ..sample()
+        };
+        let patch = ItemMetadataPatch {
+            color_label: Some(None),
+            ..Default::default()
+        };
+        apply_patch(&mut item, patch, 99).unwrap();
+        assert_eq!(item.color_label, None);
         assert_eq!(item.modified_at, 99);
     }
 

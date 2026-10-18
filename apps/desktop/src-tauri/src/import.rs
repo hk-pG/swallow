@@ -272,6 +272,7 @@ fn new_item(
         folders,
         annotation: String::new(),
         star: 0,
+        color_label: None,
         url,
         created_at: now,
         modified_at: now,

@@ -2,11 +2,12 @@ import { describe, expect, it } from "vitest";
 import { sidebarSections } from "./sections";
 
 describe("sidebarSections", () => {
-  it("registers smart views, folders, then tags", () => {
+  it("registers smart views, folders, color labels, then tags", () => {
     expect(sidebarSections.map((entry) => entry.id)).toEqual([
       "smart-views",
       "smart-folders",
       "folders",
+      "color-labels",
       "tags",
     ]);
   });

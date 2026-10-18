@@ -1,4 +1,5 @@
 export * from "./api";
+export * from "./colorLabel";
 export * from "./filter";
 export * from "./folders";
 export * from "./import";
