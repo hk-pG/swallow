@@ -1,14 +1,13 @@
 import {
   EMPTY_SMART_FOLDER_CRITERIA,
-  isSmartFolderCriteriaActive,
   type Folder,
+  isSmartFolderCriteriaActive,
   type SmartFolderCriteria,
 } from "@swallow/shared";
 import { useState } from "react";
 import { SmartFolderCriteriaFields } from "./SmartFolderCriteriaFields";
 
-const EXIF_NOTE =
-  "EXIF（カメラ・撮影日・GPS など）は未対応です。将来のバージョンで追加予定。";
+const EXIF_NOTE = "EXIF（カメラ・撮影日・GPS など）は未対応です。将来のバージョンで追加予定。";
 
 interface Props {
   criteria: SmartFolderCriteria;

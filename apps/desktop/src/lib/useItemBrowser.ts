@@ -80,10 +80,7 @@ export function useItemBrowser(
     [visibleIds],
   );
   const clearSelection = useCallback(() => setSelection(EMPTY_SELECTION), []);
-  const clearAdvancedSearch = useCallback(
-    () => setSearchCriteria(EMPTY_SMART_FOLDER_CRITERIA),
-    [],
-  );
+  const clearAdvancedSearch = useCallback(() => setSearchCriteria(EMPTY_SMART_FOLDER_CRITERIA), []);
 
   const selectedCount = selection.ids.size;
   const [selectedId] = selection.ids;

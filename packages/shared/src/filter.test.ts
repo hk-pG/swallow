@@ -136,26 +136,24 @@ describe("filterItems", () => {
     const list = [...items, starred];
     expect(
       ids(
-        filterItems(
-          list,
-          { kind: "all" },
-          "",
-          [],
-          [],
-          { query: "", tags: ["landscape"], tagMatch: "all", folderId: null, minStar: null },
-        ),
+        filterItems(list, { kind: "all" }, "", [], [], {
+          query: "",
+          tags: ["landscape"],
+          tagMatch: "all",
+          folderId: null,
+          minStar: null,
+        }),
       ),
     ).toEqual(["filed"]);
     expect(
       ids(
-        filterItems(
-          list,
-          { kind: "folder", folderId: "f1" },
-          "",
-          [],
-          [],
-          { query: "", tags: [], tagMatch: "all", folderId: null, minStar: 3 },
-        ),
+        filterItems(list, { kind: "folder", folderId: "f1" }, "", [], [], {
+          query: "",
+          tags: [],
+          tagMatch: "all",
+          folderId: null,
+          minStar: 3,
+        }),
       ),
     ).toEqual(["starred"]);
   });

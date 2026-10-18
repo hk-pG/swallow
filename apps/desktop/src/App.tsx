@@ -1,11 +1,15 @@
+<<<<<<< HEAD
 import { ask } from "@tauri-apps/plugin-dialog";
 import { useCallback, useRef } from "react";
+=======
+import { useRef } from "react";
+import { AdvancedSearch } from "./components/AdvancedSearch";
+>>>>>>> b9e18aa (style: Biome 整形と未使用 import 削除)
 import { AppInfo } from "./components/AppInfo";
 import { FolderAssignControl } from "./components/FolderAssignControl";
 import { Inspector } from "./components/Inspector";
 import { ItemGrid } from "./components/ItemGrid";
 import { QuickLook } from "./components/QuickLook";
-import { AdvancedSearch } from "./components/AdvancedSearch";
 import { TrashActions } from "./components/TrashActions";
 import { ImportReportBanner } from "./ImportReportBanner";
 import { purgeItems, restoreItems, revealItemInExplorer } from "./lib/commands";
