@@ -1,21 +1,35 @@
 import { subtreeIds } from "./folders";
 import type { Folder, FolderId, ItemMetadata } from "./library";
+import {
+  filterItemsBySmartFolder,
+  matchesSmartFolderCriteria,
+  type SmartFolder,
+} from "./smartFolders";
 
 export type SmartViewKind = "all" | "uncategorized" | "trash";
 
 export type ItemView =
   | { kind: SmartViewKind }
   | { kind: "folder"; folderId: FolderId }
-  | { kind: "tag"; tag: string };
+  | { kind: "tag"; tag: string }
+  | { kind: "smartFolder"; smartFolderId: string };
 
 /**
  * A folder view matches items in that folder and, when `folders` contains it, its descendants.
  * An id missing from `folders` matches only itself.
  */
+function findSmartFolder(
+  smartFolders: readonly SmartFolder[],
+  id: string,
+): SmartFolder | undefined {
+  return smartFolders.find((folder) => folder.id === id);
+}
+
 export function matchesView(
   item: ItemMetadata,
   view: ItemView,
   folders: readonly Folder[] = [],
+  smartFolders: readonly SmartFolder[] = [],
 ): boolean {
   switch (view.kind) {
     case "trash":
@@ -28,6 +42,11 @@ export function matchesView(
       return matchesFolder(item, view.folderId, folders);
     case "tag":
       return !item.isDeleted && item.tags.includes(view.tag);
+    case "smartFolder": {
+      const smart = findSmartFolder(smartFolders, view.smartFolderId);
+      if (!smart) return false;
+      return matchesSmartFolderCriteria(item, smart.criteria, folders);
+    }
   }
 }
 
@@ -64,7 +83,17 @@ export function filterItems(
   view: ItemView,
   query: string,
   folders: readonly Folder[] = [],
+  smartFolders: readonly SmartFolder[] = [],
 ): ItemMetadata[] {
   const terms = parseQuery(query);
-  return items.filter((item) => matchesView(item, view, folders) && matchesQuery(item, terms));
+  if (view.kind === "smartFolder") {
+    const smart = findSmartFolder(smartFolders, view.smartFolderId);
+    if (!smart) return [];
+    const base = filterItemsBySmartFolder(items, smart.criteria, folders);
+    if (terms.length === 0) return base;
+    return base.filter((item) => matchesQuery(item, terms));
+  }
+  return items.filter(
+    (item) => matchesView(item, view, folders, smartFolders) && matchesQuery(item, terms),
+  );
 }

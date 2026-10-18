@@ -1,4 +1,5 @@
 import { FolderSection } from "./FolderSection";
+import { SmartFolderSection } from "./SmartFolderSection";
 import { SmartViewSection } from "./SmartViewSection";
 import { TagSection } from "./TagSection";
 import type { SidebarSectionEntry, SidebarSectionProps } from "./types";
@@ -11,6 +12,7 @@ export type { SidebarSectionEntry, SidebarSectionProps } from "./types";
  */
 export const sidebarSections: SidebarSectionEntry[] = [
   { id: "smart-views", Component: SmartViewSection },
+  { id: "smart-folders", Component: SmartFolderSection },
   { id: "folders", Component: FolderSection },
   { id: "tags", Component: TagSection },
 ];

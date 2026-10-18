@@ -154,6 +154,46 @@ nav {
   opacity: 0.5;
 }
 
+.smart-folder-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.smart-folder-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 2px;
+}
+
+.smart-folder-editor {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.smart-folder-criteria {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.smart-folder-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.smart-folder-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
 .tag-group {
   margin-top: 10px;
 }

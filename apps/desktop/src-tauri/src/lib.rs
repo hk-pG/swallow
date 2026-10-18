@@ -6,6 +6,7 @@ pub mod item;
 mod library;
 mod protocol;
 mod settings;
+mod smart_folders;
 mod tags;
 mod thumbnail;
 
@@ -47,6 +48,11 @@ pub fn run() {
             commands::delete_folder,
             commands::assign_items,
             commands::unassign_items,
+            commands::list_smart_folders,
+            commands::create_smart_folder,
+            commands::rename_smart_folder,
+            commands::update_smart_folder,
+            commands::delete_smart_folder,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

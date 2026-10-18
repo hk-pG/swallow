@@ -9,6 +9,7 @@ use crate::import::{self, ImportError, ImportReport};
 use crate::item::{self, ItemError, ItemMetadata, ItemMetadataPatch};
 use crate::library::{self, Folder, LibraryError, LibraryInfo, LibraryTags};
 use crate::settings::{SETTINGS_FILE, Settings};
+use crate::smart_folders::{self, SmartFolder, SmartFolderCriteria, SmartFolderError};
 use crate::tags::{self, TagError};
 
 /// Mirrors `AppInfo` in `packages/shared/src/api.ts`.
@@ -33,6 +34,8 @@ pub enum CommandError {
     Folder(#[from] FolderError),
     #[error(transparent)]
     Tag(#[from] TagError),
+    #[error(transparent)]
+    SmartFolder(#[from] SmartFolderError),
     #[error(transparent)]
     Import(#[from] ImportError),
     #[error("設定を保存できません: {0}")]
@@ -165,6 +168,50 @@ pub fn assign_items(
     folder_id: String,
 ) -> Result<(), CommandError> {
     Ok(folders::assign_items(&library_path, &item_ids, &folder_id)?)
+}
+
+#[tauri::command]
+pub fn list_smart_folders(library_path: PathBuf) -> Result<Vec<SmartFolder>, CommandError> {
+    Ok(smart_folders::list(&library_path)?)
+}
+
+#[tauri::command]
+pub fn create_smart_folder(
+    library_path: PathBuf,
+    name: String,
+    criteria: SmartFolderCriteria,
+) -> Result<SmartFolder, CommandError> {
+    Ok(smart_folders::create(&library_path, &name, criteria)?)
+}
+
+#[tauri::command]
+pub fn rename_smart_folder(
+    library_path: PathBuf,
+    id: String,
+    name: String,
+) -> Result<SmartFolder, CommandError> {
+    Ok(smart_folders::rename(&library_path, &id, &name)?)
+}
+
+#[tauri::command]
+pub fn update_smart_folder(
+    library_path: PathBuf,
+    id: String,
+    criteria: SmartFolderCriteria,
+) -> Result<SmartFolder, CommandError> {
+    Ok(smart_folders::update_criteria(
+        &library_path,
+        &id,
+        criteria,
+    )?)
+}
+
+#[tauri::command]
+pub fn delete_smart_folder(
+    library_path: PathBuf,
+    id: String,
+) -> Result<Vec<SmartFolder>, CommandError> {
+    Ok(smart_folders::delete(&library_path, &id)?)
 }
 
 #[tauri::command]

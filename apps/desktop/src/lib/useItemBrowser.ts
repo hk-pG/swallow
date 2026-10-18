@@ -4,6 +4,7 @@ import {
   type ItemId,
   type ItemMetadata,
   type ItemView,
+  type SmartFolder,
 } from "@swallow/shared";
 import {
   type Dispatch,
@@ -47,14 +48,15 @@ export interface ItemBrowser {
 export function useItemBrowser(
   items: ItemMetadata[],
   folders: readonly Folder[] = [],
+  smartFolders: readonly SmartFolder[] = [],
 ): ItemBrowser {
   const [selection, setSelection] = useState<Selection>(EMPTY_SELECTION);
   const [view, setView] = useState<ItemView>({ kind: "all" });
   const [query, setQuery] = useState("");
 
   const visibleItems = useMemo(
-    () => filterItems(items, view, query, folders),
-    [items, view, query, folders],
+    () => filterItems(items, view, query, folders, smartFolders),
+    [items, view, query, folders, smartFolders],
   );
   const visibleIds = useMemo(() => visibleItems.map((item) => item.id), [visibleItems]);
 
