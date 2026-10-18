@@ -1,7 +1,8 @@
 import type { ItemView, LibraryTags, TagGroup } from "@swallow/shared";
 import { ask } from "@tauri-apps/plugin-dialog";
-import { type FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { tagSections } from "../lib/tags";
+import { SidebarSection } from "./SidebarSection";
 
 export interface TagNavMutations {
   addTag: (tag: string) => Promise<void>;
@@ -22,11 +23,16 @@ interface Props {
 export function TagNav({ libraryTags, view, onChange, mutations, disabled }: Props) {
   const [tagDraft, setTagDraft] = useState("");
   const [groupDraft, setGroupDraft] = useState("");
+  const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const sections = useMemo(() => (libraryTags ? tagSections(libraryTags) : []), [libraryTags]);
   const groups = libraryTags?.groups ?? [];
+
+  useEffect(() => {
+    if (disabled) setAdding(false);
+  }, [disabled]);
 
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
@@ -47,6 +53,7 @@ export function TagNav({ libraryTags, view, onChange, mutations, disabled }: Pro
     void run(async () => {
       await mutations.addTag(tag);
       setTagDraft("");
+      setAdding(false);
     });
   };
 
@@ -57,6 +64,7 @@ export function TagNav({ libraryTags, view, onChange, mutations, disabled }: Pro
     void run(async () => {
       await mutations.createGroup(name);
       setGroupDraft("");
+      setAdding(false);
     });
   };
 
@@ -93,38 +101,50 @@ export function TagNav({ libraryTags, view, onChange, mutations, disabled }: Pro
   };
 
   return (
-    <section className="sidebar-section" aria-label="タグ">
-      <div className="sidebar-section-header">
-        <h2 className="sidebar-section-title">タグ</h2>
-      </div>
-
-      <form className="sidebar-form" onSubmit={submitTag}>
-        <input
-          className="sidebar-input"
-          type="text"
-          placeholder="タグを追加"
-          value={tagDraft}
-          disabled={disabled || busy}
-          onChange={(e) => setTagDraft(e.target.value)}
-        />
-        <button type="submit" disabled={disabled || busy || tagDraft.trim() === ""}>
+    <SidebarSection
+      title="タグ"
+      headerAction={
+        <button
+          type="button"
+          className="text-button"
+          disabled={disabled}
+          aria-expanded={adding}
+          onClick={() => setAdding((open) => !open)}
+        >
           追加
         </button>
-      </form>
-
-      <form className="sidebar-form" onSubmit={submitGroup}>
-        <input
-          className="sidebar-input"
-          type="text"
-          placeholder="グループを作成"
-          value={groupDraft}
-          disabled={disabled || busy}
-          onChange={(e) => setGroupDraft(e.target.value)}
-        />
-        <button type="submit" disabled={disabled || busy || groupDraft.trim() === ""}>
-          作成
-        </button>
-      </form>
+      }
+    >
+      {adding && (
+        <>
+          <form className="sidebar-form" onSubmit={submitTag}>
+            <input
+              className="sidebar-input"
+              type="text"
+              placeholder="タグを追加"
+              value={tagDraft}
+              disabled={disabled || busy}
+              onChange={(e) => setTagDraft(e.target.value)}
+            />
+            <button type="submit" disabled={disabled || busy || tagDraft.trim() === ""}>
+              追加
+            </button>
+          </form>
+          <form className="sidebar-form" onSubmit={submitGroup}>
+            <input
+              className="sidebar-input"
+              type="text"
+              placeholder="グループを作成"
+              value={groupDraft}
+              disabled={disabled || busy}
+              onChange={(e) => setGroupDraft(e.target.value)}
+            />
+            <button type="submit" disabled={disabled || busy || groupDraft.trim() === ""}>
+              作成
+            </button>
+          </form>
+        </>
+      )}
 
       {error && (
         <p className="sidebar-error" role="alert">
@@ -152,49 +172,55 @@ export function TagNav({ libraryTags, view, onChange, mutations, disabled }: Pro
             <p className="tag-group-empty">タグなし</p>
           ) : (
             <ul className="tag-list">
-              {tags.map((tag) => (
-                <li key={tag} className="tag-row">
-                  <button
-                    type="button"
-                    className="nav-item tag-nav-item"
-                    aria-current={view.kind === "tag" && view.tag === tag ? "page" : undefined}
-                    disabled={disabled || busy}
-                    onClick={() => onChange({ kind: "tag", tag })}
-                  >
-                    {tag}
-                  </button>
-                  <select
-                    className="tag-group-select"
-                    aria-label={`${tag} のグループ`}
-                    value={group?.id ?? ""}
-                    disabled={disabled || busy}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      void run(() => mutations.setTagGroup(tag, value === "" ? null : value));
-                    }}
-                  >
-                    <option value="">未分類</option>
-                    {groups.map((g) => (
-                      <option key={g.id} value={g.id}>
-                        {g.name}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    className="sidebar-icon-button"
-                    title="タグを削除"
-                    disabled={disabled || busy}
-                    onClick={() => handleRemoveTag(tag)}
-                  >
-                    ×
-                  </button>
-                </li>
-              ))}
+              {tags.map((tag) => {
+                const selected = view.kind === "tag" && view.tag === tag;
+                return (
+                  <li key={tag} className="sidebar-row">
+                    <button
+                      type="button"
+                      className="nav-item tag-nav-item"
+                      aria-current={selected ? "page" : undefined}
+                      disabled={disabled || busy}
+                      onClick={() => onChange({ kind: "tag", tag })}
+                    >
+                      {tag}
+                    </button>
+                    {selected && !disabled && (
+                      <div className="sidebar-detail">
+                        <select
+                          className="tag-group-select"
+                          aria-label={`${tag} のグループ`}
+                          value={group?.id ?? ""}
+                          disabled={busy}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            void run(() => mutations.setTagGroup(tag, value === "" ? null : value));
+                          }}
+                        >
+                          <option value="">未分類</option>
+                          {groups.map((g) => (
+                            <option key={g.id} value={g.id}>
+                              {g.name}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          className="text-button danger"
+                          disabled={busy}
+                          onClick={() => handleRemoveTag(tag)}
+                        >
+                          削除
+                        </button>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
       ))}
-    </section>
+    </SidebarSection>
   );
 }

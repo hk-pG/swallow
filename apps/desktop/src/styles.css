@@ -344,18 +344,10 @@ nav {
   gap: var(--space-1);
 }
 
-.smart-folder-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: var(--space-1);
-}
-
-.smart-folder-editor {
-  margin-top: 8px;
+.sidebar-row {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  min-width: 0;
 }
 
 .smart-folder-criteria {
@@ -370,12 +362,6 @@ nav {
   gap: 2px;
   font-size: 11px;
   color: var(--muted);
-}
-
-.smart-folder-editor-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
 }
 
 .tag-group {
@@ -410,13 +396,6 @@ nav {
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-.tag-row {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  align-items: center;
-  gap: 2px;
 }
 
 .tag-nav-item {
@@ -507,18 +486,6 @@ nav {
   white-space: nowrap;
 }
 
-.folder-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1);
-  margin: var(--space-1) 0 var(--space-2);
-  /* 左余白は 0。ボタン自身の padding が .nav-item と同じ 8px になり、フォルダ名と先頭が揃う */
-  padding: var(--space-1) var(--space-1) var(--space-1) 0;
-  border-radius: var(--space-2);
-  background: color-mix(in srgb, currentColor 6%, transparent);
-}
-
 .folder-name-input {
   flex: 1;
   min-width: 0;
@@ -573,15 +540,28 @@ select.inspector-input option {
   color: #d33;
 }
 
-.folder-actions .text-button,
-.folder-actions .folder-move {
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid transparent;
-  border-radius: var(--space-1);
-  line-height: 1.2;
+/* 選択行の従属操作。見た目は既存のテキストボタンのまま、行として縦に積む。 */
+.sidebar-detail {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+  margin-inline-start: var(--tree-indent);
+  margin-bottom: var(--space-1);
 }
 
-.folder-actions .folder-move {
+.sidebar-detail > .text-button,
+.sidebar-detail > .folder-move,
+.sidebar-detail > .tag-group-select {
+  width: 100%;
+  padding: var(--space-2);
+  border-radius: var(--space-2);
+  text-align: start;
+}
+
+.sidebar-detail > .folder-move,
+.sidebar-detail > .tag-group-select {
+  max-width: none;
   border-color: var(--border);
 }
 

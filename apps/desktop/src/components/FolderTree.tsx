@@ -1,6 +1,7 @@
 import type { Folder, FolderId } from "@swallow/shared";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { flattenFolders, moveParentOptions } from "../lib/folders";
+import { SidebarSection } from "./SidebarSection";
 
 const ROOT_VALUE = "__root__";
 
@@ -53,9 +54,10 @@ export function FolderTree({
   };
 
   return (
-    <section className="sidebar-section folder-section" aria-label="フォルダ">
-      <div className="sidebar-section-header">
-        <h2 className="sidebar-section-title">フォルダ</h2>
+    <SidebarSection
+      title="フォルダ"
+      className="folder-section"
+      headerAction={
         <button
           type="button"
           className="text-button"
@@ -64,7 +66,8 @@ export function FolderTree({
         >
           追加
         </button>
-      </div>
+      }
+    >
       {creatingRoot && (
         <div className="folder-line">
           <FolderNameField
@@ -99,7 +102,7 @@ export function FolderTree({
           {error}
         </p>
       )}
-    </section>
+    </SidebarSection>
   );
 }
 
@@ -160,7 +163,7 @@ function FolderNodes({
           )}
         </div>
         {selected && !renaming && !disabled && (
-          <div className="folder-actions">
+          <div className="sidebar-detail">
             <button
               type="button"
               className="text-button"

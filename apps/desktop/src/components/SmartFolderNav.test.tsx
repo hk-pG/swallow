@@ -11,7 +11,7 @@ const noopApi = {
 };
 
 describe("SmartFolderNav", () => {
-  it("renders section title and create form", () => {
+  it("keeps create in the header and edits under the selected row", () => {
     const html = renderToStaticMarkup(
       <SmartFolderNav
         smartFolders={[
@@ -36,6 +36,9 @@ describe("SmartFolderNav", () => {
     );
     expect(html).toContain("スマートフォルダ");
     expect(html).toContain("High stars");
-    expect(html).toContain("作成");
+    expect(html).toContain("追加");
+    expect(html).toContain("sidebar-detail");
+    expect(html).toContain("条件を保存");
+    expect(html).not.toContain('placeholder="名前"');
   });
 });
