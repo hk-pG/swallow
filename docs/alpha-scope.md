@@ -1,0 +1,30 @@
+# Swallow α スコープ（確定）
+
+確定日: 2026-10-18
+
+## 入れる（2026-10-18 時点で main 到達済み）
+
+| 項目 | 既存 | 結果 |
+|---|---|---|
+| フォルダ UI | #22 / [#41](https://github.com/hk-pG/swallow/pull/41) | マージ済み |
+| 右クリック抑止 | #33 / [#42](https://github.com/hk-pG/swallow/pull/42) | マージ済み |
+| App シェル分割の main 取り込み | #44 / [#47](https://github.com/hk-pG/swallow/pull/47) | マージ済み（順序 B: draft 後） |
+| タグ UI | #24 / [#48](https://github.com/hk-pG/swallow/pull/48) | マージ済み（#47 後に再 PR） |
+
+## 外す
+
+| 項目 | 理由 |
+|---|---|
+| Chrome 拡張 #12 | 別リポジトリ予定 |
+| 階層取り込み #34 | beta 予定 |
+| 設定ファイル保存 #35 | beta 予定 |
+
+## マージ順序（α 当時）
+
+1. draft #41 と #42 を先に main へ（並行可）
+2. その後 #39 相当のリファクタを main へ
+3. タグ UI（#24）は #41/#42 マージ後に main 向け再 PR
+
+## 並行 Issue の意図
+
+エージェントが同時に進められる単位に分ける。依存は Issue 本文に明記する。次の着手は [HANDOFF.md](./HANDOFF.md)。
