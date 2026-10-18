@@ -19,6 +19,7 @@ function item(overrides: Partial<ItemMetadata> = {}): ItemMetadata {
     createdAt: 0,
     modifiedAt: 0,
     isDeleted: false,
+    colorLabel: null,
     ...overrides,
   };
 }
