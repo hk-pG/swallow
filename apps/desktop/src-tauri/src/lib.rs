@@ -26,6 +26,8 @@ pub fn run() {
             commands::open_library,
             commands::restore_library,
             commands::recent_libraries,
+            commands::get_settings,
+            commands::update_settings,
             commands::import_assets,
             commands::list_items,
             commands::get_item,
