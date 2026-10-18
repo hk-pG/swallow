@@ -1,0 +1,84 @@
+name: 機能追加
+description: プロダクトに機能を足す依頼。最低限だけ書いて Agent が着手できる形にする
+title: "[機能] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        書くのは **追加したい機能** と **受け入れ条件** だけで十分です。
+        雑多な作業（リファクタ・調査・ドキュメント）は「Agent 依頼」を使ってください。
+
+  - type: textarea
+    id: feature
+    attributes:
+      label: 追加したい機能
+      description: 1〜3 文でよい。ユーザーから見て何ができるようになれば完了か。
+      placeholder: |
+        例: グリッドでスペースキーを押すと、選択中アイテムを原寸に近いプレビューで確認できる。
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 受け入れ条件
+      description: チェックリスト形式。すべて満たせば完了とみなします。曖昧でも箇条書きで構いません。
+      value: |
+        - [ ] 
+        - [ ] 
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: なぜ欲しいか（任意）
+      description: 背景・困っていること・Eagle とのギャップなど。空でよい。
+      placeholder: |
+        例: サムネだけでは細部が分からず、毎回外部ビューアを開いている。
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 領域
+      description: 分かる範囲で選ぶ。不明なら「未定」のまま。
+      options:
+        - 未定
+        - desktop（Tauri / React）
+        - extension（Chrome 拡張）
+        - ci（CI / エージェント基盤）
+        - docs / その他
+      default: 0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 優先度の目安
+      description: ラベル付けのヒント。不明なら「未定」。
+      options:
+        - 未定
+        - P1（高）
+        - P2（中）
+        - P3（低 / backlog）
+      default: 0
+    validations:
+      required: true
+
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: やらないこと（任意）
+      description: スコープを狭めたいときだけ書く。
+      placeholder: |
+        例: 動画・フォントの高度プレビューは別 Issue（P3）。今回は画像のみ。
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: 補足（任意）
+      description: 依存 Issue、参考 URL、触ってほしい場所など。空でよい。
+      placeholder: |
+        例: #50 の続き。apps/desktop/src のグリッド周り。

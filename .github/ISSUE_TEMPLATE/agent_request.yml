@@ -1,0 +1,76 @@
+name: Agent 依頼
+description: リファクタ・調査・ドキュメントなど、機能追加以外の作業依頼
+title: "[依頼] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        書くのは **やりたいこと** と **受け入れ条件** だけで十分です。
+        プロダクトへの機能追加は「機能追加」テンプレートを使ってください。
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: やりたいこと
+      description: 1〜3 文でよい。「何ができれば完了か」が伝われば十分です。
+      placeholder: |
+        例: サイドバーのフォルダ一覧で、選択中フォルダの子だけ折りたためるようにする。
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 受け入れ条件
+      description: チェックリスト形式。すべて満たせば完了とみなします。曖昧でも箇条書きで構いません。
+      value: |
+        - [ ] 
+        - [ ] 
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 領域
+      description: 分かる範囲で選ぶ。不明なら「未定」のまま。
+      options:
+        - 未定
+        - desktop（Tauri / React）
+        - extension（Chrome 拡張）
+        - ci（CI / エージェント基盤）
+        - docs / その他
+      default: 0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 優先度の目安
+      description: ラベル付けのヒント。不明なら「未定」。
+      options:
+        - 未定
+        - P1（高）
+        - P2（中）
+        - P3（低 / backlog）
+      default: 0
+    validations:
+      required: true
+
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: やらないこと（任意）
+      description: スコープを狭めたいときだけ書く。
+      placeholder: |
+        例: デザイン全体の刷新は別 Issue。今回はサイドバーのみ。
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: 補足（任意）
+      description: 触ってほしいファイル、参考 Issue / URL、依存、既存の方針など。空でよい。
+      placeholder: |
+        例: apps/desktop/src のサイドバー周り。#72 の指針に従う。
