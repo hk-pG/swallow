@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { sidebarSections } from "./sections";
 
 describe("sidebarSections", () => {
-  it("registers smart views then folders", () => {
-    expect(sidebarSections.map((entry) => entry.id)).toEqual(["smart-views", "folders"]);
+  it("registers smart views, folders, then tags", () => {
+    expect(sidebarSections.map((entry) => entry.id)).toEqual(["smart-views", "folders", "tags"]);
   });
 
   it("exposes a stable id on every entry so sections can be appended without touching App", () => {

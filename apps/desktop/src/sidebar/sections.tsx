@@ -1,16 +1,18 @@
 import { FolderSection } from "./FolderSection";
 import { SmartViewSection } from "./SmartViewSection";
+import { TagSection } from "./TagSection";
 import type { SidebarSectionEntry, SidebarSectionProps } from "./types";
 
 export type { SidebarSectionEntry, SidebarSectionProps } from "./types";
 
 /**
- * Ordered sidebar sections. Add tag (#24) UI by appending an entry —
+ * Ordered sidebar sections. Feature UIs append an entry here —
  * App does not gain useState or effects for those sections.
  */
 export const sidebarSections: SidebarSectionEntry[] = [
   { id: "smart-views", Component: SmartViewSection },
   { id: "folders", Component: FolderSection },
+  { id: "tags", Component: TagSection },
 ];
 
 export function SidebarSections(props: SidebarSectionProps) {
