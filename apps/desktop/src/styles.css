@@ -89,6 +89,175 @@ nav {
   cursor: default;
 }
 
+.sidebar-section {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.sidebar-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.sidebar-section-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.sidebar-form {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.sidebar-input {
+  min-width: 0;
+  flex: 1;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.sidebar-error {
+  margin: 0 0 8px;
+  color: #d33;
+}
+
+.sidebar-icon-button {
+  flex: none;
+  padding: 0 4px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sidebar-icon-button:hover:not(:disabled) {
+  color: inherit;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.sidebar-icon-button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.tag-group {
+  margin-top: 10px;
+}
+
+.tag-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+
+.tag-group-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.tag-group-empty {
+  margin: 0;
+  padding: 4px 8px;
+  color: var(--muted);
+}
+
+.tag-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tag-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 2px;
+}
+
+.tag-nav-item {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag-group-select {
+  max-width: 72px;
+  padding: 2px 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background-color: Canvas;
+  color: CanvasText;
+  font: inherit;
+  font-size: 11px;
+}
+
+.tag-group-select option {
+  background-color: Canvas;
+  color: CanvasText;
+}
+
+.tag-group-select:hover:not(:disabled),
+.tag-group-select:focus {
+  border-color: var(--border);
+}
+
+.editable-tags {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.editable-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chip-remove {
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.chip-remove:hover:not(:disabled) {
+  opacity: 1;
+}
+
+.chip-remove:disabled {
+  cursor: default;
+}
+
+.tag-add-form {
+  display: flex;
+  gap: 4px;
+}
+
 .folder-section {
   display: flex;
   flex-direction: column;
@@ -416,6 +585,11 @@ select.inspector-input option {
   background: transparent;
   color: inherit;
   font: inherit;
+}
+
+.tag-add-form .inspector-input {
+  min-width: 0;
+  flex: 1;
 }
 
 textarea.inspector-input {
