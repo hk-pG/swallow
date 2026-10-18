@@ -7,7 +7,7 @@ describe("DEFAULT_SETTINGS", () => {
       version: SETTINGS_VERSION,
       recentLibraries: [],
       shortcuts: {},
-      appearance: {},
+      appearance: { itemViewMode: "grid", thumbnailSizeIndex: 2 },
       behavior: {},
     });
   });
