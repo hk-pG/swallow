@@ -1,15 +1,19 @@
+import { thumbnailSizePx } from "@swallow/shared";
 import { ask } from "@tauri-apps/plugin-dialog";
-import { useCallback, useRef } from "react";
+import { type CSSProperties, useCallback, useRef } from "react";
 import { AppInfo } from "./components/AppInfo";
 import { FolderAssignControl } from "./components/FolderAssignControl";
 import { Inspector } from "./components/Inspector";
 import { ItemGrid } from "./components/ItemGrid";
+import { ItemList } from "./components/ItemList";
 import { QuickLook } from "./components/QuickLook";
 import { TrashActions } from "./components/TrashActions";
+import { ViewModeToolbar } from "./components/ViewModeToolbar";
 import { ImportReportBanner } from "./ImportReportBanner";
 import { purgeItems, restoreItems, revealItemInExplorer } from "./lib/commands";
 import { focusInspectorTagInput } from "./lib/focusInspector";
 import { purgeConfirmMessage } from "./lib/trash";
+import { useAppearanceSettings } from "./lib/useAppearanceSettings";
 import { useAssetImport } from "./lib/useAssetImport";
 import { useFolders } from "./lib/useFolders";
 import { useItemBrowser } from "./lib/useItemBrowser";
@@ -27,7 +31,11 @@ import { TagsProvider } from "./sidebar/TagsContext";
 
 export function App() {
   const session = useLibrarySession();
+  const appearance = useAppearanceSettings();
   const { libraryPath } = session;
+  const contentStyle = {
+    "--item-thumb-size": `${thumbnailSizePx(appearance.itemView.thumbnailSizeIndex)}px`,
+  } as CSSProperties;
   const { items, invalidate, saveItem } = useItemList(libraryPath);
 
   const { setView, setViewRef } = useSetViewBridge();
@@ -157,6 +165,7 @@ export function App() {
             <main
               ref={contentRef}
               className={assetImport.dragOver ? "content drag-over" : "content"}
+              style={contentStyle}
             >
               <header className="toolbar">
                 <input
@@ -166,6 +175,13 @@ export function App() {
                   value={browser.query}
                   onChange={(e) => browser.setQuery(e.target.value)}
                   disabled={disabled}
+                />
+                <ViewModeToolbar
+                  itemViewMode={appearance.itemView.itemViewMode}
+                  thumbnailSizeIndex={appearance.itemView.thumbnailSizeIndex}
+                  disabled={disabled}
+                  onViewModeChange={appearance.setItemViewMode}
+                  onThumbnailSizeIndexChange={appearance.setThumbnailSizeIndex}
                 />
                 <button
                   type="button"
@@ -205,6 +221,17 @@ export function App() {
                   <section className="grid-placeholder">ファイルをドロップして取り込み</section>
                 ) : browser.visibleItems.length === 0 ? (
                   <section className="grid-placeholder">該当するアイテムがありません</section>
+                ) : appearance.itemView.itemViewMode === "list" ? (
+                  <ItemList
+                    libraryPath={libraryPath}
+                    items={browser.visibleItems}
+                    selection={browser.selection}
+                    onSelect={browser.handleSelect}
+                    onSelectAll={browser.handleSelectAll}
+                    onClearSelection={browser.clearSelection}
+                    onDelete={trash.onDelete}
+                    onQuickLook={quickLook.openAt}
+                  />
                 ) : (
                   <ItemGrid
                     libraryPath={libraryPath}

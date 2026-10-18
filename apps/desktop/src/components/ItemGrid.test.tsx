@@ -20,6 +20,7 @@ function sample(id: string): ItemMetadata {
     createdAt: 0,
     modifiedAt: 0,
     isDeleted: false,
+    colorLabel: null,
   };
 }
 

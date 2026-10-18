@@ -851,6 +851,7 @@ select.inspector-input option {
   overflow-y: auto;
   padding: 0 12px 12px;
 }
+
 .item-list-header,
 .item-list-row {
   display: grid;
@@ -861,6 +862,7 @@ select.inspector-input option {
   align-items: center;
   gap: 8px;
 }
+
 .item-list-header {
   position: sticky;
   top: 0;
@@ -886,20 +888,25 @@ select.inspector-input option {
   cursor: default;
   user-select: none;
 }
+
 .item-list-row:focus {
   outline: none;
 }
+
 .item-list-row:focus-visible {
   outline: 2px solid color-mix(in srgb, Highlight 70%, currentColor);
   outline-offset: -2px;
 }
+
 .item-list-row:hover {
   background: color-mix(in srgb, currentColor 6%, transparent);
 }
+
 .item-list-row[aria-pressed="true"] {
   border-color: Highlight;
   background: color-mix(in srgb, Highlight 15%, transparent);
 }
+
 .item-list-thumb {
   display: grid;
   place-items: center;
@@ -909,17 +916,20 @@ select.inspector-input option {
   border-radius: 4px;
   background: color-mix(in srgb, currentColor 5%, transparent);
 }
+
 .item-list-thumb img {
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
+
 .item-list-col-name,
 .item-list-col-tags {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 .item-list-col-star {
   color: color-mix(in srgb, Highlight 80%, currentColor);
   font-size: 12px;
