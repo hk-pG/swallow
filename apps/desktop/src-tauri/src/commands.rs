@@ -8,7 +8,7 @@ use crate::folders::{self, FolderError};
 use crate::import::{self, ImportError, ImportReport};
 use crate::item::{self, ItemError, ItemMetadata, ItemMetadataPatch};
 use crate::library::{self, Folder, LibraryError, LibraryInfo, LibraryTags};
-use crate::settings::{SETTINGS_FILE, Settings};
+use crate::settings::{SETTINGS_FILE, Settings, SettingsDocument, SettingsPatch};
 use crate::smart_folders::{self, SmartFolder, SmartFolderCriteria, SmartFolderError};
 use crate::tags::{self, TagError};
 
@@ -237,9 +237,9 @@ fn activate(
     library: LibraryInfo,
 ) -> Result<LibraryInfo, CommandError> {
     let path = settings_path(app)?;
-    let mut settings = Settings::load(&path);
-    settings.push_recent_library(&library.path);
-    settings.save(&path).map_err(CommandError::Settings)?;
+    let mut doc = SettingsDocument::load(&path);
+    doc.settings.push_recent_library(&library.path);
+    doc.save(&path).map_err(CommandError::Settings)?;
     *state.library.lock().unwrap() = Some(library.clone());
     Ok(library)
 }
@@ -276,15 +276,15 @@ pub fn restore_library(
         return Ok(Some(library));
     }
     let path = settings_path(&app)?;
-    let mut settings = Settings::load(&path);
-    let Some(last) = settings.last_library().map(str::to_owned) else {
+    let mut doc = SettingsDocument::load(&path);
+    let Some(last) = doc.settings.last_library().map(str::to_owned) else {
         return Ok(None);
     };
     match library::open(Path::new(&last)) {
         Ok(library) => activate(&app, &state, library).map(Some),
         Err(err) => {
-            settings.remove_recent_library(&last);
-            settings.save(&path).map_err(CommandError::Settings)?;
+            doc.settings.remove_recent_library(&last);
+            doc.save(&path).map_err(CommandError::Settings)?;
             Err(err.into())
         }
     }
@@ -292,7 +292,26 @@ pub fn restore_library(
 
 #[tauri::command]
 pub fn recent_libraries(app: tauri::AppHandle) -> Result<Vec<String>, CommandError> {
-    Ok(Settings::load(&settings_path(&app)?).recent_libraries)
+    Ok(SettingsDocument::load(&settings_path(&app)?)
+        .settings
+        .recent_libraries)
+}
+
+#[tauri::command]
+pub fn get_settings(app: tauri::AppHandle) -> Result<Settings, CommandError> {
+    Ok(SettingsDocument::load(&settings_path(&app)?).settings)
+}
+
+#[tauri::command]
+pub fn update_settings(
+    app: tauri::AppHandle,
+    patch: SettingsPatch,
+) -> Result<Settings, CommandError> {
+    let path = settings_path(&app)?;
+    let mut doc = SettingsDocument::load(&path);
+    doc.apply_patch(patch);
+    doc.save(&path).map_err(CommandError::Settings)?;
+    Ok(doc.settings)
 }
 
 #[tauri::command]

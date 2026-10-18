@@ -8,6 +8,8 @@ import {
   type ItemMetadataPatch,
   type LibraryInfo,
   type LibraryTags,
+  type Settings,
+  type SettingsPatch,
   type SmartFolder,
   type SmartFolderCriteria,
   SUPPORTED_IMPORT_EXTENSIONS,
@@ -164,6 +166,14 @@ export function restoreLibrary(): Promise<LibraryInfo | null> {
 /** Most recently opened first. */
 export function getRecentLibraries(): Promise<string[]> {
   return invoke<string[]>("recent_libraries");
+}
+
+export function getSettings(): Promise<Settings> {
+  return invoke<Settings>("get_settings");
+}
+
+export function updateSettings(patch: SettingsPatch): Promise<Settings> {
+  return invoke<Settings>("update_settings", { patch });
 }
 
 export function importAssets(libraryPath: string, paths: string[]): Promise<ImportReport> {
