@@ -186,6 +186,7 @@ impl From<ImportError> for ApiError {
         let code = match error {
             ImportError::NotALibrary(_) => ApiErrorCode::LibraryNotOpen,
             ImportError::UnsupportedExtension(_) => ApiErrorCode::UnsupportedExtension,
+            ImportError::Folder(_) => ApiErrorCode::Internal,
             ImportError::Io(_) => ApiErrorCode::Internal,
         };
         Self::new(code, error.to_string())

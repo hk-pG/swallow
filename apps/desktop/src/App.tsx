@@ -46,7 +46,11 @@ export function App() {
   setViewRef.current = browser.setView;
 
   const contentRef = useRef<HTMLElement>(null);
-  const assetImport = useAssetImport(libraryPath, contentRef, invalidate);
+  const refreshAfterImport = async () => {
+    await invalidate();
+    await folders.reload();
+  };
+  const assetImport = useAssetImport(libraryPath, contentRef, refreshAfterImport);
   const quickLook = useQuickLook(browser.selection, browser.visibleIds, browser.visibleItems);
   const trash = useTrashActions({
     libraryPath,
@@ -114,7 +118,14 @@ export function App() {
                   onClick={() => void assetImport.pickAndImport()}
                   disabled={disabled || assetImport.importing}
                 >
-                  {assetImport.importing ? "取り込み中…" : "取り込み"}
+                  {assetImport.importing ? "取り込み中…" : "ファイル取り込み"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void assetImport.pickFoldersAndImport()}
+                  disabled={disabled || assetImport.importing}
+                >
+                  フォルダ取り込み
                 </button>
               </header>
               {session.error && (

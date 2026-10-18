@@ -21,6 +21,8 @@ import { flattenFolderNames } from "./folders";
 
 export interface FoldersApi {
   folders: Folder[];
+  /** Reloads the folder tree from disk without changing item membership. */
+  reload: () => Promise<void>;
   onCreate: (parentId: FolderId | null, name: string) => Promise<void>;
   onRename: (id: FolderId, name: string) => Promise<void>;
   onDelete: (id: FolderId) => Promise<void>;
@@ -128,6 +130,9 @@ export function useFolders({ libraryPath, invalidateItems, setView }: Options): 
 
   return {
     folders,
+    reload: async () => {
+      await reloadFolders();
+    },
     onCreate,
     onRename,
     onDelete,
