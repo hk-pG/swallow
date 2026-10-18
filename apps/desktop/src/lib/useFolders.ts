@@ -18,6 +18,7 @@ import {
   unassignItems,
 } from "./commands";
 import { flattenFolderNames } from "./folders";
+import { useLatest } from "./useLatest";
 
 export interface FoldersApi {
   folders: Folder[];
@@ -44,6 +45,7 @@ interface Options {
  */
 export function useFolders({ libraryPath, invalidateItems, setView }: Options): FoldersApi {
   const [folders, setFolders] = useState<Folder[]>([]);
+  const setViewRef = useLatest(setView);
 
   const folderReloadSeq = useRef(0);
   const reloadFolders = useCallback(async (): Promise<Folder[] | null> => {
@@ -65,9 +67,9 @@ export function useFolders({ libraryPath, invalidateItems, setView }: Options): 
 
   useEffect(() => {
     setFolders([]);
-    setView((current) => (current.kind === "folder" ? { kind: "all" } : current));
+    setViewRef.current((current) => (current.kind === "folder" ? { kind: "all" } : current));
     void reloadFolders();
-  }, [reloadFolders, setView]);
+  }, [reloadFolders, setViewRef]);
 
   const refreshAfterFolderChange = async () => {
     const next = await reloadFolders();

@@ -18,6 +18,7 @@ import {
   setTagGroup,
 } from "./commands";
 import { nextViewAfterTagChange } from "./tags";
+import { useLatest } from "./useLatest";
 
 export interface TagsApi {
   libraryTags: LibraryTags | null;
@@ -43,14 +44,15 @@ interface Options {
  */
 export function useTags({ libraryPath, invalidateItems, setView }: Options): TagsApi {
   const [libraryTags, setLibraryTags] = useState<LibraryTags | null>(null);
+  const setViewRef = useLatest(setView);
 
   const tagsSeq = useRef(0);
   const applyLibraryTags = useCallback(
     (tags: LibraryTags) => {
       setLibraryTags(tags);
-      setView((current) => nextViewAfterTagChange(current, tags));
+      setViewRef.current((current) => nextViewAfterTagChange(current, tags));
     },
-    [setView],
+    [setViewRef],
   );
 
   const reloadTags = useCallback(async (): Promise<LibraryTags | null> => {
@@ -72,9 +74,9 @@ export function useTags({ libraryPath, invalidateItems, setView }: Options): Tag
 
   useEffect(() => {
     setLibraryTags(null);
-    setView((current) => (current.kind === "tag" ? { kind: "all" } : current));
+    setViewRef.current((current) => (current.kind === "tag" ? { kind: "all" } : current));
     void reloadTags();
-  }, [reloadTags, setView]);
+  }, [reloadTags, setViewRef]);
 
   const requireLibrary = () => {
     if (!libraryPath) throw new Error("ライブラリが開かれていません");

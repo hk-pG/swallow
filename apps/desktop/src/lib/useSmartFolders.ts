@@ -20,6 +20,7 @@ import {
   updateSmartFolder,
 } from "./commands";
 import { nextViewAfterSmartFolderChange } from "./smartFolders";
+import { useLatest } from "./useLatest";
 
 export interface SmartFoldersApi {
   smartFolders: SmartFolder[];
@@ -36,14 +37,17 @@ interface Options {
 
 export function useSmartFolders({ libraryPath, setView }: Options): SmartFoldersApi {
   const [smartFolders, setSmartFolders] = useState<SmartFolder[]>([]);
+  const setViewRef = useLatest(setView);
 
   const seq = useRef(0);
   const applyLibrary = useCallback(
     (library: SmartFolder[]) => {
       setSmartFolders(library);
-      setView((current) => nextViewAfterSmartFolderChange(current, { folders: library }));
+      setViewRef.current((current) =>
+        nextViewAfterSmartFolderChange(current, { folders: library }),
+      );
     },
-    [setView],
+    [setViewRef],
   );
 
   const reload = useCallback(async (): Promise<SmartFolder[] | null> => {
@@ -65,9 +69,9 @@ export function useSmartFolders({ libraryPath, setView }: Options): SmartFolders
 
   useEffect(() => {
     setSmartFolders([]);
-    setView((current) => (current.kind === "smartFolder" ? { kind: "all" } : current));
+    setViewRef.current((current) => (current.kind === "smartFolder" ? { kind: "all" } : current));
     void reload();
-  }, [reload, setView]);
+  }, [reload, setViewRef]);
 
   const requireLibrary = () => {
     if (!libraryPath) throw new Error("ライブラリが開かれていません");
