@@ -9,6 +9,7 @@ pub const LIBRARY_VERSION: u32 = 1;
 
 pub const METADATA_FILE: &str = "metadata.json";
 pub const TAGS_FILE: &str = "tags.json";
+pub const SMART_FOLDERS_FILE: &str = "smart-folders.json";
 pub const IMAGES_DIR: &str = "images";
 
 /// Mirrors `Folder` in `packages/shared/src/library.ts`.
@@ -118,6 +119,9 @@ pub fn create(path: &Path) -> Result<LibraryInfo, LibraryError> {
     write_json_atomic(&metadata_path, &metadata).map_err(io_err(&metadata_path))?;
     let tags_path = path.join(TAGS_FILE);
     write_json_atomic(&tags_path, &LibraryTags::default()).map_err(io_err(&tags_path))?;
+    let smart_folders_path = path.join(SMART_FOLDERS_FILE);
+    write_json_atomic(&smart_folders_path, &serde_json::json!({ "folders": [] }))
+        .map_err(io_err(&smart_folders_path))?;
 
     Ok(info(path, &metadata))
 }
@@ -176,6 +180,9 @@ mod tests {
         let tags: serde_json::Value =
             serde_json::from_slice(&fs::read(path.join(TAGS_FILE)).unwrap()).unwrap();
         assert_eq!(tags, serde_json::json!({ "tags": [], "groups": [] }));
+        let smart: serde_json::Value =
+            serde_json::from_slice(&fs::read(path.join(SMART_FOLDERS_FILE)).unwrap()).unwrap();
+        assert_eq!(smart, serde_json::json!({ "folders": [] }));
     }
 
     #[test]

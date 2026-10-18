@@ -3,7 +3,12 @@ import { sidebarSections } from "./sections";
 
 describe("sidebarSections", () => {
   it("registers smart views, folders, then tags", () => {
-    expect(sidebarSections.map((entry) => entry.id)).toEqual(["smart-views", "folders", "tags"]);
+    expect(sidebarSections.map((entry) => entry.id)).toEqual([
+      "smart-views",
+      "smart-folders",
+      "folders",
+      "tags",
+    ]);
   });
 
   it("exposes a stable id on every entry so sections can be appended without touching App", () => {
