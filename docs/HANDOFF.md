@@ -78,11 +78,12 @@ gh issue list --repo hk-pG/swallow --milestone backlog --state open
 
 ### 着手ルール
 
-1. **P1 かつ `beta` が空くまで P2 に手を出さない**（依存・方針変更がない限り）
+1. **P1 かつ `beta` が空くまで P2 に手を出さない**（依存・方針変更がない限り）。**バグ（`bug`）の P1 は機能 P2 より先**
 2. Issue を 1 件選び、`scripts/agent/start-issue.sh <N>` → 実装 → `scripts/agent/check.sh` → PR（Ready まで。**マージは人**）
 3. 並行可なら P1 を複数 Agent に分割してよい（#34/#35/#49/#50 は原則独立）
 4. #12（拡張）は別リポ予定 → このリポでは実装しない
 5. AGENTS.md 禁止事項: main 直 push、PR マージ、Issue クローズ／ラベル無断変更（付与は運用上可だが既存方針を壊さない）
+6. **バグは先に Issue 化**（再現・受け入れ条件・原因仮説を本文に残す）。チャットだけで直さない。詳細は `AGENTS.md` の「バグの扱い」
 
 ### 受け入れの見方
 
