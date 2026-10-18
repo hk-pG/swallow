@@ -37,11 +37,7 @@ describe("matchesView", () => {
     const starred = item({ id: "starred", star: 2 });
     const zero = item({ id: "zero", star: 0 });
     const list = [...items, starred, zero];
-    expect(ids(list.filter((i) => matchesView(i, { kind: "favorites" })))).toEqual([
-      "filed",
-      "loose",
-      "starred",
-    ]);
+    expect(ids(list.filter((i) => matchesView(i, { kind: "favorites" })))).toEqual(["starred"]);
   });
 
   it("uncategorized shows non-deleted items without folders", () => {
