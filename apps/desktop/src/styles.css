@@ -3,7 +3,15 @@
   font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
   font-size: 13px;
   --border: color-mix(in srgb, currentColor 15%, transparent);
+  --border-strong: color-mix(in srgb, currentColor 26%, transparent);
+  --shell-border: var(--border-strong);
   --muted: color-mix(in srgb, currentColor 55%, transparent);
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --sidebar-bg: color-mix(in srgb, currentColor 4%, canvas);
 }
 
 * {
@@ -112,7 +120,10 @@ body,
 }
 
 .sidebar {
-  border-right: 1px solid var(--border);
+  padding: var(--space-3);
+  overflow-y: auto;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--shell-border);
 }
 
 .item-list {
@@ -198,16 +209,16 @@ body,
 }
 
 .inspector {
-  border-left: 1px solid var(--border);
+  border-left: 1px solid var(--shell-border);
 }
 
 .library-header {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding-bottom: 12px;
-  margin-bottom: 8px;
-  border-bottom: 1px solid var(--border);
+  gap: var(--space-2);
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-2);
+  border-bottom: 1px solid var(--shell-border);
 }
 
 .library-name {
@@ -225,11 +236,11 @@ body,
 nav {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-1);
 }
 
 .nav-item {
-  padding: 6px 8px;
+  padding: var(--space-2) 10px;
   border: none;
   border-radius: 6px;
   background: none;
@@ -253,18 +264,30 @@ nav {
   cursor: default;
 }
 
-.sidebar-section {
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
+.sidebar-section,
+.folder-section {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-strong);
 }
 
-.sidebar-section-header {
+.sidebar-section-first {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.sidebar-section-header,
+.folder-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.sidebar-section-header {
+  margin-bottom: var(--space-2);
 }
 
 .sidebar-section-title {
@@ -465,20 +488,17 @@ nav {
 .folder-section {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
+  gap: var(--space-1);
 }
 
 .folder-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 4px;
   font-size: 11px;
   font-weight: 600;
   color: var(--muted);
+}
+
+.folder-header > span {
+  margin: 0;
 }
 
 .folder-line {
@@ -498,8 +518,11 @@ nav {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 2px;
-  padding-bottom: 4px;
+  gap: var(--space-1);
+  margin: var(--space-1) 0 var(--space-2);
+  padding: var(--space-2);
+  border-radius: 6px;
+  background: color-mix(in srgb, currentColor 6%, transparent);
 }
 
 .folder-name-input {
