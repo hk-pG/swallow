@@ -16,3 +16,8 @@ export function itemDirPath(libraryPath: string, id: ItemId): string {
 export function thumbnailUrl(libraryPath: string, id: ItemId): string {
   return convertFileSrc(itemDirPath(libraryPath, id), THUMBNAIL_SCHEME);
 }
+
+/** Original stored image URL for Quick Look (`?full=1` in `protocol.rs`). */
+export function originalImageUrl(libraryPath: string, id: ItemId): string {
+  return `${thumbnailUrl(libraryPath, id)}?full=1`;
+}

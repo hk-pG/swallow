@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hasThumbnail, itemDirPath } from "./thumbnail";
+import { hasThumbnail, itemDirPath, originalImageUrl, thumbnailUrl } from "./thumbnail";
 
 describe("hasThumbnail", () => {
   it("accepts supported image extensions case-insensitively", () => {
@@ -21,5 +21,11 @@ describe("itemDirPath", () => {
 
   it("ignores trailing separators", () => {
     expect(itemDirPath("C:\\lib\\", "01J")).toBe("C:\\lib/images/01J.info");
+  });
+});
+
+describe("originalImageUrl", () => {
+  it("appends full=1 to the thumbnail URL", () => {
+    expect(originalImageUrl("/lib", "01J")).toBe(`${thumbnailUrl("/lib", "01J")}?full=1`);
   });
 });

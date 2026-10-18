@@ -1,12 +1,15 @@
 import process from "node:process";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 
 const host = process.env.TAURI_DEV_HOST;
 
 // https://v2.tauri.app/start/frontend/vite/
 export default defineConfig({
   plugins: [react()],
+  test: {
+    setupFiles: ["./src/test/setup.ts"],
+  },
   clearScreen: false,
   server: {
     // Must match `build.devUrl` in src-tauri/tauri.conf.json.

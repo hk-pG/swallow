@@ -72,6 +72,36 @@ pub fn preview(item_dir: &Path) -> io::Result<Option<Preview>> {
     }))
 }
 
+/// Resolves the original stored image for Quick Look, without downscaling.
+pub fn original_preview(item_dir: &Path) -> io::Result<Option<Preview>> {
+    let item = item::read_item(item_dir)?;
+    let Some(mime) = image_mime(&item.ext) else {
+        return Ok(None);
+    };
+    Ok(Some(Preview {
+        path: item::item_file(item_dir, &item)?,
+        mime,
+    }))
+}
+
+fn image_mime(ext: &str) -> Option<&'static str> {
+    if ext.eq_ignore_ascii_case("png") {
+        Some("image/png")
+    } else if ext.eq_ignore_ascii_case("jpg") || ext.eq_ignore_ascii_case("jpeg") {
+        Some("image/jpeg")
+    } else if ext.eq_ignore_ascii_case("webp") {
+        Some("image/webp")
+    } else if ext.eq_ignore_ascii_case("gif") {
+        Some("image/gif")
+    } else if ext.eq_ignore_ascii_case("bmp") {
+        Some("image/bmp")
+    } else if ext.eq_ignore_ascii_case(SVG_EXT) {
+        Some("image/svg+xml")
+    } else {
+        None
+    }
+}
+
 /// Accepts only `.../images/<id>.info` so the protocol cannot be used to read arbitrary files.
 pub fn is_item_dir(path: &Path) -> bool {
     path.is_absolute()
@@ -160,6 +190,33 @@ mod tests {
 
         let pdf_dir = write_item(library.path(), &sample_item("P", "doc", "pdf"));
         assert_eq!(preview(&pdf_dir).unwrap(), None);
+    }
+
+    #[test]
+    fn original_preview_serves_source_file_with_matching_mime() {
+        let library = tempfile::tempdir().unwrap();
+        let jpg = sample_item("J", "photo", "JPG");
+        let jpg_dir = write_item(library.path(), &jpg);
+        assert_eq!(
+            original_preview(&jpg_dir).unwrap(),
+            Some(Preview {
+                path: jpg_dir.join("photo.JPG"),
+                mime: "image/jpeg"
+            })
+        );
+
+        let svg = sample_item("S", "logo", "svg");
+        let svg_dir = write_item(library.path(), &svg);
+        assert_eq!(
+            original_preview(&svg_dir).unwrap(),
+            Some(Preview {
+                path: svg_dir.join("logo.svg"),
+                mime: "image/svg+xml"
+            })
+        );
+
+        let pdf_dir = write_item(library.path(), &sample_item("P", "doc", "pdf"));
+        assert_eq!(original_preview(&pdf_dir).unwrap(), None);
     }
 
     #[test]

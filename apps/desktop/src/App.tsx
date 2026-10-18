@@ -4,6 +4,7 @@ import { AppInfo } from "./components/AppInfo";
 import { FolderAssignControl } from "./components/FolderAssignControl";
 import { Inspector } from "./components/Inspector";
 import { ItemGrid } from "./components/ItemGrid";
+import { QuickLook } from "./components/QuickLook";
 import { TrashActions } from "./components/TrashActions";
 import { ImportReportBanner } from "./ImportReportBanner";
 import { useAssetImport } from "./lib/useAssetImport";
@@ -11,6 +12,7 @@ import { useFolders } from "./lib/useFolders";
 import { useItemBrowser } from "./lib/useItemBrowser";
 import { useItemList } from "./lib/useItemList";
 import { useLibrarySession } from "./lib/useLibrarySession";
+import { useQuickLook } from "./lib/useQuickLook";
 import { useSmartFolders } from "./lib/useSmartFolders";
 import { useTags } from "./lib/useTags";
 import { useTrashActions } from "./lib/useTrashActions";
@@ -45,6 +47,7 @@ export function App() {
 
   const contentRef = useRef<HTMLElement>(null);
   const assetImport = useAssetImport(libraryPath, contentRef, invalidate);
+  const quickLook = useQuickLook(browser.selection, browser.visibleIds, browser.visibleItems);
   const trash = useTrashActions({
     libraryPath,
     view: browser.view,
@@ -100,6 +103,14 @@ export function App() {
                 />
                 <button
                   type="button"
+                  onClick={() => quickLook.open()}
+                  disabled={disabled || !quickLook.canOpen}
+                  title="選択中のアイテムを拡大プレビュー（Space）"
+                >
+                  クイックルック
+                </button>
+                <button
+                  type="button"
                   onClick={() => void assetImport.pickAndImport()}
                   disabled={disabled || assetImport.importing}
                 >
@@ -130,6 +141,7 @@ export function App() {
                     onSelectAll={browser.handleSelectAll}
                     onClearSelection={browser.clearSelection}
                     onDelete={trash.onDelete}
+                    onQuickLook={quickLook.openAt}
                   />
                 )
               ) : (
@@ -204,6 +216,18 @@ export function App() {
               )}
               <AppInfo />
             </aside>
+            {quickLook.isOpen && quickLook.target && libraryPath && (
+              <QuickLook
+                key={quickLook.target.item.id}
+                libraryPath={libraryPath}
+                target={quickLook.target}
+                scaleMode={quickLook.scaleMode}
+                onScaleModeChange={quickLook.setScaleMode}
+                onClose={quickLook.close}
+                onPrev={quickLook.goPrev}
+                onNext={quickLook.goNext}
+              />
+            )}
           </div>
         </TagsProvider>
       </SmartFoldersProvider>
