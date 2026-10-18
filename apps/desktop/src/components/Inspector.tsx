@@ -3,6 +3,7 @@ import { type FormEvent, type KeyboardEvent, useEffect, useId, useMemo, useState
 import { flattenFolderNames } from "../lib/folders";
 import { formatBytes, formatDateTime, formatResolution } from "../lib/format";
 import { suggestTags } from "../lib/tags";
+import { ColorLabelPicker } from "./ColorLabelPicker";
 import { FolderAssignControl } from "./FolderAssignControl";
 
 const MAX_STAR = 5;
@@ -55,6 +56,10 @@ export function Inspector({
     <div className="inspector-body" key={id}>
       <CommitField label="名前" value={item.name} required onCommit={(name) => save({ name })} />
       <StarRating value={item.star} onChange={(star) => save({ star }).catch(() => {})} />
+      <ColorLabelPicker
+        value={item.colorLabel}
+        onChange={(colorLabel) => save({ colorLabel }).catch(() => {})}
+      />
       <CommitField
         label="メモ"
         value={item.annotation}
@@ -308,6 +313,7 @@ function EditableTagList({
           className="inspector-input"
           type="text"
           list={listId}
+          data-inspector-tag-input="true"
           placeholder="タグを追加"
           value={draft}
           disabled={busy}

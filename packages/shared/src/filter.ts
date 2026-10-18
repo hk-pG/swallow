@@ -1,3 +1,4 @@
+import type { ColorLabel } from "./colorLabel";
 import { subtreeIds } from "./folders";
 import type { Folder, FolderId, ItemMetadata } from "./library";
 import {
@@ -6,12 +7,16 @@ import {
   type SmartFolder,
 } from "./smartFolders";
 
-export type SmartViewKind = "all" | "uncategorized" | "trash";
+/** Minimum star (1–5) for the fixed favorites smart view. */
+export const FAVORITES_MIN_STAR = 1;
+
+export type SmartViewKind = "all" | "favorites" | "uncategorized" | "trash";
 
 export type ItemView =
   | { kind: SmartViewKind }
   | { kind: "folder"; folderId: FolderId }
   | { kind: "tag"; tag: string }
+  | { kind: "colorLabel"; colorLabel: ColorLabel | null }
   | { kind: "smartFolder"; smartFolderId: string };
 
 /**
@@ -36,12 +41,16 @@ export function matchesView(
       return item.isDeleted;
     case "all":
       return !item.isDeleted;
+    case "favorites":
+      return !item.isDeleted && item.star >= FAVORITES_MIN_STAR;
     case "uncategorized":
       return !item.isDeleted && item.folders.length === 0;
     case "folder":
       return matchesFolder(item, view.folderId, folders);
     case "tag":
       return !item.isDeleted && item.tags.includes(view.tag);
+    case "colorLabel":
+      return !item.isDeleted && item.colorLabel === view.colorLabel;
     case "smartFolder": {
       const smart = findSmartFolder(smartFolders, view.smartFolderId);
       if (!smart) return false;

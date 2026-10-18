@@ -27,6 +27,7 @@ function item(folderIds: string[]): ItemMetadata {
     folders: folderIds,
     annotation: "",
     star: 0,
+    colorLabel: null,
     url: null,
     createdAt: 0,
     modifiedAt: 0,

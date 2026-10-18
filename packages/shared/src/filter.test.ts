@@ -13,6 +13,7 @@ function item(overrides: Partial<ItemMetadata> & Pick<ItemMetadata, "id">): Item
     folders: [],
     annotation: "",
     star: 0,
+    colorLabel: null,
     url: null,
     createdAt: 0,
     modifiedAt: 0,
@@ -33,12 +34,32 @@ describe("matchesView", () => {
     expect(ids(items.filter((i) => matchesView(i, { kind: "all" })))).toEqual(["filed", "loose"]);
   });
 
+  it("favorites shows non-deleted items with star >= 1", () => {
+    const starred = item({ id: "starred", star: 2 });
+    const zero = item({ id: "zero", star: 0 });
+    const list = [...items, starred, zero];
+    expect(ids(list.filter((i) => matchesView(i, { kind: "favorites" })))).toEqual(["starred"]);
+  });
+
   it("uncategorized shows non-deleted items without folders", () => {
     expect(ids(items.filter((i) => matchesView(i, { kind: "uncategorized" })))).toEqual(["loose"]);
   });
 
   it("trash shows only deleted items", () => {
     expect(ids(items.filter((i) => matchesView(i, { kind: "trash" })))).toEqual(["trashed"]);
+  });
+
+  it("colorLabel view matches items with that label and excludes deleted", () => {
+    const red = item({ id: "red", colorLabel: "red" });
+    const none = item({ id: "none", colorLabel: null });
+    const deleted = item({ id: "deleted", colorLabel: "blue", isDeleted: true });
+    const list = [red, none, deleted];
+    expect(
+      ids(list.filter((i) => matchesView(i, { kind: "colorLabel", colorLabel: "red" }))),
+    ).toEqual(["red"]);
+    expect(
+      ids(list.filter((i) => matchesView(i, { kind: "colorLabel", colorLabel: null }))),
+    ).toEqual(["none"]);
   });
 
   it("folder and tag views exclude deleted items", () => {

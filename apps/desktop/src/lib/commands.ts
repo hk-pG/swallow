@@ -243,3 +243,8 @@ export function restoreItems(libraryPath: string, itemIds: ItemId[]): Promise<vo
 export function purgeItems(libraryPath: string, itemIds: ItemId[]): Promise<void> {
   return invoke<void>("purge_items", { libraryPath, itemIds });
 }
+
+/** Opens the item file in the system file manager (Finder / Explorer / folder on Linux). */
+export function revealItemInExplorer(libraryPath: string, itemId: ItemId): Promise<void> {
+  return invoke<void>("reveal_item_in_explorer", { libraryPath, itemId });
+}

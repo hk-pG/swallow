@@ -28,7 +28,9 @@ export function suppressDefaultContextMenu(event: Event): void {
 
 /**
  * In production builds, hide the browser-like context menu so right-click
- * cannot open DevTools. Development keeps the menu for Inspect Element.
+ * cannot open DevTools. Development keeps the default menu on chrome
+ * (toolbar, empty areas) for Inspect Element; item cells call preventDefault
+ * and show Swallow's own menu instead.
  * Returns an uninstall function.
  */
 export function installDisableDefaultContextMenu(isDev = import.meta.env.DEV): () => void {

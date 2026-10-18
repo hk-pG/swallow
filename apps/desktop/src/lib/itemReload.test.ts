@@ -11,6 +11,7 @@ function item(id: string): ItemMetadata {
     width: 1,
     height: 1,
     star: 0,
+    colorLabel: null,
     annotation: "",
     url: null,
     tags: [],

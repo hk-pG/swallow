@@ -1,3 +1,4 @@
+import { ColorLabelSection } from "./ColorLabelSection";
 import { FolderSection } from "./FolderSection";
 import { SmartFolderSection } from "./SmartFolderSection";
 import { SmartViewSection } from "./SmartViewSection";
@@ -14,6 +15,7 @@ export const sidebarSections: SidebarSectionEntry[] = [
   { id: "smart-views", Component: SmartViewSection },
   { id: "smart-folders", Component: SmartFolderSection },
   { id: "folders", Component: FolderSection },
+  { id: "color-labels", Component: ColorLabelSection },
   { id: "tags", Component: TagSection },
 ];
 

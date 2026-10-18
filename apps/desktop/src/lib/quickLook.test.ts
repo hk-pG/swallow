@@ -15,6 +15,7 @@ function makeItem(id: string): ItemMetadata {
     folders: [],
     annotation: "",
     star: 0,
+    colorLabel: null,
     url: null,
     createdAt: 0,
     modifiedAt: 0,

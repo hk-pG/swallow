@@ -1,4 +1,4 @@
-import type { ItemId, ItemMetadata } from "@swallow/shared";
+import { COLOR_LABEL_SWATCH, type ItemId, type ItemMetadata } from "@swallow/shared";
 import {
   type KeyboardEvent,
   type MouseEvent,
@@ -10,6 +10,7 @@ import {
 } from "react";
 import { isNavigationKey, moveFocus, type Selection, type SelectModifiers } from "../lib/selection";
 import { hasThumbnail, thumbnailUrl } from "../lib/thumbnail";
+import { ItemContextMenu, type ItemContextMenuState } from "./ItemContextMenu";
 
 interface ItemGridProps {
   libraryPath: string;
@@ -22,6 +23,12 @@ interface ItemGridProps {
   onDelete?: () => void;
   /** Space on a grid cell opens Quick Look for that item. */
   onQuickLook?: (id: ItemId) => void;
+  isTrashView?: boolean;
+  onContextTrash?: () => void;
+  onContextRestore?: (id: ItemId) => void;
+  onContextPurge?: (id: ItemId) => void;
+  onContextEditTags?: (id: ItemId) => void;
+  onContextRevealInExplorer?: (id: ItemId) => void;
 }
 
 function columnCount(grid: HTMLElement | null): number {
@@ -38,15 +45,28 @@ export function ItemGrid({
   onClearSelection,
   onDelete,
   onQuickLook,
+  isTrashView = false,
+  onContextTrash,
+  onContextRestore,
+  onContextPurge,
+  onContextEditTags,
+  onContextRevealInExplorer,
 }: ItemGridProps) {
   const gridRef = useRef<HTMLElement>(null);
   const focusId = selection.focus;
+  const [contextMenu, setContextMenu] = useState<ItemContextMenuState | null>(null);
+  const contextMenuEnabled = Boolean(
+    onContextTrash ||
+      onContextRestore ||
+      onContextPurge ||
+      onContextEditTags ||
+      onContextRevealInExplorer,
+  );
 
   useEffect(() => {
     const grid = gridRef.current;
     if (!grid || focusId === null) return;
     const active = document.activeElement;
-    // Don't pull focus out of other inputs, but recover it when the focused cell was removed.
     if (active && active !== document.body && !grid.contains(active)) return;
     const cell = grid.querySelector<HTMLElement>(`[data-id="${focusId}"]`);
     cell?.focus({ preventScroll: true });
@@ -55,9 +75,23 @@ export function ItemGrid({
 
   const handleClick = useCallback(
     (e: MouseEvent, id: ItemId) => {
+      setContextMenu(null);
       onSelect(id, { range: e.shiftKey, toggle: e.metaKey || e.ctrlKey });
     },
     [onSelect],
+  );
+
+  const handleContextMenu = useCallback(
+    (e: MouseEvent, item: ItemMetadata) => {
+      if (!contextMenuEnabled) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (!selection.ids.has(item.id)) {
+        onSelect(item.id, {});
+      }
+      setContextMenu({ item, x: e.clientX, y: e.clientY });
+    },
+    [contextMenuEnabled, onSelect, selection.ids],
   );
 
   const handleKeyDown = useCallback(
@@ -72,6 +106,7 @@ export function ItemGrid({
         onSelectAll();
       } else if (e.key === "Escape") {
         onClearSelection();
+        setContextMenu(null);
       } else if (e.key === " " && onQuickLook) {
         e.preventDefault();
         onQuickLook(id);
@@ -89,19 +124,34 @@ export function ItemGrid({
   }
   const tabStop = items.some((item) => item.id === focusId) ? focusId : first.id;
   return (
-    <section ref={gridRef} className="grid" aria-label="アイテム一覧">
-      {items.map((item) => (
-        <ItemCell
-          key={item.id}
-          item={item}
-          src={hasThumbnail(item.ext) ? thumbnailUrl(libraryPath, item.id) : null}
-          selected={selection.ids.has(item.id)}
-          tabStop={item.id === tabStop}
-          onClick={handleClick}
-          onKeyDown={handleKeyDown}
+    <>
+      <section ref={gridRef} className="grid" aria-label="アイテム一覧">
+        {items.map((item) => (
+          <ItemCell
+            key={item.id}
+            item={item}
+            src={hasThumbnail(item.ext) ? thumbnailUrl(libraryPath, item.id) : null}
+            selected={selection.ids.has(item.id)}
+            tabStop={item.id === tabStop}
+            onClick={handleClick}
+            onKeyDown={handleKeyDown}
+            onContextMenu={contextMenuEnabled ? handleContextMenu : undefined}
+          />
+        ))}
+      </section>
+      {contextMenuEnabled && (
+        <ItemContextMenu
+          state={contextMenu}
+          isTrashView={isTrashView}
+          onClose={() => setContextMenu(null)}
+          onTrash={() => onContextTrash?.()}
+          onRestore={(id) => onContextRestore?.(id)}
+          onPurge={(id) => onContextPurge?.(id)}
+          onEditTags={(id) => onContextEditTags?.(id)}
+          onRevealInExplorer={(id) => onContextRevealInExplorer?.(id)}
         />
-      ))}
-    </section>
+      )}
+    </>
   );
 }
 
@@ -109,10 +159,10 @@ interface ItemCellProps {
   item: ItemMetadata;
   src: string | null;
   selected: boolean;
-  /** The one cell reachable with Tab. */
   tabStop: boolean;
   onClick: (e: MouseEvent, id: ItemId) => void;
   onKeyDown: (e: KeyboardEvent, id: ItemId) => void;
+  onContextMenu?: (e: MouseEvent, item: ItemMetadata) => void;
 }
 
 const ItemCell = memo(function ItemCell({
@@ -122,6 +172,7 @@ const ItemCell = memo(function ItemCell({
   tabStop,
   onClick,
   onKeyDown,
+  onContextMenu,
 }: ItemCellProps) {
   const [failed, setFailed] = useState(false);
   const fileName = `${item.name}.${item.ext}`;
@@ -136,8 +187,17 @@ const ItemCell = memo(function ItemCell({
       title={fileName}
       onClick={(e) => onClick(e, item.id)}
       onKeyDown={(e) => onKeyDown(e, item.id)}
+      onContextMenu={onContextMenu ? (e) => onContextMenu(e, item) : undefined}
     >
       <div className="grid-thumb">
+        {item.colorLabel ? (
+          <span
+            className="grid-color-label"
+            style={{ background: COLOR_LABEL_SWATCH[item.colorLabel] }}
+            aria-hidden="true"
+            title="カラーラベル"
+          />
+        ) : null}
         {src && !failed ? (
           <img
             src={src}

@@ -1,3 +1,4 @@
+mod color_label;
 mod commands;
 mod folders;
 mod http_api;
@@ -5,6 +6,7 @@ mod import;
 pub mod item;
 mod library;
 mod protocol;
+mod reveal;
 mod settings;
 mod smart_folders;
 mod tags;
@@ -35,6 +37,7 @@ pub fn run() {
             commands::trash_items,
             commands::restore_items,
             commands::purge_items,
+            commands::reveal_item_in_explorer,
             commands::get_library_tags,
             commands::add_tag,
             commands::remove_tag,
