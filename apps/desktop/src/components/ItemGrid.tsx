@@ -20,6 +20,8 @@ interface ItemGridProps {
   onClearSelection: () => void;
   /** Omit to disable the Delete key. */
   onDelete?: () => void;
+  /** Space on a grid cell opens Quick Look for that item. */
+  onQuickLook?: (id: ItemId) => void;
 }
 
 function columnCount(grid: HTMLElement | null): number {
@@ -35,6 +37,7 @@ export function ItemGrid({
   onSelectAll,
   onClearSelection,
   onDelete,
+  onQuickLook,
 }: ItemGridProps) {
   const gridRef = useRef<HTMLElement>(null);
   const focusId = selection.focus;
@@ -69,12 +72,15 @@ export function ItemGrid({
         onSelectAll();
       } else if (e.key === "Escape") {
         onClearSelection();
+      } else if (e.key === " " && onQuickLook) {
+        e.preventDefault();
+        onQuickLook(id);
       } else if ((e.key === "Delete" || e.key === "Backspace") && onDelete) {
         e.preventDefault();
         onDelete();
       }
     },
-    [items, onSelect, onSelectAll, onClearSelection, onDelete],
+    [items, onSelect, onSelectAll, onClearSelection, onDelete, onQuickLook],
   );
 
   const [first] = items;
