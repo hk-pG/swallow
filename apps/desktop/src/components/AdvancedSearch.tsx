@@ -1,5 +1,4 @@
 import {
-  EMPTY_SMART_FOLDER_CRITERIA,
   type Folder,
   isSmartFolderCriteriaActive,
   type SmartFolderCriteria,
