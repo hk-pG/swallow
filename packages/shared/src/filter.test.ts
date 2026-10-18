@@ -33,6 +33,17 @@ describe("matchesView", () => {
     expect(ids(items.filter((i) => matchesView(i, { kind: "all" })))).toEqual(["filed", "loose"]);
   });
 
+  it("favorites shows non-deleted items with star >= 1", () => {
+    const starred = item({ id: "starred", star: 2 });
+    const zero = item({ id: "zero", star: 0 });
+    const list = [...items, starred, zero];
+    expect(ids(list.filter((i) => matchesView(i, { kind: "favorites" })))).toEqual([
+      "filed",
+      "loose",
+      "starred",
+    ]);
+  });
+
   it("uncategorized shows non-deleted items without folders", () => {
     expect(ids(items.filter((i) => matchesView(i, { kind: "uncategorized" })))).toEqual(["loose"]);
   });
