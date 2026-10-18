@@ -5,6 +5,7 @@ import { FolderAssignControl } from "./components/FolderAssignControl";
 import { Inspector } from "./components/Inspector";
 import { ItemGrid } from "./components/ItemGrid";
 import { QuickLook } from "./components/QuickLook";
+import { AdvancedSearch } from "./components/AdvancedSearch";
 import { TrashActions } from "./components/TrashActions";
 import { ImportReportBanner } from "./ImportReportBanner";
 import { purgeItems, restoreItems, revealItemInExplorer } from "./lib/commands";
@@ -165,6 +166,14 @@ export function App() {
                   placeholder="名前・タグ・注釈で検索"
                   value={browser.query}
                   onChange={(e) => browser.setQuery(e.target.value)}
+                  disabled={disabled}
+                />
+                <AdvancedSearch
+                  criteria={browser.searchCriteria}
+                  onChange={browser.setSearchCriteria}
+                  onClear={browser.clearAdvancedSearch}
+                  folders={folders.folders}
+                  libraryTags={tags.libraryTags?.tags ?? []}
                   disabled={disabled}
                 />
                 <button

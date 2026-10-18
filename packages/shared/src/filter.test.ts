@@ -130,4 +130,33 @@ describe("filterItems", () => {
     expect(ids(filterItems(items, { kind: "trash" }, "logo"))).toEqual([]);
     expect(ids(filterItems(items, { kind: "folder", folderId: "f1" }, "beach"))).toEqual(["filed"]);
   });
+
+  it("applies advanced search criteria on top of the current view", () => {
+    const starred = item({ id: "starred", name: "Sunset", folders: ["f1"], star: 4 });
+    const list = [...items, starred];
+    expect(
+      ids(
+        filterItems(
+          list,
+          { kind: "all" },
+          "",
+          [],
+          [],
+          { query: "", tags: ["landscape"], tagMatch: "all", folderId: null, minStar: null },
+        ),
+      ),
+    ).toEqual(["filed"]);
+    expect(
+      ids(
+        filterItems(
+          list,
+          { kind: "folder", folderId: "f1" },
+          "",
+          [],
+          [],
+          { query: "", tags: [], tagMatch: "all", folderId: null, minStar: 3 },
+        ),
+      ),
+    ).toEqual(["starred"]);
+  });
 });

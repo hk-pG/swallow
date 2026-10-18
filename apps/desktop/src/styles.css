@@ -652,6 +652,21 @@ select.inspector-input option {
   cursor: pointer;
 }
 
+.advanced-search {
+  position: relative;
+  flex: none;
+}
+
+.advanced-search-toggle {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
 .view-mode-button + .view-mode-button {
   border-left: 1px solid var(--border);
 }
@@ -662,6 +677,15 @@ select.inspector-input option {
 }
 
 .view-mode-toolbar:disabled .view-mode-button {
+  color: var(--muted);
+  cursor: default;
+}
+
+.advanced-search-toggle:hover:not(:disabled) {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.advanced-search-toggle:disabled {
   color: var(--muted);
   cursor: default;
 }
@@ -681,6 +705,33 @@ select.inspector-input option {
 .view-mode-zoom-value {
   min-width: 3.5em;
   color: inherit;
+}
+
+.advanced-search-panel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  width: min(320px, calc(100vw - 48px));
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: canvas;
+  box-shadow: 0 8px 24px color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.advanced-search-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.advanced-search-note {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
 }
 
 .import-report {
