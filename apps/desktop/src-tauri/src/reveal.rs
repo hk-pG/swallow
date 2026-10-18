@@ -2,6 +2,12 @@ use std::path::Path;
 use std::process::Command;
 
 pub fn reveal_in_file_manager(path: &Path) -> std::io::Result<()> {
+    if !path.exists() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "file not found",
+        ));
+    }
     #[cfg(target_os = "windows")]
     {
         Command::new("explorer")
@@ -39,8 +45,9 @@ mod tests {
     }
 
     #[test]
-    fn reveal_rejects_path_without_parent() {
-        let err = reveal_in_file_manager(Path::new("file-only")).unwrap_err();
+    fn reveal_rejects_missing_file() {
+        let err =
+            reveal_in_file_manager(Path::new("/tmp/swallow-missing-reveal-file")).unwrap_err();
         assert_eq!(err.kind(), std::io::ErrorKind::NotFound);
     }
 }
