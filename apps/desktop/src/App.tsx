@@ -1,15 +1,15 @@
-import { thumbnailSizePx } from "@swallow/shared";
-import { type CSSProperties, useRef } from "react";
+import { ask } from "@tauri-apps/plugin-dialog";
+import { useCallback, useRef } from "react";
 import { AppInfo } from "./components/AppInfo";
 import { FolderAssignControl } from "./components/FolderAssignControl";
 import { Inspector } from "./components/Inspector";
 import { ItemGrid } from "./components/ItemGrid";
-import { ItemList } from "./components/ItemList";
 import { QuickLook } from "./components/QuickLook";
 import { TrashActions } from "./components/TrashActions";
-import { ViewModeToolbar } from "./components/ViewModeToolbar";
 import { ImportReportBanner } from "./ImportReportBanner";
-import { useAppearanceSettings } from "./lib/useAppearanceSettings";
+import { purgeItems, restoreItems, revealItemInExplorer } from "./lib/commands";
+import { focusInspectorTagInput } from "./lib/focusInspector";
+import { purgeConfirmMessage } from "./lib/trash";
 import { useAssetImport } from "./lib/useAssetImport";
 import { useFolders } from "./lib/useFolders";
 import { useItemBrowser } from "./lib/useItemBrowser";
@@ -27,11 +27,7 @@ import { TagsProvider } from "./sidebar/TagsContext";
 
 export function App() {
   const session = useLibrarySession();
-  const appearance = useAppearanceSettings();
   const { libraryPath } = session;
-  const contentStyle = {
-    "--item-thumb-size": `${thumbnailSizePx(appearance.itemView.thumbnailSizeIndex)}px`,
-  } as CSSProperties;
   const { items, invalidate, saveItem } = useItemList(libraryPath);
 
   const { setView, setViewRef } = useSetViewBridge();
@@ -68,6 +64,68 @@ export function App() {
     setError: session.setError,
   });
 
+  const isTrashView = browser.view.kind === "trash";
+
+  const handleContextRevealInExplorer = useCallback(
+    async (itemId: string) => {
+      if (!libraryPath) return;
+      try {
+        await revealItemInExplorer(libraryPath, itemId);
+        session.setError(null);
+      } catch (e) {
+        session.setError(`エクスプローラーで表示できませんでした: ${e}`);
+      }
+    },
+    [libraryPath, session.setError],
+  );
+
+  const handleContextEditTags = useCallback(
+    (itemId: string) => {
+      browser.handleSelect(itemId, {});
+      requestAnimationFrame(() => focusInspectorTagInput());
+    },
+    [browser.handleSelect],
+  );
+
+  const handleContextRestore = useCallback(
+    async (itemId: string) => {
+      if (!libraryPath) return;
+      try {
+        await restoreItems(libraryPath, [itemId]);
+        session.setError(null);
+        browser.clearSelection();
+        await invalidate();
+      } catch (e) {
+        session.setError(`復元できませんでした: ${e}`);
+      }
+    },
+    [libraryPath, browser.clearSelection, invalidate, session.setError],
+  );
+
+  const handleContextPurge = useCallback(
+    async (itemId: string) => {
+      if (!libraryPath) return;
+      const item = browser.visibleItems.find((entry) => entry.id === itemId);
+      if (!item) return;
+      const confirmed = await ask(purgeConfirmMessage([item]), {
+        title: "完全に削除",
+        kind: "warning",
+        okLabel: "完全に削除",
+        cancelLabel: "キャンセル",
+      });
+      if (!confirmed) return;
+      try {
+        await purgeItems(libraryPath, [itemId]);
+        session.setError(null);
+        browser.clearSelection();
+        await invalidate();
+      } catch (e) {
+        session.setError(`完全に削除できませんでした: ${e}`);
+      }
+    },
+    [libraryPath, browser.visibleItems, browser.clearSelection, invalidate, session.setError],
+  );
+
   const disabled = session.library === null;
 
   return (
@@ -99,7 +157,6 @@ export function App() {
             <main
               ref={contentRef}
               className={assetImport.dragOver ? "content drag-over" : "content"}
-              style={contentStyle}
             >
               <header className="toolbar">
                 <input
@@ -109,13 +166,6 @@ export function App() {
                   value={browser.query}
                   onChange={(e) => browser.setQuery(e.target.value)}
                   disabled={disabled}
-                />
-                <ViewModeToolbar
-                  itemViewMode={appearance.itemView.itemViewMode}
-                  thumbnailSizeIndex={appearance.itemView.thumbnailSizeIndex}
-                  disabled={disabled}
-                  onViewModeChange={appearance.setItemViewMode}
-                  onThumbnailSizeIndexChange={appearance.setThumbnailSizeIndex}
                 />
                 <button
                   type="button"
@@ -155,17 +205,6 @@ export function App() {
                   <section className="grid-placeholder">ファイルをドロップして取り込み</section>
                 ) : browser.visibleItems.length === 0 ? (
                   <section className="grid-placeholder">該当するアイテムがありません</section>
-                ) : appearance.itemView.itemViewMode === "list" ? (
-                  <ItemList
-                    libraryPath={libraryPath}
-                    items={browser.visibleItems}
-                    selection={browser.selection}
-                    onSelect={browser.handleSelect}
-                    onSelectAll={browser.handleSelectAll}
-                    onClearSelection={browser.clearSelection}
-                    onDelete={trash.onDelete}
-                    onQuickLook={quickLook.openAt}
-                  />
                 ) : (
                   <ItemGrid
                     libraryPath={libraryPath}
@@ -176,6 +215,14 @@ export function App() {
                     onClearSelection={browser.clearSelection}
                     onDelete={trash.onDelete}
                     onQuickLook={quickLook.openAt}
+                    isTrashView={isTrashView}
+                    onContextTrash={isTrashView ? undefined : () => void trash.handleTrash()}
+                    onContextRestore={
+                      isTrashView ? (id) => void handleContextRestore(id) : undefined
+                    }
+                    onContextPurge={isTrashView ? (id) => void handleContextPurge(id) : undefined}
+                    onContextEditTags={isTrashView ? undefined : handleContextEditTags}
+                    onContextRevealInExplorer={(id) => void handleContextRevealInExplorer(id)}
                   />
                 )
               ) : (
