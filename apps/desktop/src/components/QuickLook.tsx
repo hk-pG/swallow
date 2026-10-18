@@ -31,11 +31,6 @@ export function QuickLook({
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    setLoading(true);
-    setFailed(false);
-  }, [item.id]);
-
-  useEffect(() => {
     const onKeyDown = (e: globalThis.KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
@@ -68,13 +63,18 @@ export function QuickLook({
     : `表示中の一覧をプレビュー（← → で送り）`;
 
   return (
-    <div className="quick-look-backdrop" onClick={onClose} role="presentation">
+    <div className="quick-look-layer">
+      <button
+        type="button"
+        className="quick-look-backdrop"
+        aria-label="クイックルックを閉じる"
+        onClick={onClose}
+      />
       <div
         className="quick-look"
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        onClick={(e) => e.stopPropagation()}
         onKeyDown={onDialogKeyDown}
       >
         <header className="quick-look-header">
@@ -110,16 +110,23 @@ export function QuickLook({
         >
           {!previewable ? (
             <p className="quick-look-unsupported">
-              この形式（{item.ext.toUpperCase() || "不明"}）はクイックルックのプレビューに対応していません
+              この形式（{item.ext.toUpperCase() || "不明"}
+              ）はクイックルックのプレビューに対応していません
             </p>
           ) : failed ? (
             <p className="quick-look-unsupported">画像を読み込めませんでした</p>
           ) : (
             <>
-              {loading && <p className="quick-look-loading" aria-live="polite">読み込み中…</p>}
+              {loading && (
+                <p className="quick-look-loading" aria-live="polite">
+                  読み込み中…
+                </p>
+              )}
               <img
                 key={src ?? item.id}
-                className={scaleMode === "actual" ? "quick-look-image-actual" : "quick-look-image-fit"}
+                className={
+                  scaleMode === "actual" ? "quick-look-image-actual" : "quick-look-image-fit"
+                }
                 src={src ?? undefined}
                 alt={fileName}
                 decoding="async"

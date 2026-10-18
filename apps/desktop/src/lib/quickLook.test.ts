@@ -1,10 +1,6 @@
 import type { ItemMetadata } from "@swallow/shared";
 import { describe, expect, it } from "vitest";
-import {
-  initialQuickLookId,
-  resolveQuickLookTarget,
-  stepQuickLookId,
-} from "./quickLook";
+import { initialQuickLookId, resolveQuickLookTarget, stepQuickLookId } from "./quickLook";
 import { EMPTY_SELECTION, type Selection } from "./selection";
 
 function makeItem(id: string): ItemMetadata {
@@ -107,11 +103,15 @@ describe("stepQuickLookId", () => {
       anchor: "b",
       focus: "b",
     };
-    const first = resolveQuickLookTarget("b", selection, visibleItems)!;
+    const first = resolveQuickLookTarget("b", selection, visibleItems);
+    expect(first).not.toBeNull();
+    if (!first) return;
     expect(stepQuickLookId(first, "prev")).toBe("b");
     expect(stepQuickLookId(first, "next")).toBe("d");
 
-    const second = resolveQuickLookTarget("d", selection, visibleItems)!;
+    const second = resolveQuickLookTarget("d", selection, visibleItems);
+    expect(second).not.toBeNull();
+    if (!second) return;
     expect(stepQuickLookId(second, "prev")).toBe("b");
     expect(stepQuickLookId(second, "next")).toBe("d");
   });

@@ -64,10 +64,7 @@ export function resolveQuickLookTarget(
 }
 
 /** Moves to the previous or next item in the Quick Look playlist, clamping at the ends. */
-export function stepQuickLookId(
-  target: QuickLookTarget,
-  direction: "prev" | "next",
-): ItemId {
+export function stepQuickLookId(target: QuickLookTarget, direction: "prev" | "next"): ItemId {
   const nextIndex =
     direction === "prev"
       ? Math.max(0, target.index - 1)

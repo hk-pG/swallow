@@ -721,17 +721,27 @@ textarea.inspector-input {
   color: #d33;
 }
 
-.quick-look-backdrop {
+.quick-look-layer {
   position: fixed;
   inset: 0;
   z-index: 1000;
   display: grid;
   place-items: center;
   padding: 24px;
+}
+
+.quick-look-backdrop {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: none;
   background: color-mix(in srgb, Canvas 20%, black);
+  cursor: default;
 }
 
 .quick-look {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   width: min(96vw, 1200px);
