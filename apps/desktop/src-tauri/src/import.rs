@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use serde::Serialize;
 use ulid::Ulid;
 
+use crate::folders::{FolderError, FolderHierarchy};
 use crate::item::{ITEM_DIR_EXT, ITEM_METADATA_FILE, ItemMetadata, now_millis};
 use crate::library::IMAGES_DIR;
 
@@ -42,6 +43,8 @@ pub enum ImportError {
     NotALibrary(PathBuf),
     #[error("unsupported extension: {0:?}")]
     UnsupportedExtension(String),
+    #[error(transparent)]
+    Folder(#[from] FolderError),
     #[error(transparent)]
     Io(#[from] io::Error),
 }
@@ -81,18 +84,137 @@ impl ImportFailure {
 
 /// Copies each file into `<library>/images/<id>.info/` alongside its `metadata.json`.
 ///
-/// Per-file failures are collected in the report; only an invalid library aborts the whole call.
+/// Regular files are imported without a folder assignment. Directories are walked recursively;
+/// the source tree is mirrored in the library folder hierarchy and imported items are assigned
+/// to the matching folder. Per-path failures are collected in the report.
 pub fn import_files(library: &Path, paths: &[PathBuf]) -> Result<ImportReport, ImportError> {
     let images_dir = images_dir(library)?;
     let now = now_millis();
     let mut report = ImportReport::default();
+    let mut hierarchy = FolderHierarchy::load(library)?;
     for path in paths {
-        match import_one(&images_dir, path, now) {
+        match fs::metadata(path) {
+            Ok(meta) if meta.is_dir() => {
+                import_dropped_directory(&mut hierarchy, &images_dir, path, now, &mut report)?;
+            }
+            Ok(meta) if meta.is_file() => match import_one(&images_dir, path, now, None) {
+                Ok(item) => report.imported.push(item),
+                Err(failure) => report.failed.push(failure),
+            },
+            Ok(_) => report.failed.push(ImportFailure::new(
+                path,
+                ImportFailureReason::NotAFile,
+                "not a regular file",
+            )),
+            Err(err) => report.failed.push(ImportFailure::io(path, &err)),
+        }
+    }
+    hierarchy.save_if_dirty()?;
+    Ok(report)
+}
+
+fn import_dropped_directory(
+    hierarchy: &mut FolderHierarchy,
+    images_dir: &Path,
+    dir: &Path,
+    now: i64,
+    report: &mut ImportReport,
+) -> Result<(), ImportError> {
+    let name = dir
+        .file_name()
+        .and_then(|n| n.to_str())
+        .filter(|n| !n.is_empty())
+        .ok_or_else(|| {
+            ImportError::Io(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                format!("invalid directory name: {}", dir.display()),
+            ))
+        })?;
+    let folder_id = hierarchy.ensure_child(None, name)?;
+    import_directory_contents(
+        hierarchy,
+        images_dir,
+        dir,
+        Some(folder_id.as_str()),
+        now,
+        report,
+    )?;
+    Ok(())
+}
+
+fn import_directory_contents(
+    hierarchy: &mut FolderHierarchy,
+    images_dir: &Path,
+    dir: &Path,
+    folder_id: Option<&str>,
+    now: i64,
+    report: &mut ImportReport,
+) -> Result<(), ImportError> {
+    let entries = fs::read_dir(dir).map_err(ImportError::from)?;
+    for entry in entries {
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(err) => {
+                report.failed.push(ImportFailure::new(
+                    dir,
+                    ImportFailureReason::Io,
+                    err.to_string(),
+                ));
+                continue;
+            }
+        };
+        let path = entry.path();
+        let meta = match entry.metadata() {
+            Ok(meta) => meta,
+            Err(err) => {
+                report.failed.push(ImportFailure::io(&path, &err));
+                continue;
+            }
+        };
+        if meta.is_dir() {
+            let name = path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .filter(|n| !n.is_empty());
+            let Some(name) = name else {
+                report.failed.push(ImportFailure::new(
+                    &path,
+                    ImportFailureReason::Io,
+                    "invalid directory name",
+                ));
+                continue;
+            };
+            match hierarchy.ensure_child(folder_id, name) {
+                Ok(child_id) => import_directory_contents(
+                    hierarchy,
+                    images_dir,
+                    &path,
+                    Some(child_id.as_str()),
+                    now,
+                    report,
+                )?,
+                Err(err) => report.failed.push(ImportFailure::new(
+                    &path,
+                    ImportFailureReason::Io,
+                    err.to_string(),
+                )),
+            }
+            continue;
+        }
+        if !meta.is_file() {
+            report.failed.push(ImportFailure::new(
+                &path,
+                ImportFailureReason::NotAFile,
+                "not a regular file",
+            ));
+            continue;
+        }
+        match import_one(images_dir, &path, now, folder_id) {
             Ok(item) => report.imported.push(item),
             Err(failure) => report.failed.push(failure),
         }
     }
-    Ok(report)
+    Ok(())
 }
 
 /// Stores `asset.bytes` as a new item. `name` must already be a valid file stem.
@@ -111,6 +233,7 @@ pub fn import_bytes(library: &Path, asset: &BytesImport<'_>) -> Result<ItemMetad
         dims,
         asset.url.map(str::to_owned),
         now_millis(),
+        Vec::new(),
     );
     store_item(&images_dir, content, &item)?;
     Ok(item)
@@ -135,6 +258,7 @@ fn new_item(
     dimensions: Option<(u32, u32)>,
     url: Option<String>,
     now: i64,
+    folders: Vec<String>,
 ) -> ItemMetadata {
     let (width, height) = dimensions.unzip();
     ItemMetadata {
@@ -145,7 +269,7 @@ fn new_item(
         width,
         height,
         tags: Vec::new(),
-        folders: Vec::new(),
+        folders,
         annotation: String::new(),
         star: 0,
         url,
@@ -170,7 +294,12 @@ fn store_item(images_dir: &Path, content: Content<'_>, item: &ItemMetadata) -> i
     result
 }
 
-fn import_one(images_dir: &Path, source: &Path, now: i64) -> Result<ItemMetadata, ImportFailure> {
+fn import_one(
+    images_dir: &Path,
+    source: &Path,
+    now: i64,
+    folder_id: Option<&str>,
+) -> Result<ItemMetadata, ImportFailure> {
     let ext = source
         .extension()
         .map(|e| e.to_string_lossy().to_lowercase())
@@ -198,7 +327,8 @@ fn import_one(images_dir: &Path, source: &Path, now: i64) -> Result<ItemMetadata
         .unwrap_or_default();
     let content = Content::File(source);
     let dims = dimensions(&content, &ext);
-    let item = new_item(name, ext, meta.len(), dims, None, now);
+    let folders = folder_id.map(|id| vec![id.to_owned()]).unwrap_or_default();
+    let item = new_item(name, ext, meta.len(), dims, None, now, folders);
     store_item(images_dir, content, &item).map_err(|err| ImportFailure::io(source, &err))?;
     Ok(item)
 }
@@ -295,7 +425,7 @@ mod tests {
 
     fn library() -> tempfile::TempDir {
         let dir = tempfile::tempdir().unwrap();
-        fs::create_dir(dir.path().join(IMAGES_DIR)).unwrap();
+        crate::library::create(dir.path()).unwrap();
         dir
     }
 
@@ -332,10 +462,7 @@ mod tests {
         let unsupported = src_dir.path().join("notes.txt");
         fs::write(&unsupported, "x").unwrap();
         let missing = src_dir.path().join("missing.jpg");
-        let folder = src_dir.path().join("folder.png");
-        fs::create_dir(&folder).unwrap();
-
-        let report = import_files(lib.path(), &[ok, unsupported, missing, folder]).unwrap();
+        let report = import_files(lib.path(), &[ok, unsupported, missing]).unwrap();
 
         assert_eq!(report.imported.len(), 1);
         let reasons: Vec<_> = report.failed.iter().map(|f| f.reason).collect();
@@ -344,7 +471,6 @@ mod tests {
             [
                 ImportFailureReason::UnsupportedExtension,
                 ImportFailureReason::NotFound,
-                ImportFailureReason::NotAFile,
             ]
         );
         assert_eq!(
@@ -408,6 +534,47 @@ mod tests {
     fn rejects_directory_without_images() {
         let dir = tempfile::tempdir().unwrap();
         assert!(import_files(dir.path(), &[]).is_err());
+    }
+
+    #[test]
+    fn imports_directory_tree_with_folders() {
+        let lib = library();
+        let src = tempfile::tempdir().unwrap();
+        let root = src.path().join("Photos");
+        let nested = root.join("Cats");
+        fs::create_dir_all(&nested).unwrap();
+        fs::write(root.join("cover.png"), png(10, 10)).unwrap();
+        fs::write(nested.join("cat.png"), png(20, 20)).unwrap();
+        fs::write(nested.join("readme.txt"), "x").unwrap();
+
+        let report = import_files(lib.path(), std::slice::from_ref(&root)).unwrap();
+
+        assert_eq!(report.imported.len(), 2);
+        assert_eq!(report.failed.len(), 1);
+        assert_eq!(
+            report.failed[0].reason,
+            ImportFailureReason::UnsupportedExtension
+        );
+
+        let folders = crate::folders::list(lib.path()).unwrap();
+        assert_eq!(folders.len(), 1);
+        assert_eq!(folders[0].name, "Photos");
+        assert_eq!(folders[0].children.len(), 1);
+        assert_eq!(folders[0].children[0].name, "Cats");
+        let cats_id = folders[0].children[0].id.clone();
+
+        let cover = report
+            .imported
+            .iter()
+            .find(|item| item.name == "cover")
+            .unwrap();
+        let cat = report
+            .imported
+            .iter()
+            .find(|item| item.name == "cat")
+            .unwrap();
+        assert_eq!(cover.folders, vec![folders[0].id.clone()]);
+        assert_eq!(cat.folders, vec![cats_id]);
     }
 
     #[test]

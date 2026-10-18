@@ -187,7 +187,23 @@ export async function pickImportFiles(): Promise<string[]> {
     directory: false,
     filters: [{ name: "Assets", extensions: [...SUPPORTED_IMPORT_EXTENSIONS] }],
   });
-  return selected ?? [];
+  if (!selected) {
+    return [];
+  }
+  return Array.isArray(selected) ? selected : [selected];
+}
+
+/** Resolves to an empty array when the dialog is cancelled. */
+export async function pickImportFolders(): Promise<string[]> {
+  const selected = await open({
+    multiple: true,
+    directory: true,
+    title: "取り込むフォルダを選択",
+  });
+  if (!selected) {
+    return [];
+  }
+  return Array.isArray(selected) ? selected : [selected];
 }
 
 export function listItems(libraryPath: string): Promise<ItemMetadata[]> {

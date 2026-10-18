@@ -1,7 +1,7 @@
 import type { ImportReport } from "@swallow/shared";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
-import { importAssets, pickImportFiles } from "./commands";
+import { importAssets, pickImportFiles, pickImportFolders } from "./commands";
 
 export interface AssetImport {
   importing: boolean;
@@ -10,6 +10,7 @@ export interface AssetImport {
   report: ImportReport | null;
   error: string | null;
   pickAndImport: () => Promise<void>;
+  pickFoldersAndImport: () => Promise<void>;
   dismiss: () => void;
 }
 
@@ -109,10 +110,22 @@ export function useAssetImport(
     await importPaths(await pickImportFiles());
   }, [importPaths]);
 
+  const pickFoldersAndImport = useCallback(async () => {
+    await importPaths(await pickImportFolders());
+  }, [importPaths]);
+
   const dismiss = useCallback(() => {
     setReport(null);
     setError(null);
   }, []);
 
-  return { importing, dragOver, report, error, pickAndImport, dismiss };
+  return {
+    importing,
+    dragOver,
+    report,
+    error,
+    pickAndImport,
+    pickFoldersAndImport,
+    dismiss,
+  };
 }

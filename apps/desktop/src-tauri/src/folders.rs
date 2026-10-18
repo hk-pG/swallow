@@ -102,11 +102,11 @@ pub fn subtree_ids(folders: &[Folder], id: &str) -> Option<Vec<String>> {
 struct LibraryDoc {
     path: PathBuf,
     raw: Value,
-    folders: Vec<Folder>,
+    pub(crate) folders: Vec<Folder>,
 }
 
 impl LibraryDoc {
-    fn load(root: &Path) -> Result<Self, FolderError> {
+    pub(crate) fn load(root: &Path) -> Result<Self, FolderError> {
         let path = root.join(METADATA_FILE);
         let raw = read_json(&path)?;
         let folders = match raw.get("folders") {
@@ -117,7 +117,7 @@ impl LibraryDoc {
     }
 
     /// Replaces only `folders`, preserving every other field of `metadata.json`.
-    fn save(mut self) -> Result<Vec<Folder>, FolderError> {
+    pub(crate) fn save(mut self) -> Result<Vec<Folder>, FolderError> {
         let folders = serde_json::to_value(&self.folders).map_err(json_err(&self.path))?;
         match self.raw.as_object_mut() {
             Some(obj) => {
@@ -128,6 +128,58 @@ impl LibraryDoc {
         write_json_atomic(&self.path, &self.raw).map_err(io_err(&self.path))?;
         Ok(self.folders)
     }
+}
+
+pub(crate) struct FolderHierarchy {
+    doc: LibraryDoc,
+    dirty: bool,
+}
+
+impl FolderHierarchy {
+    pub(crate) fn load(library: &Path) -> Result<Self, FolderError> {
+        let doc = LibraryDoc::load(library)?;
+        Ok(Self { doc, dirty: false })
+    }
+
+    /// Finds an existing child with `name` under `parent_id` (or at the top level when `None`),
+    /// or appends a new folder with that name.
+    pub(crate) fn ensure_child(
+        &mut self,
+        parent_id: Option<&str>,
+        name: &str,
+    ) -> Result<String, FolderError> {
+        let name = normalize_name(name)?;
+        let siblings = match parent_id {
+            Some(pid) => {
+                &mut find_mut(&mut self.doc.folders, pid)
+                    .ok_or_else(|| FolderError::FolderNotFound(pid.to_owned()))?
+                    .children
+            }
+            None => &mut doc_top(&mut self.doc),
+        };
+        if let Some(existing) = siblings.iter().find(|f| f.name == name) {
+            return Ok(existing.id.clone());
+        }
+        let id = ulid::Ulid::generate().to_string();
+        siblings.push(Folder {
+            id: id.clone(),
+            name,
+            children: Vec::new(),
+        });
+        self.dirty = true;
+        Ok(id)
+    }
+
+    pub(crate) fn save_if_dirty(self) -> Result<(), FolderError> {
+        if self.dirty {
+            self.doc.save()?;
+        }
+        Ok(())
+    }
+}
+
+fn doc_top(doc: &mut LibraryDoc) -> &mut Vec<Folder> {
+    &mut doc.folders
 }
 
 pub fn list(root: &Path) -> Result<Vec<Folder>, FolderError> {
@@ -274,6 +326,17 @@ mod tests {
 
     fn names(folders: &[Folder]) -> Vec<&str> {
         folders.iter().map(|f| f.name.as_str()).collect()
+    }
+
+    #[test]
+    fn ensure_child_reuses_existing_sibling_name() {
+        let lib = library();
+        let mut hierarchy = FolderHierarchy::load(lib.path()).unwrap();
+        let a = hierarchy.ensure_child(None, "Photos").unwrap();
+        let b = hierarchy.ensure_child(None, "Photos").unwrap();
+        assert_eq!(a, b);
+        hierarchy.save_if_dirty().unwrap();
+        assert_eq!(list(lib.path()).unwrap().len(), 1);
     }
 
     #[test]
