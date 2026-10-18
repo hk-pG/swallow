@@ -8,6 +8,7 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig({
   plugins: [react()],
   test: {
+    environment: "happy-dom",
     setupFiles: ["./src/test/setup.ts"],
   },
   clearScreen: false,

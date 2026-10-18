@@ -1,5 +1,4 @@
-import type { ItemView } from "@swallow/shared";
-import { type Dispatch, type SetStateAction, useRef } from "react";
+import { useRef } from "react";
 import { AppInfo } from "./components/AppInfo";
 import { FolderAssignControl } from "./components/FolderAssignControl";
 import { Inspector } from "./components/Inspector";
@@ -13,6 +12,7 @@ import { useItemBrowser } from "./lib/useItemBrowser";
 import { useItemList } from "./lib/useItemList";
 import { useLibrarySession } from "./lib/useLibrarySession";
 import { useQuickLook } from "./lib/useQuickLook";
+import { useSetViewBridge } from "./lib/useSetViewBridge";
 import { useSmartFolders } from "./lib/useSmartFolders";
 import { useTags } from "./lib/useTags";
 import { useTrashActions } from "./lib/useTrashActions";
@@ -26,11 +26,7 @@ export function App() {
   const { libraryPath } = session;
   const { items, invalidate, saveItem } = useItemList(libraryPath);
 
-  // Bridge so feature hooks can reset the view before `useItemBrowser` exists.
-  const setViewRef = useRef<Dispatch<SetStateAction<ItemView>>>((update) => {
-    void update;
-  });
-  const setView = (update: SetStateAction<ItemView>) => setViewRef.current(update);
+  const { setView, setViewRef } = useSetViewBridge();
   const folders = useFolders({
     libraryPath,
     invalidateItems: invalidate,
