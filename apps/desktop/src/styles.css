@@ -233,6 +233,45 @@ body,
   gap: 6px;
 }
 
+.ui-trial-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.ui-trial-toggle label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ui-trial-banner {
+  margin: 8px 12px 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 nav {
   display: flex;
   flex-direction: column;
@@ -661,6 +700,9 @@ select.inspector-input option {
 
 .view-mode-toggle {
   display: inline-flex;
+  margin: 0;
+  padding: 0;
+  min-inline-size: 0;
   border: 1px solid var(--border);
   border-radius: 6px;
   overflow: hidden;

@@ -1,6 +1,6 @@
 import { thumbnailSizePx } from "@swallow/shared";
 import { ask } from "@tauri-apps/plugin-dialog";
-import { type CSSProperties, useCallback, useRef } from "react";
+import { type CSSProperties, useCallback, useEffect, useRef, useState } from "react";
 import { AdvancedSearch } from "./components/AdvancedSearch";
 import { AppInfo } from "./components/AppInfo";
 import { FolderAssignControl } from "./components/FolderAssignControl";
@@ -14,6 +14,7 @@ import { ImportReportBanner } from "./ImportReportBanner";
 import { purgeItems, restoreItems, revealItemInExplorer } from "./lib/commands";
 import { focusInspectorTagInput } from "./lib/focusInspector";
 import { purgeConfirmMessage } from "./lib/trash";
+import { applyUiTrialToDocument, readUiTrial, type UiTrialId, writeUiTrial } from "./lib/uiTrial";
 import { useAppearanceSettings } from "./lib/useAppearanceSettings";
 import { useAssetImport } from "./lib/useAssetImport";
 import { useFolders } from "./lib/useFolders";
@@ -33,10 +34,16 @@ import { TagsProvider } from "./sidebar/TagsContext";
 export function App() {
   const session = useLibrarySession();
   const appearance = useAppearanceSettings();
+  const [uiTrial, setUiTrial] = useState<UiTrialId>(() => readUiTrial());
   const { libraryPath } = session;
   const contentStyle = {
     "--item-thumb-size": `${thumbnailSizePx(appearance.itemView.thumbnailSizeIndex)}px`,
   } as CSSProperties;
+
+  useEffect(() => {
+    applyUiTrialToDocument(uiTrial);
+    writeUiTrial(uiTrial);
+  }, [uiTrial]);
   const { items, invalidate, saveItem } = useItemList(libraryPath);
 
   const { setView, setViewRef } = useSetViewBridge();
@@ -155,6 +162,17 @@ export function App() {
                     開く
                   </button>
                 </div>
+                <div className="ui-trial-toggle">
+                  <span>UI 試作</span>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={uiTrial === "apple-hig"}
+                      onChange={(e) => setUiTrial(e.target.checked ? "apple-hig" : "off")}
+                    />
+                    Apple HIG Foundations
+                  </label>
+                </div>
               </div>
               <SidebarSections
                 libraryPath={libraryPath}
@@ -168,6 +186,13 @@ export function App() {
               className={assetImport.dragOver ? "content drag-over" : "content"}
               style={contentStyle}
             >
+              {uiTrial === "apple-hig" && (
+                <div className="ui-trial-banner" role="note">
+                  <strong>HIG 試作中</strong>
+                  {" — "}
+                  Foundations（色・書体・レイアウト・マテリアル等）の試験適用です。サイドバーのトグルで従来見た目に戻せます。
+                </div>
+              )}
               <header className="toolbar">
                 <input
                   className="search"

@@ -1,0 +1,587 @@
+/*
+ * Experimental Apple HIG Foundations trial layer.
+ * Scoped to html[data-ui-trial="apple-hig"] so default tokens stay untouched.
+ * Foundations referenced: Color, Typography, Layout, Materials, Dark Mode, Motion, Accessibility cues.
+ */
+
+html[data-ui-trial="apple-hig"] {
+  color-scheme: light dark;
+
+  /* Typography — SF / system stack + HIG-like text styles */
+  --hig-font:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro", "Hiragino Sans",
+    "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Segoe UI", sans-serif;
+  --hig-font-size-caption: 11px;
+  --hig-font-size-footnote: 12px;
+  --hig-font-size-body: 13px;
+  --hig-font-size-callout: 14px;
+  --hig-font-size-headline: 13px;
+  --hig-font-size-title3: 15px;
+  --hig-line-body: 1.35;
+
+  /* Spacing — 4pt grid */
+  --hig-space-1: 4px;
+  --hig-space-2: 8px;
+  --hig-space-3: 12px;
+  --hig-space-4: 16px;
+  --hig-space-5: 20px;
+  --hig-space-6: 24px;
+  --hig-radius-control: 6px;
+  --hig-radius-surface: 10px;
+  --hig-radius-window: 12px;
+  --hig-sidebar-width: 240px;
+  --hig-inspector-width: 300px;
+
+  /* Motion */
+  --hig-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --hig-duration-fast: 120ms;
+  --hig-duration: 180ms;
+
+  /* Semantic colors (light) — system-like labels / fills / separator / tint */
+  --hig-label: #1d1d1f;
+  --hig-secondary-label: rgb(60 60 67 / 60%);
+  --hig-tertiary-label: rgb(60 60 67 / 30%);
+  --hig-quaternary-label: rgb(60 60 67 / 18%);
+  --hig-bg: #ffffff;
+  --hig-bg-secondary: #f5f5f7;
+  --hig-bg-tertiary: #ebebef;
+  --hig-bg-grouped: #f2f2f7;
+  --hig-fill: rgb(120 120 128 / 12%);
+  --hig-fill-secondary: rgb(120 120 128 / 8%);
+  --hig-separator: rgb(60 60 67 / 12%);
+  --hig-separator-opaque: #d2d2d7;
+  --hig-tint: #007aff;
+  --hig-tint-soft: rgb(0 122 255 / 14%);
+  --hig-tint-strong: rgb(0 122 255 / 22%);
+  --hig-danger: #ff3b30;
+  --hig-warning: #ff9f0a;
+  --hig-success: #34c759;
+  --hig-shadow: 0 10px 40px rgb(0 0 0 / 18%);
+  --hig-shadow-menu: 0 8px 28px rgb(0 0 0 / 16%);
+  --hig-control-border: rgb(0 0 0 / 12%);
+  --hig-focus-ring: 0 0 0 3px rgb(0 122 255 / 35%);
+
+  /* Map onto existing app tokens without editing the base :root block permanently */
+  --border: var(--hig-separator);
+  --border-strong: var(--hig-separator-opaque);
+  --shell-border: var(--hig-separator);
+  --muted: var(--hig-secondary-label);
+  --sidebar-bg: var(--hig-bg-secondary);
+  --space-1: var(--hig-space-1);
+  --space-2: var(--hig-space-2);
+  --space-3: var(--hig-space-3);
+  --space-4: var(--hig-space-4);
+  --space-5: var(--hig-space-6);
+  --surface: color-mix(in srgb, var(--hig-bg) 82%, transparent);
+
+  font-family: var(--hig-font);
+  font-size: var(--hig-font-size-body);
+  line-height: var(--hig-line-body);
+  color: var(--hig-label);
+  background: var(--hig-bg);
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-ui-trial="apple-hig"] {
+    --hig-label: #f5f5f7;
+    --hig-secondary-label: rgb(235 235 245 / 60%);
+    --hig-tertiary-label: rgb(235 235 245 / 30%);
+    --hig-quaternary-label: rgb(235 235 245 / 16%);
+    --hig-bg: #1c1c1e;
+    --hig-bg-secondary: #2c2c2e;
+    --hig-bg-tertiary: #3a3a3c;
+    --hig-bg-grouped: #000000;
+    --hig-fill: rgb(120 120 128 / 24%);
+    --hig-fill-secondary: rgb(120 120 128 / 18%);
+    --hig-separator: rgb(84 84 88 / 65%);
+    --hig-separator-opaque: #38383a;
+    --hig-tint: #0a84ff;
+    --hig-tint-soft: rgb(10 132 255 / 22%);
+    --hig-tint-strong: rgb(10 132 255 / 32%);
+    --hig-danger: #ff453a;
+    --hig-warning: #ffd60a;
+    --hig-success: #30d158;
+    --hig-shadow: 0 14px 48px rgb(0 0 0 / 55%);
+    --hig-shadow-menu: 0 10px 32px rgb(0 0 0 / 48%);
+    --hig-control-border: rgb(255 255 255 / 12%);
+    --hig-focus-ring: 0 0 0 3px rgb(10 132 255 / 45%);
+    --surface: color-mix(in srgb, var(--hig-bg-secondary) 88%, transparent);
+  }
+}
+
+html[data-ui-trial="apple-hig"] body,
+html[data-ui-trial="apple-hig"] #root {
+  background: var(--hig-bg);
+  color: var(--hig-label);
+}
+
+/* Layout — clearer column hierarchy (sidebar / content / inspector) */
+html[data-ui-trial="apple-hig"] .layout {
+  grid-template-columns: var(--hig-sidebar-width) 1fr var(--hig-inspector-width);
+  background: var(--hig-bg);
+}
+
+html[data-ui-trial="apple-hig"] .sidebar {
+  padding: var(--hig-space-4) var(--hig-space-3) var(--hig-space-5);
+  background: color-mix(in srgb, var(--hig-bg-secondary) 92%, transparent);
+  border-right: 1px solid var(--hig-separator);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+html[data-ui-trial="apple-hig"] .content {
+  background: var(--hig-bg);
+}
+
+html[data-ui-trial="apple-hig"] .inspector {
+  padding: var(--hig-space-4);
+  background: var(--hig-bg-secondary);
+  border-left: 1px solid var(--hig-separator);
+}
+
+html[data-ui-trial="apple-hig"] .library-header {
+  gap: var(--hig-space-3);
+  padding-bottom: var(--hig-space-3);
+  margin-bottom: var(--hig-space-3);
+  border-bottom: 1px solid var(--hig-separator);
+}
+
+html[data-ui-trial="apple-hig"] .library-name {
+  font-size: var(--hig-font-size-title3);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+html[data-ui-trial="apple-hig"] .library-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hig-space-2);
+}
+
+html[data-ui-trial="apple-hig"] .ui-trial-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--hig-space-2);
+  margin-top: var(--hig-space-2);
+  padding: var(--hig-space-2) var(--hig-space-3);
+  border-radius: var(--hig-radius-control);
+  background: var(--hig-fill-secondary);
+  color: var(--hig-secondary-label);
+  font-size: var(--hig-font-size-caption);
+  font-weight: 600;
+}
+
+html[data-ui-trial="apple-hig"] .ui-trial-toggle label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+html[data-ui-trial="apple-hig"] .ui-trial-banner {
+  margin: 0 12px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: var(--hig-radius-control);
+  background: var(--hig-tint-soft);
+  color: var(--hig-label);
+  font-size: var(--hig-font-size-footnote);
+  line-height: 1.4;
+}
+
+html[data-ui-trial="apple-hig"] .ui-trial-banner strong {
+  color: var(--hig-tint);
+  font-weight: 600;
+}
+
+/* Navigation — deferent chrome, selected = tint fill (not heavy border) */
+html[data-ui-trial="apple-hig"] .sidebar-section-title,
+html[data-ui-trial="apple-hig"] .folder-header,
+html[data-ui-trial="apple-hig"] .tag-group-name,
+html[data-ui-trial="apple-hig"] .inspector-label,
+html[data-ui-trial="apple-hig"] .inspector-section h3 {
+  font-size: var(--hig-font-size-caption);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--hig-secondary-label);
+}
+
+html[data-ui-trial="apple-hig"] .sidebar-section,
+html[data-ui-trial="apple-hig"] .folder-section {
+  margin-top: var(--hig-space-5);
+  padding-top: var(--hig-space-4);
+  border-top-color: var(--hig-separator);
+}
+
+html[data-ui-trial="apple-hig"] .nav-item {
+  padding: 6px 10px;
+  border-radius: var(--hig-radius-control);
+  transition:
+    background var(--hig-duration-fast) var(--hig-ease),
+    color var(--hig-duration-fast) var(--hig-ease);
+}
+
+html[data-ui-trial="apple-hig"] .nav-item:hover:not(:disabled) {
+  background: var(--hig-fill);
+}
+
+html[data-ui-trial="apple-hig"] .nav-item[aria-current="page"]:not(:disabled) {
+  background: var(--hig-tint-soft);
+  color: var(--hig-tint);
+  font-weight: 600;
+}
+
+html[data-ui-trial="apple-hig"] .nav-item:focus-visible,
+html[data-ui-trial="apple-hig"] .sidebar-icon-button:focus-visible,
+html[data-ui-trial="apple-hig"] .text-button:focus-visible,
+html[data-ui-trial="apple-hig"] .view-mode-button:focus-visible,
+html[data-ui-trial="apple-hig"] .advanced-search-toggle:focus-visible,
+html[data-ui-trial="apple-hig"] .layout button:focus-visible,
+html[data-ui-trial="apple-hig"] .layout input:focus-visible,
+html[data-ui-trial="apple-hig"] .layout select:focus-visible,
+html[data-ui-trial="apple-hig"] .layout textarea:focus-visible {
+  outline: none;
+  box-shadow: var(--hig-focus-ring);
+}
+
+/* Toolbar / controls — compact macOS-like push buttons & fields */
+html[data-ui-trial="apple-hig"] .toolbar {
+  gap: var(--hig-space-2);
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--hig-separator);
+  background: color-mix(in srgb, var(--hig-bg) 88%, var(--hig-bg-secondary));
+}
+
+html[data-ui-trial="apple-hig"] .search,
+html[data-ui-trial="apple-hig"] .sidebar-input,
+html[data-ui-trial="apple-hig"] .inspector-input,
+html[data-ui-trial="apple-hig"] .folder-move,
+html[data-ui-trial="apple-hig"] .tag-group-select {
+  border: 1px solid var(--hig-control-border);
+  border-radius: var(--hig-radius-control);
+  background: var(--hig-bg);
+  color: var(--hig-label);
+  transition:
+    border-color var(--hig-duration-fast) var(--hig-ease),
+    box-shadow var(--hig-duration-fast) var(--hig-ease);
+}
+
+html[data-ui-trial="apple-hig"] .search {
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: var(--hig-fill-secondary);
+}
+
+html[data-ui-trial="apple-hig"] .search:focus {
+  background: var(--hig-bg);
+  border-color: var(--hig-tint);
+}
+
+html[data-ui-trial="apple-hig"]
+  .layout
+  button:not(.nav-item):not(.grid-item):not(.item-list-row):not(.sidebar-icon-button):not(
+    .text-button
+  ):not(.chip-remove):not(.star):not(.color-label-swatch):not(.item-context-menu-item):not(
+    .quick-look-backdrop
+  ):not(.view-mode-button) {
+  padding: 5px 12px;
+  border: 1px solid var(--hig-control-border);
+  border-radius: var(--hig-radius-control);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--hig-bg) 92%, white),
+    var(--hig-bg-secondary)
+  );
+  color: var(--hig-label);
+  font: inherit;
+  font-size: var(--hig-font-size-footnote);
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    background var(--hig-duration-fast) var(--hig-ease),
+    border-color var(--hig-duration-fast) var(--hig-ease),
+    transform var(--hig-duration-fast) var(--hig-ease);
+}
+
+html[data-ui-trial="apple-hig"]
+  .layout
+  button:not(.nav-item):not(.grid-item):not(.item-list-row):not(.sidebar-icon-button):not(
+    .text-button
+  ):not(.chip-remove):not(.star):not(.color-label-swatch):not(.item-context-menu-item):not(
+    .quick-look-backdrop
+  ):not(.view-mode-button):hover:not(:disabled) {
+  background: var(--hig-bg);
+  border-color: color-mix(in srgb, var(--hig-tint) 35%, var(--hig-control-border));
+}
+
+html[data-ui-trial="apple-hig"]
+  .layout
+  button:not(.nav-item):not(.grid-item):not(.item-list-row):not(.sidebar-icon-button):not(
+    .text-button
+  ):not(.chip-remove):not(.star):not(.color-label-swatch):not(.item-context-menu-item):not(
+    .quick-look-backdrop
+  ):not(.view-mode-button):active:not(:disabled) {
+  transform: translateY(0.5px);
+  background: var(--hig-bg-tertiary);
+}
+
+html[data-ui-trial="apple-hig"] .layout button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+html[data-ui-trial="apple-hig"] .view-mode-toggle {
+  border-color: var(--hig-control-border);
+  border-radius: var(--hig-radius-control);
+  overflow: hidden;
+  background: var(--hig-fill-secondary);
+}
+
+html[data-ui-trial="apple-hig"] .view-mode-button {
+  padding: 5px 12px;
+  transition: background var(--hig-duration-fast) var(--hig-ease);
+}
+
+html[data-ui-trial="apple-hig"] .view-mode-button[aria-pressed="true"] {
+  background: var(--hig-bg);
+  color: var(--hig-tint);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px var(--hig-separator);
+}
+
+html[data-ui-trial="apple-hig"] .advanced-search-toggle {
+  border-color: var(--hig-control-border);
+  border-radius: var(--hig-radius-control);
+  background: var(--hig-bg);
+}
+
+html[data-ui-trial="apple-hig"] .advanced-search-panel {
+  border-color: var(--hig-separator);
+  border-radius: var(--hig-radius-surface);
+  background: color-mix(in srgb, var(--hig-bg) 86%, transparent);
+  box-shadow: var(--hig-shadow-menu);
+  backdrop-filter: saturate(180%) blur(24px);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+}
+
+/* Browser — content-first grid/list; selection uses tint fill (deference) */
+html[data-ui-trial="apple-hig"] .grid {
+  gap: var(--hig-space-3);
+  padding: var(--hig-space-4);
+}
+
+html[data-ui-trial="apple-hig"] .grid-item,
+html[data-ui-trial="apple-hig"] .item-list-row {
+  border-width: 0;
+  border-radius: var(--hig-radius-surface);
+  transition: background var(--hig-duration-fast) var(--hig-ease);
+}
+
+html[data-ui-trial="apple-hig"] .grid-item:hover,
+html[data-ui-trial="apple-hig"] .item-list-row:hover {
+  background: var(--hig-fill-secondary);
+}
+
+html[data-ui-trial="apple-hig"] .grid-item[aria-pressed="true"],
+html[data-ui-trial="apple-hig"] .item-list-row[aria-pressed="true"] {
+  background: var(--hig-tint-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hig-tint) 45%, transparent);
+}
+
+html[data-ui-trial="apple-hig"] .grid-item:focus-visible,
+html[data-ui-trial="apple-hig"] .item-list-row:focus-visible {
+  outline: none;
+  box-shadow: var(--hig-focus-ring);
+}
+
+html[data-ui-trial="apple-hig"] .grid-thumb,
+html[data-ui-trial="apple-hig"] .item-list-thumb {
+  border-radius: 8px;
+  background: var(--hig-bg-tertiary);
+}
+
+html[data-ui-trial="apple-hig"] .grid-name,
+html[data-ui-trial="apple-hig"] .item-list-col-name {
+  font-size: var(--hig-font-size-footnote);
+}
+
+html[data-ui-trial="apple-hig"] .item-list-header {
+  padding: 10px 8px;
+  background: color-mix(in srgb, var(--hig-bg) 92%, transparent);
+  color: var(--hig-secondary-label);
+  font-size: var(--hig-font-size-caption);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+html[data-ui-trial="apple-hig"] .grid-placeholder {
+  color: var(--hig-secondary-label);
+  font-size: var(--hig-font-size-callout);
+}
+
+html[data-ui-trial="apple-hig"] .empty-library {
+  gap: var(--hig-space-4);
+}
+
+html[data-ui-trial="apple-hig"] .empty-library > p {
+  margin: 0;
+  font-size: var(--hig-font-size-title3);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+html[data-ui-trial="apple-hig"] .recent-libraries p {
+  color: var(--hig-secondary-label);
+  font-size: var(--hig-font-size-caption);
+  font-weight: 600;
+}
+
+html[data-ui-trial="apple-hig"] .recent-libraries li button {
+  padding: 8px 10px;
+  border-radius: var(--hig-radius-control);
+  color: var(--hig-tint);
+  text-decoration: none;
+}
+
+html[data-ui-trial="apple-hig"] .recent-libraries li button:hover {
+  background: var(--hig-tint-soft);
+  text-decoration: none;
+}
+
+/* Inspector — grouped detail panel */
+html[data-ui-trial="apple-hig"] .inspector-body {
+  gap: var(--hig-space-4);
+}
+
+html[data-ui-trial="apple-hig"] .inspector-section {
+  gap: var(--hig-space-2);
+  padding: var(--hig-space-3);
+  border: 1px solid var(--hig-separator);
+  border-radius: var(--hig-radius-surface);
+  background: var(--hig-bg);
+  border-top: 1px solid var(--hig-separator);
+  padding-top: var(--hig-space-3);
+}
+
+html[data-ui-trial="apple-hig"] .inspector-empty {
+  margin-top: 48px;
+  color: var(--hig-secondary-label);
+  font-size: var(--hig-font-size-callout);
+}
+
+html[data-ui-trial="apple-hig"] .chip {
+  border-radius: 999px;
+  background: var(--hig-fill);
+  color: var(--hig-label);
+  font-size: var(--hig-font-size-footnote);
+}
+
+html[data-ui-trial="apple-hig"] .app-info {
+  margin-top: auto;
+  padding-top: var(--hig-space-4);
+  font-size: var(--hig-font-size-caption);
+  color: var(--hig-tertiary-label);
+}
+
+html[data-ui-trial="apple-hig"] .error {
+  border-color: color-mix(in srgb, var(--hig-danger) 45%, transparent);
+  border-radius: var(--hig-radius-control);
+  background: color-mix(in srgb, var(--hig-danger) 10%, transparent);
+  color: var(--hig-danger);
+}
+
+html[data-ui-trial="apple-hig"] .import-report {
+  border-radius: var(--hig-radius-control);
+  background: var(--hig-bg-secondary);
+}
+
+html[data-ui-trial="apple-hig"] .text-button.danger,
+html[data-ui-trial="apple-hig"] .trash-actions .danger,
+html[data-ui-trial="apple-hig"] .item-context-menu-item.danger,
+html[data-ui-trial="apple-hig"] .sidebar-error,
+html[data-ui-trial="apple-hig"] .inspector-error {
+  color: var(--hig-danger);
+}
+
+/* Menus / Quick Look — materials + elevation */
+html[data-ui-trial="apple-hig"] .item-context-menu {
+  padding: 6px;
+  border: 1px solid var(--hig-separator);
+  border-radius: var(--hig-radius-surface);
+  background: color-mix(in srgb, var(--hig-bg) 82%, transparent);
+  box-shadow: var(--hig-shadow-menu);
+  backdrop-filter: saturate(180%) blur(28px);
+  -webkit-backdrop-filter: saturate(180%) blur(28px);
+}
+
+html[data-ui-trial="apple-hig"] .item-context-menu-item {
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-size: var(--hig-font-size-body);
+}
+
+html[data-ui-trial="apple-hig"] .item-context-menu-item:hover,
+html[data-ui-trial="apple-hig"] .item-context-menu-item:focus-visible {
+  background: var(--hig-tint);
+  color: #fff;
+}
+
+html[data-ui-trial="apple-hig"] .item-context-menu-item.danger:hover,
+html[data-ui-trial="apple-hig"] .item-context-menu-item.danger:focus-visible {
+  background: var(--hig-danger);
+  color: #fff;
+}
+
+html[data-ui-trial="apple-hig"] .quick-look-backdrop {
+  background: rgb(0 0 0 / 42%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+html[data-ui-trial="apple-hig"] .quick-look {
+  border: 1px solid var(--hig-separator);
+  border-radius: var(--hig-radius-window);
+  background: color-mix(in srgb, var(--hig-bg) 92%, transparent);
+  box-shadow: var(--hig-shadow);
+  backdrop-filter: saturate(180%) blur(30px);
+  -webkit-backdrop-filter: saturate(180%) blur(30px);
+  overflow: hidden;
+}
+
+html[data-ui-trial="apple-hig"] .quick-look-title {
+  font-size: var(--hig-font-size-title3);
+  letter-spacing: -0.01em;
+}
+
+html[data-ui-trial="apple-hig"] .quick-look-meta,
+html[data-ui-trial="apple-hig"] .quick-look-hint {
+  color: var(--hig-secondary-label);
+}
+
+html[data-ui-trial="apple-hig"] .quick-look-stage {
+  background: var(--hig-bg-grouped);
+}
+
+html[data-ui-trial="apple-hig"] .folder-actions {
+  border-radius: var(--hig-radius-surface);
+  background: var(--hig-fill-secondary);
+}
+
+html[data-ui-trial="apple-hig"] .content.drag-over {
+  outline: 2px dashed var(--hig-tint);
+  outline-offset: -8px;
+  background: var(--hig-tint-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-ui-trial="apple-hig"] .nav-item,
+  html[data-ui-trial="apple-hig"] .grid-item,
+  html[data-ui-trial="apple-hig"] .item-list-row,
+  html[data-ui-trial="apple-hig"] .view-mode-button,
+  html[data-ui-trial="apple-hig"] .search,
+  html[data-ui-trial="apple-hig"] .layout button {
+    transition-duration: 0ms;
+  }
+}
