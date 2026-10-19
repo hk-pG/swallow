@@ -1,8 +1,13 @@
 /**
  * Static shell for evaluating the Apple HIG trial without a Tauri library session.
  * Open via `?higPreview=1` in the Vite dev server.
+ * Optional `uiTrial=off|apple-hig` mirrors the document trial attribute.
  */
 export function HigTrialPreview() {
+  const trialOn =
+    typeof document !== "undefined" &&
+    document.documentElement.getAttribute("data-ui-trial") === "apple-hig";
+
   return (
     <div className="layout" data-hig-preview="true">
       <aside className="sidebar">
@@ -15,7 +20,7 @@ export function HigTrialPreview() {
           <div className="ui-trial-toggle">
             <span>UI 試作</span>
             <label>
-              <input type="checkbox" checked readOnly />
+              <input type="checkbox" checked={trialOn} readOnly />
               Apple HIG Foundations
             </label>
           </div>
@@ -69,9 +74,15 @@ export function HigTrialPreview() {
       </aside>
 
       <main className="content" style={{ ["--item-thumb-size" as string]: "140px" }}>
-        <div className="ui-trial-banner" role="note">
-          <strong>HIG 試作プレビュー</strong> — 静的モック。ライブラリ I/O は使いません。
-        </div>
+        {trialOn ? (
+          <div className="ui-trial-banner" role="note">
+            <strong>HIG 試作プレビュー</strong> — 静的モック。ライブラリ I/O は使いません。
+          </div>
+        ) : (
+          <div className="ui-trial-banner" role="note">
+            従来スタイル（uiTrial=off）。静的モックです。
+          </div>
+        )}
         <header className="toolbar">
           <input
             className="search"
