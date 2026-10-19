@@ -73,30 +73,31 @@ export function HigTrialPreview() {
           <strong>HIG 試作プレビュー</strong> — 静的モック。ライブラリ I/O は使いません。
         </div>
         <header className="toolbar">
-          <input className="search" type="search" defaultValue="" placeholder="名前・タグ・注釈で検索" />
+          <input
+            className="search"
+            type="search"
+            defaultValue=""
+            placeholder="名前・タグ・注釈で検索"
+          />
           <button type="button" className="advanced-search-toggle">
             詳細検索
           </button>
-          <div className="view-mode-toggle" role="group" aria-label="表示モード">
+          <fieldset className="view-mode-toggle">
+            <legend className="visually-hidden">表示モード</legend>
             <button type="button" className="view-mode-button" aria-pressed="true">
               グリッド
             </button>
             <button type="button" className="view-mode-button" aria-pressed="false">
               リスト
             </button>
-          </div>
+          </fieldset>
           <button type="button">クイックルック</button>
           <button type="button">ファイル取り込み</button>
         </header>
         <section className="grid" aria-label="アイテム">
           {["hero-sky", "portrait-a", "prop-cup", "texture-wood", "ui-frame", "ref-pose"].map(
             (name, index) => (
-              <button
-                key={name}
-                type="button"
-                className="grid-item"
-                aria-pressed={index === 1}
-              >
+              <button key={name} type="button" className="grid-item" aria-pressed={index === 1}>
                 <div className="grid-thumb">
                   <span className="grid-thumb-placeholder">{name.slice(0, 2).toUpperCase()}</span>
                 </div>

@@ -14,12 +14,7 @@ import { ImportReportBanner } from "./ImportReportBanner";
 import { purgeItems, restoreItems, revealItemInExplorer } from "./lib/commands";
 import { focusInspectorTagInput } from "./lib/focusInspector";
 import { purgeConfirmMessage } from "./lib/trash";
-import {
-  applyUiTrialToDocument,
-  readUiTrial,
-  type UiTrialId,
-  writeUiTrial,
-} from "./lib/uiTrial";
+import { applyUiTrialToDocument, readUiTrial, type UiTrialId, writeUiTrial } from "./lib/uiTrial";
 import { useAppearanceSettings } from "./lib/useAppearanceSettings";
 import { useAssetImport } from "./lib/useAssetImport";
 import { useFolders } from "./lib/useFolders";

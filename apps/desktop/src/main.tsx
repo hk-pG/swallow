@@ -18,6 +18,4 @@ if (!root) throw new Error("#root not found");
 
 const higPreview = params.has("higPreview");
 
-createRoot(root).render(
-  <StrictMode>{higPreview ? <HigTrialPreview /> : <App />}</StrictMode>,
-);
+createRoot(root).render(<StrictMode>{higPreview ? <HigTrialPreview /> : <App />}</StrictMode>);

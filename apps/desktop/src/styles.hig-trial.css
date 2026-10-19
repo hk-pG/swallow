@@ -9,8 +9,8 @@ html[data-ui-trial="apple-hig"] {
 
   /* Typography — SF / system stack + HIG-like text styles */
   --hig-font:
-    -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro", "Hiragino Sans", "Hiragino Kaku Gothic ProN",
-    "Noto Sans JP", "Segoe UI", sans-serif;
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro", "Hiragino Sans",
+    "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Segoe UI", sans-serif;
   --hig-font-size-caption: 11px;
   --hig-font-size-footnote: 12px;
   --hig-font-size-body: 13px;
@@ -279,15 +279,21 @@ html[data-ui-trial="apple-hig"] .search:focus {
   border-color: var(--hig-tint);
 }
 
-html[data-ui-trial="apple-hig"] .layout button:not(.nav-item):not(.grid-item):not(.item-list-row):not(
-    .sidebar-icon-button
-  ):not(.text-button):not(.chip-remove):not(.star):not(.color-label-swatch):not(
-    .item-context-menu-item
-  ):not(.quick-look-backdrop):not(.view-mode-button) {
+html[data-ui-trial="apple-hig"]
+  .layout
+  button:not(.nav-item):not(.grid-item):not(.item-list-row):not(.sidebar-icon-button):not(
+    .text-button
+  ):not(.chip-remove):not(.star):not(.color-label-swatch):not(.item-context-menu-item):not(
+    .quick-look-backdrop
+  ):not(.view-mode-button) {
   padding: 5px 12px;
   border: 1px solid var(--hig-control-border);
   border-radius: var(--hig-radius-control);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--hig-bg) 92%, white), var(--hig-bg-secondary));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--hig-bg) 92%, white),
+    var(--hig-bg-secondary)
+  );
   color: var(--hig-label);
   font: inherit;
   font-size: var(--hig-font-size-footnote);
@@ -299,20 +305,24 @@ html[data-ui-trial="apple-hig"] .layout button:not(.nav-item):not(.grid-item):no
     transform var(--hig-duration-fast) var(--hig-ease);
 }
 
-html[data-ui-trial="apple-hig"] .layout button:not(.nav-item):not(.grid-item):not(.item-list-row):not(
-    .sidebar-icon-button
-  ):not(.text-button):not(.chip-remove):not(.star):not(.color-label-swatch):not(
-    .item-context-menu-item
-  ):not(.quick-look-backdrop):not(.view-mode-button):hover:not(:disabled) {
+html[data-ui-trial="apple-hig"]
+  .layout
+  button:not(.nav-item):not(.grid-item):not(.item-list-row):not(.sidebar-icon-button):not(
+    .text-button
+  ):not(.chip-remove):not(.star):not(.color-label-swatch):not(.item-context-menu-item):not(
+    .quick-look-backdrop
+  ):not(.view-mode-button):hover:not(:disabled) {
   background: var(--hig-bg);
   border-color: color-mix(in srgb, var(--hig-tint) 35%, var(--hig-control-border));
 }
 
-html[data-ui-trial="apple-hig"] .layout button:not(.nav-item):not(.grid-item):not(.item-list-row):not(
-    .sidebar-icon-button
-  ):not(.text-button):not(.chip-remove):not(.star):not(.color-label-swatch):not(
-    .item-context-menu-item
-  ):not(.quick-look-backdrop):not(.view-mode-button):active:not(:disabled) {
+html[data-ui-trial="apple-hig"]
+  .layout
+  button:not(.nav-item):not(.grid-item):not(.item-list-row):not(.sidebar-icon-button):not(
+    .text-button
+  ):not(.chip-remove):not(.star):not(.color-label-swatch):not(.item-context-menu-item):not(
+    .quick-look-backdrop
+  ):not(.view-mode-button):active:not(:disabled) {
   transform: translateY(0.5px);
   background: var(--hig-bg-tertiary);
 }
@@ -566,7 +576,12 @@ html[data-ui-trial="apple-hig"] .content.drag-over {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html[data-ui-trial="apple-hig"] * {
-    transition: none !important;
+  html[data-ui-trial="apple-hig"] .nav-item,
+  html[data-ui-trial="apple-hig"] .grid-item,
+  html[data-ui-trial="apple-hig"] .item-list-row,
+  html[data-ui-trial="apple-hig"] .view-mode-button,
+  html[data-ui-trial="apple-hig"] .search,
+  html[data-ui-trial="apple-hig"] .layout button {
+    transition-duration: 0ms;
   }
 }

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  DEFAULT_UI_TRIAL,
   applyUiTrialToDocument,
+  DEFAULT_UI_TRIAL,
   parseUiTrial,
   readUiTrial,
   writeUiTrial,
