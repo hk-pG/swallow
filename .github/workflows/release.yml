@@ -4,15 +4,20 @@ on:
   push:
     tags: ["v*"]
 
+# 既定は読み取りのみ。書き込みはジョブ単位で付与する（#94）。
 permissions:
-  contents: write
-  packages: write
+  contents: read
 
 jobs:
   image:
+    permissions:
+      contents: read
+      packages: write
     uses: ./.github/workflows/build-image.yml
 
   create-release:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     outputs:
       release_id: ${{ steps.create.outputs.release_id }}
@@ -29,6 +34,9 @@ jobs:
 
   linux:
     needs: [image, create-release]
+    permissions:
+      contents: write
+      packages: read
     runs-on: ubuntu-latest
     container:
       image: ${{ needs.image.outputs.image }}
@@ -36,9 +44,10 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - run: pnpm install --frozen-lockfile
-      - uses: tauri-apps/tauri-action@v0
+      # v1.0.0 — 浮動タグではなく commit SHA にピン留め（#94）
+      - uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -48,6 +57,8 @@ jobs:
 
   native:
     needs: create-release
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -60,9 +71,9 @@ jobs:
             target: x86_64-pc-windows-msvc
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -76,7 +87,8 @@ jobs:
           key: ${{ matrix.target }}
       - run: pnpm install --frozen-lockfile
       # TODO: add Apple code signing / notarization and Windows signing secrets.
-      - uses: tauri-apps/tauri-action@v0
+      # v1.0.0 — 浮動タグではなく commit SHA にピン留め（#94）
+      - uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
