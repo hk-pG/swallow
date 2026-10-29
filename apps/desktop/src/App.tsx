@@ -1,11 +1,10 @@
 import { thumbnailSizePx } from "@swallow/shared";
-import { type CSSProperties, useRef } from "react";
+import { type CSSProperties, useLayoutEffect, useRef } from "react";
 import { AdvancedSearch } from "./components/AdvancedSearch";
 import { AppInfo } from "./components/AppInfo";
 import { FolderAssignControl } from "./components/FolderAssignControl";
 import { Inspector } from "./components/Inspector";
-import { ItemGrid } from "./components/ItemGrid";
-import { ItemList } from "./components/ItemList";
+import { MainItemView } from "./components/MainItemView";
 import { QuickLook } from "./components/QuickLook";
 import { TrashActions } from "./components/TrashActions";
 import { ViewModeToolbar } from "./components/ViewModeToolbar";
@@ -48,7 +47,9 @@ export function App() {
   });
   const smartFolders = useSmartFolders({ libraryPath, setView });
   const browser = useItemBrowser(items, folders.folders, smartFolders.smartFolders);
-  setViewRef.current = browser.setView;
+  useLayoutEffect(() => {
+    setViewRef.current = browser.setView;
+  });
 
   const contentRef = useRef<HTMLElement>(null);
   const refreshAfterImport = async () => {
@@ -171,69 +172,23 @@ export function App() {
                 error={assetImport.error}
                 onDismiss={assetImport.dismiss}
               />
-              {libraryPath ? (
-                items.length === 0 ? (
-                  <section className="grid-placeholder">ファイルをドロップして取り込み</section>
-                ) : browser.visibleItems.length === 0 ? (
-                  <section className="grid-placeholder">該当するアイテムがありません</section>
-                ) : appearance.itemView.itemViewMode === "list" ? (
-                  <ItemList
-                    libraryPath={libraryPath}
-                    items={browser.visibleItems}
-                    selection={browser.selection}
-                    onSelect={browser.handleSelect}
-                    onSelectAll={browser.handleSelectAll}
-                    onClearSelection={browser.clearSelection}
-                    onDelete={trash.onDelete}
-                    onQuickLook={quickLook.openAt}
-                    {...itemContext}
-                  />
-                ) : (
-                  <ItemGrid
-                    libraryPath={libraryPath}
-                    items={browser.visibleItems}
-                    selection={browser.selection}
-                    onSelect={browser.handleSelect}
-                    onSelectAll={browser.handleSelectAll}
-                    onClearSelection={browser.clearSelection}
-                    onDelete={trash.onDelete}
-                    onQuickLook={quickLook.openAt}
-                    {...itemContext}
-                  />
-                )
-              ) : (
-                <section className="grid-placeholder">
-                  <div className="empty-library">
-                    <p>ライブラリが開かれていません</p>
-                    <div className="library-actions">
-                      <button type="button" onClick={() => void session.handleCreate()}>
-                        新規ライブラリを作成
-                      </button>
-                      <button type="button" onClick={() => void session.handleOpen()}>
-                        ライブラリを開く
-                      </button>
-                    </div>
-                    {session.recent.length > 0 && (
-                      <div className="recent-libraries">
-                        <p>最近使ったライブラリ</p>
-                        <ul>
-                          {session.recent.map((path) => (
-                            <li key={path}>
-                              <button
-                                type="button"
-                                title={path}
-                                onClick={() => void session.openPath(path)}
-                              >
-                                {path}
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                </section>
-              )}
+              <MainItemView
+                libraryPath={libraryPath}
+                itemCount={items.length}
+                visibleItems={browser.visibleItems}
+                itemViewMode={appearance.itemView.itemViewMode}
+                selection={browser.selection}
+                recentLibraries={session.recent}
+                onSelect={browser.handleSelect}
+                onSelectAll={browser.handleSelectAll}
+                onClearSelection={browser.clearSelection}
+                onDelete={trash.onDelete}
+                onQuickLook={quickLook.openAt}
+                onCreateLibrary={() => void session.handleCreate()}
+                onOpenLibrary={() => void session.handleOpen()}
+                onOpenRecent={(path) => void session.openPath(path)}
+                {...itemContext}
+              />
             </main>
             <aside className="inspector">
               {browser.selectedCount > 1 ? (
