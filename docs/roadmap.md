@@ -16,14 +16,14 @@ gh issue list --milestone beta --label P1 --state open
 
 ## 優先度順一覧
 
-| 優先度 | Issue | 一言 |
-|---|---|---|
-| P1 | [#34](https://github.com/hk-pG/swallow/issues/34) | フォルダ階層ごとの取り込み |
-| P1 | [#35](https://github.com/hk-pG/swallow/issues/35) | 設定ファイル拡張 |
-| P1 | [#49](https://github.com/hk-pG/swallow/issues/49) | スマートフォルダ（保存済み検索） |
-| P1 | [#50](https://github.com/hk-pG/swallow/issues/50) | クイックルック / 原寸プレビュー |
-| P2 | [#51](https://github.com/hk-pG/swallow/issues/51)–[#56](https://github.com/hk-pG/swallow/issues/56) | 高度検索・お気に入りビュー・カラーラベル・独自コンテキストメニュー・リスト/ズーム・タグ磨き |
-| P3 | [#57](https://github.com/hk-pG/swallow/issues/57) / [#58](https://github.com/hk-pG/swallow/issues/58) | Eagle 移行インポート / 高度プレビュー |
+| 優先度 | Issue                                                                                                 | 一言                                                                                        |
+| ------ | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| P1     | [#34](https://github.com/hk-pG/swallow/issues/34)                                                     | フォルダ階層ごとの取り込み                                                                  |
+| P1     | [#35](https://github.com/hk-pG/swallow/issues/35)                                                     | 設定ファイル拡張                                                                            |
+| P1     | [#49](https://github.com/hk-pG/swallow/issues/49)                                                     | スマートフォルダ（保存済み検索）                                                            |
+| P1     | [#50](https://github.com/hk-pG/swallow/issues/50)                                                     | クイックルック / 原寸プレビュー                                                             |
+| P2     | [#51](https://github.com/hk-pG/swallow/issues/51)–[#56](https://github.com/hk-pG/swallow/issues/56)   | 高度検索・お気に入りビュー・カラーラベル・独自コンテキストメニュー・リスト/ズーム・タグ磨き |
+| P3     | [#57](https://github.com/hk-pG/swallow/issues/57) / [#58](https://github.com/hk-pG/swallow/issues/58) | Eagle 移行インポート / 高度プレビュー                                                       |
 
 ## α 済み（再 Issue なし）
 
@@ -33,18 +33,18 @@ gh issue list --milestone beta --label P1 --state open
 
 ## 対象外・別枠
 
-| 項目 | 扱い |
-|---|---|
-| クラウド同期 | Issue 不要（対象外） |
-| Chrome 拡張 | [#12](https://github.com/hk-pG/swallow/issues/12)（別リポ予定・`backlog`） |
-| CI 調査 | [#46](https://github.com/hk-pG/swallow/issues/46)（`backlog` + `area:ci`） |
+| 項目         | 扱い                                                                       |
+| ------------ | -------------------------------------------------------------------------- |
+| クラウド同期 | Issue 不要（対象外）                                                       |
+| Chrome 拡張  | [#12](https://github.com/hk-pG/swallow/issues/12)（別リポ予定・`backlog`） |
+| CI 調査      | [#46](https://github.com/hk-pG/swallow/issues/46)（`backlog` + `area:ci`） |
 
 ## マイルストーンとラベル
 
-| マイルストーン | 意味 |
-|---|---|
-| [`alpha`](https://github.com/hk-pG/swallow/milestone/1) | α（ほぼ完了。トラッカー紐づけ） |
-| [`beta`](https://github.com/hk-pG/swallow/milestone/2) | P1/P2 |
-| [`backlog`](https://github.com/hk-pG/swallow/milestone/3) | P3・後続・拡張など |
+| マイルストーン                                            | 意味                            |
+| --------------------------------------------------------- | ------------------------------- |
+| [`alpha`](https://github.com/hk-pG/swallow/milestone/1)   | α（ほぼ完了。トラッカー紐づけ） |
+| [`beta`](https://github.com/hk-pG/swallow/milestone/2)    | P1/P2                           |
+| [`backlog`](https://github.com/hk-pG/swallow/milestone/3) | P3・後続・拡張など              |
 
 ラベル: `P1` / `P2` / `P3`、`area:desktop` / `area:extension` / `area:ci`。付与スクリプトは [`scripts/agent/github-taxonomy-setup.sh`](../scripts/agent/github-taxonomy-setup.sh)。
