@@ -214,7 +214,8 @@ pub fn handle(head: &RequestHead<'_>, body: &mut dyn Read, ctx: &impl Context) -
 }
 
 /// Binding to 127.0.0.1 already keeps other machines out. The `Host` check stops DNS
-/// rebinding, and the `Origin` check stops ordinary web pages in the user's browser.
+/// rebinding, and requiring a `chrome-extension://` `Origin` stops ordinary web pages
+/// and non-browser local clients from using the API.
 fn check_access(head: &RequestHead<'_>) -> Result<(), ApiError> {
     let forbidden = |message: &str| Err(ApiError::new(ApiErrorCode::Forbidden, message));
     if !head.peer.is_some_and(|peer| peer.ip().is_loopback()) {
@@ -223,12 +224,10 @@ fn check_access(head: &RequestHead<'_>) -> Result<(), ApiError> {
     if !head.host.is_some_and(is_allowed_host) {
         return forbidden("Host が localhost ではありません");
     }
-    if let Some(origin) = head.origin
-        && !origin.starts_with(ALLOWED_ORIGIN_PREFIX)
-    {
-        return forbidden("この Origin からのリクエストは受け付けません");
+    match head.origin {
+        Some(origin) if origin.starts_with(ALLOWED_ORIGIN_PREFIX) => Ok(()),
+        _ => forbidden("この Origin からのリクエストは受け付けません"),
     }
-    Ok(())
 }
 
 fn is_allowed_host(host: &str) -> bool {
@@ -419,7 +418,7 @@ mod tests {
             url,
             peer: Some(SocketAddr::from((Ipv4Addr::LOCALHOST, 50000))),
             host: Some("127.0.0.1:41600"),
-            origin: None,
+            origin: Some("chrome-extension://abcdefghijklmnop"),
             content_type: None,
             content_length: None,
         }
@@ -572,10 +571,44 @@ mod tests {
             origin: Some("https://evil.example"),
             ..head("GET", "/api/app/info")
         };
-        for head in [remote, unknown_peer, rebound, no_host, web_page] {
+        let no_origin = RequestHead {
+            origin: None,
+            ..head("GET", "/api/app/info")
+        };
+        let empty_origin = RequestHead {
+            origin: Some(""),
+            ..head("GET", "/api/app/info")
+        };
+        for head in [
+            remote,
+            unknown_peer,
+            rebound,
+            no_host,
+            web_page,
+            no_origin,
+            empty_origin,
+        ] {
             let (status, json) = call(&head, b"", &ctx);
             assert_eq!((status, error_code(&json)), (403, "forbidden"), "{head:?}");
         }
+    }
+
+    #[test]
+    fn add_item_without_origin_does_not_write_library() {
+        let lib = library();
+        let ctx = TestContext::with_library(lib.path());
+        let head = RequestHead {
+            origin: None,
+            content_type: Some("image/png"),
+            ..head("POST", "/api/items?ext=png")
+        };
+        let (status, json) = call(&head, &png(1, 1), &ctx);
+        assert_eq!((status, error_code(&json)), (403, "forbidden"));
+        assert!(ctx.imported.borrow().is_empty());
+        assert_eq!(
+            fs::read_dir(lib.path().join(IMAGES_DIR)).unwrap().count(),
+            0
+        );
     }
 
     #[test]
@@ -643,7 +676,7 @@ mod tests {
         let mut stream = TcpStream::connect(addr).unwrap();
         write!(
             stream,
-            "GET /api/app/info HTTP/1.1\r\nHost: localhost:{}\r\nConnection: close\r\n\r\n",
+            "GET /api/app/info HTTP/1.1\r\nHost: localhost:{}\r\nOrigin: chrome-extension://abcdefghijklmnop\r\nConnection: close\r\n\r\n",
             addr.port()
         )
         .unwrap();
