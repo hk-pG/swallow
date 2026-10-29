@@ -11,6 +11,8 @@ export interface ItemViewKeyboardOptions {
   onClearSelection: () => void;
   onDelete?: () => void;
   onQuickLook?: (id: ItemId) => void;
+  /** Extra Escape work (e.g. close a context menu) after clearing selection. */
+  onEscape?: () => void;
 }
 
 export function useItemViewFocusSync(
@@ -37,6 +39,7 @@ export function useItemViewKeyboard({
   onClearSelection,
   onDelete,
   onQuickLook,
+  onEscape,
 }: ItemViewKeyboardOptions) {
   const handleClick = useCallback(
     (e: MouseEvent, id: ItemId) => {
@@ -57,6 +60,7 @@ export function useItemViewKeyboard({
         onSelectAll();
       } else if (e.key === "Escape") {
         onClearSelection();
+        onEscape?.();
       } else if (e.key === " " && onQuickLook) {
         e.preventDefault();
         onQuickLook(id);
@@ -65,7 +69,7 @@ export function useItemViewKeyboard({
         onDelete();
       }
     },
-    [items, columnCount, onSelect, onSelectAll, onClearSelection, onDelete, onQuickLook],
+    [items, columnCount, onSelect, onSelectAll, onClearSelection, onDelete, onQuickLook, onEscape],
   );
 
   return { handleClick, handleKeyDown, containerRef };

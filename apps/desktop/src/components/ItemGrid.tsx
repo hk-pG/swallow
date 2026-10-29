@@ -1,18 +1,20 @@
 import { COLOR_LABEL_SWATCH, type ItemId, type ItemMetadata } from "@swallow/shared";
-import {
-  type KeyboardEvent,
-  type MouseEvent,
-  memo,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import { isNavigationKey, moveFocus, type Selection, type SelectModifiers } from "../lib/selection";
+import { type KeyboardEvent, type MouseEvent, memo, useCallback, useRef, useState } from "react";
+import type { Selection, SelectModifiers } from "../lib/selection";
 import { hasThumbnail, thumbnailUrl } from "../lib/thumbnail";
-import { ItemContextMenu, type ItemContextMenuState } from "./ItemContextMenu";
+import {
+  type ItemViewContextHandlers,
+  itemContextMenuEnabled,
+  useItemContextMenu,
+} from "../lib/useItemContextMenu";
+import {
+  itemViewTabStop,
+  useItemViewFocusSync,
+  useItemViewKeyboard,
+} from "../lib/useItemViewKeyboard";
+import { ItemContextMenu } from "./ItemContextMenu";
 
-interface ItemGridProps {
+interface ItemGridProps extends ItemViewContextHandlers {
   libraryPath: string;
   items: ItemMetadata[];
   selection: Selection;
@@ -23,12 +25,6 @@ interface ItemGridProps {
   onDelete?: () => void;
   /** Space on a grid cell opens Quick Look for that item. */
   onQuickLook?: (id: ItemId) => void;
-  isTrashView?: boolean;
-  onContextTrash?: () => void;
-  onContextRestore?: (id: ItemId) => void;
-  onContextPurge?: (id: ItemId) => void;
-  onContextEditTags?: (id: ItemId) => void;
-  onContextRevealInExplorer?: (id: ItemId) => void;
 }
 
 function columnCount(grid: HTMLElement | null): number {
@@ -53,76 +49,48 @@ export function ItemGrid({
   onContextRevealInExplorer,
 }: ItemGridProps) {
   const gridRef = useRef<HTMLElement>(null);
-  const focusId = selection.focus;
-  const [contextMenu, setContextMenu] = useState<ItemContextMenuState | null>(null);
-  const contextMenuEnabled = Boolean(
-    onContextTrash ||
-      onContextRestore ||
-      onContextPurge ||
-      onContextEditTags ||
-      onContextRevealInExplorer,
-  );
+  const contextHandlers = {
+    isTrashView,
+    onContextTrash,
+    onContextRestore,
+    onContextPurge,
+    onContextEditTags,
+    onContextRevealInExplorer,
+  };
+  const contextMenuEnabled = itemContextMenuEnabled(contextHandlers);
+  const {
+    state: contextMenu,
+    close: closeContextMenu,
+    handleContextMenu,
+  } = useItemContextMenu(contextMenuEnabled, selection, onSelect);
 
-  useEffect(() => {
-    const grid = gridRef.current;
-    if (!grid || focusId === null) return;
-    const active = document.activeElement;
-    if (active && active !== document.body && !grid.contains(active)) return;
-    const cell = grid.querySelector<HTMLElement>(`[data-id="${focusId}"]`);
-    cell?.focus({ preventScroll: true });
-    cell?.scrollIntoView({ block: "nearest" });
-  }, [focusId]);
+  const columns = useCallback(() => columnCount(gridRef.current), []);
+  const { handleClick: selectClick, handleKeyDown } = useItemViewKeyboard({
+    items,
+    containerRef: gridRef,
+    columnCount: columns,
+    onSelect,
+    onSelectAll,
+    onClearSelection,
+    onDelete,
+    onQuickLook,
+    onEscape: closeContextMenu,
+  });
+  useItemViewFocusSync(gridRef, selection.focus);
 
   const handleClick = useCallback(
     (e: MouseEvent, id: ItemId) => {
-      setContextMenu(null);
-      onSelect(id, { range: e.shiftKey, toggle: e.metaKey || e.ctrlKey });
+      closeContextMenu();
+      selectClick(e, id);
     },
-    [onSelect],
-  );
-
-  const handleContextMenu = useCallback(
-    (e: MouseEvent, item: ItemMetadata) => {
-      if (!contextMenuEnabled) return;
-      e.preventDefault();
-      e.stopPropagation();
-      if (!selection.ids.has(item.id)) {
-        onSelect(item.id, {});
-      }
-      setContextMenu({ item, x: e.clientX, y: e.clientY });
-    },
-    [contextMenuEnabled, onSelect, selection.ids],
-  );
-
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent, id: ItemId) => {
-      if (isNavigationKey(e.key)) {
-        e.preventDefault();
-        const order = items.map((item) => item.id);
-        const next = moveFocus(order, id, e.key, columnCount(gridRef.current));
-        if (next !== null) onSelect(next, { range: e.shiftKey });
-      } else if (e.key.toLowerCase() === "a" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        onSelectAll();
-      } else if (e.key === "Escape") {
-        onClearSelection();
-        setContextMenu(null);
-      } else if (e.key === " " && onQuickLook) {
-        e.preventDefault();
-        onQuickLook(id);
-      } else if ((e.key === "Delete" || e.key === "Backspace") && onDelete) {
-        e.preventDefault();
-        onDelete();
-      }
-    },
-    [items, onSelect, onSelectAll, onClearSelection, onDelete, onQuickLook],
+    [closeContextMenu, selectClick],
   );
 
   const [first] = items;
   if (!first) {
     return <section className="grid-placeholder">アイテムがありません</section>;
   }
-  const tabStop = items.some((item) => item.id === focusId) ? focusId : first.id;
+  const tabStop = itemViewTabStop(items, selection.focus);
   return (
     <>
       <section ref={gridRef} className="grid" aria-label="アイテム一覧">
@@ -143,7 +111,7 @@ export function ItemGrid({
         <ItemContextMenu
           state={contextMenu}
           isTrashView={isTrashView}
-          onClose={() => setContextMenu(null)}
+          onClose={closeContextMenu}
           onTrash={() => onContextTrash?.()}
           onRestore={(id) => onContextRestore?.(id)}
           onPurge={(id) => onContextPurge?.(id)}

@@ -1,12 +1,8 @@
-import type { ItemMetadata } from "@swallow/shared";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { clampContextMenuPosition } from "../lib/itemContextMenuPosition";
+import type { ItemContextMenuState } from "../lib/useItemContextMenu";
 
-export interface ItemContextMenuState {
-  item: ItemMetadata;
-  x: number;
-  y: number;
-}
+export type { ItemContextMenuState };
 
 interface ItemContextMenuProps {
   state: ItemContextMenuState | null;

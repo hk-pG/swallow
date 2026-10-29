@@ -1,6 +1,5 @@
 import { thumbnailSizePx } from "@swallow/shared";
-import { ask } from "@tauri-apps/plugin-dialog";
-import { type CSSProperties, useCallback, useRef } from "react";
+import { type CSSProperties, useRef } from "react";
 import { AdvancedSearch } from "./components/AdvancedSearch";
 import { AppInfo } from "./components/AppInfo";
 import { FolderAssignControl } from "./components/FolderAssignControl";
@@ -11,9 +10,6 @@ import { QuickLook } from "./components/QuickLook";
 import { TrashActions } from "./components/TrashActions";
 import { ViewModeToolbar } from "./components/ViewModeToolbar";
 import { ImportReportBanner } from "./ImportReportBanner";
-import { purgeItems, restoreItems, revealItemInExplorer } from "./lib/commands";
-import { focusInspectorTagInput } from "./lib/focusInspector";
-import { purgeConfirmMessage } from "./lib/trash";
 import { useAppearanceSettings } from "./lib/useAppearanceSettings";
 import { useAssetImport } from "./lib/useAssetImport";
 import { useFolders } from "./lib/useFolders";
@@ -65,75 +61,25 @@ export function App() {
     libraryPath,
     view: browser.view,
     visibleIds: browser.visibleIds,
+    visibleItems: browser.visibleItems,
     selection: browser.selection,
     selected: browser.selected,
     setSelection: browser.setSelection,
     clearSelection: browser.clearSelection,
+    onSelectItem: browser.handleSelect,
     invalidate,
     setError: session.setError,
   });
 
   const isTrashView = browser.view.kind === "trash";
-
-  const handleContextRevealInExplorer = useCallback(
-    async (itemId: string) => {
-      if (!libraryPath) return;
-      try {
-        await revealItemInExplorer(libraryPath, itemId);
-        session.setError(null);
-      } catch (e) {
-        session.setError(`エクスプローラーで表示できませんでした: ${e}`);
-      }
-    },
-    [libraryPath, session.setError],
-  );
-
-  const handleContextEditTags = useCallback(
-    (itemId: string) => {
-      browser.handleSelect(itemId, {});
-      requestAnimationFrame(() => focusInspectorTagInput());
-    },
-    [browser.handleSelect],
-  );
-
-  const handleContextRestore = useCallback(
-    async (itemId: string) => {
-      if (!libraryPath) return;
-      try {
-        await restoreItems(libraryPath, [itemId]);
-        session.setError(null);
-        browser.clearSelection();
-        await invalidate();
-      } catch (e) {
-        session.setError(`復元できませんでした: ${e}`);
-      }
-    },
-    [libraryPath, browser.clearSelection, invalidate, session.setError],
-  );
-
-  const handleContextPurge = useCallback(
-    async (itemId: string) => {
-      if (!libraryPath) return;
-      const item = browser.visibleItems.find((entry) => entry.id === itemId);
-      if (!item) return;
-      const confirmed = await ask(purgeConfirmMessage([item]), {
-        title: "完全に削除",
-        kind: "warning",
-        okLabel: "完全に削除",
-        cancelLabel: "キャンセル",
-      });
-      if (!confirmed) return;
-      try {
-        await purgeItems(libraryPath, [itemId]);
-        session.setError(null);
-        browser.clearSelection();
-        await invalidate();
-      } catch (e) {
-        session.setError(`完全に削除できませんでした: ${e}`);
-      }
-    },
-    [libraryPath, browser.visibleItems, browser.clearSelection, invalidate, session.setError],
-  );
+  const itemContext = {
+    isTrashView,
+    onContextTrash: isTrashView ? undefined : () => void trash.handleTrash(),
+    onContextRestore: isTrashView ? (id: string) => void trash.restoreItem(id) : undefined,
+    onContextPurge: isTrashView ? (id: string) => void trash.purgeItem(id) : undefined,
+    onContextEditTags: isTrashView ? undefined : trash.editTags,
+    onContextRevealInExplorer: (id: string) => void trash.revealInExplorer(id),
+  };
 
   const disabled = session.library === null;
 
@@ -240,6 +186,7 @@ export function App() {
                     onClearSelection={browser.clearSelection}
                     onDelete={trash.onDelete}
                     onQuickLook={quickLook.openAt}
+                    {...itemContext}
                   />
                 ) : (
                   <ItemGrid
@@ -251,14 +198,7 @@ export function App() {
                     onClearSelection={browser.clearSelection}
                     onDelete={trash.onDelete}
                     onQuickLook={quickLook.openAt}
-                    isTrashView={isTrashView}
-                    onContextTrash={isTrashView ? undefined : () => void trash.handleTrash()}
-                    onContextRestore={
-                      isTrashView ? (id) => void handleContextRestore(id) : undefined
-                    }
-                    onContextPurge={isTrashView ? (id) => void handleContextPurge(id) : undefined}
-                    onContextEditTags={isTrashView ? undefined : handleContextEditTags}
-                    onContextRevealInExplorer={(id) => void handleContextRevealInExplorer(id)}
+                    {...itemContext}
                   />
                 )
               ) : (
