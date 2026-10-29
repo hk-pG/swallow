@@ -25,7 +25,6 @@ Orca で作った worktree では手元で実装せず、`scripts/agent/cloud-ru
 ## バグの扱い
 
 不具合対応は **先に GitHub Issue を作り、記録を残してから** 修正 PR に進む（口頭やチャットだけで直さない）。
-
 1. 既存 Issue を検索し、無ければ `gh issue create` で新規作成する（ラベル `bug`、領域 `area:*`、優先度 `P1`/`P2`/`P3`、Milestone を付ける）
 2. 本文に再現手順・受け入れ条件・原因仮説（分かれば）を書く。チャットでの調査結果もここに要約する
 3. その後 `scripts/agent/start-issue.sh <N>` から通常どおり PR まで進める（PR は `Closes #<N>`）
@@ -33,23 +32,23 @@ Orca で作った worktree では手元で実装せず、`scripts/agent/cloud-ru
 
 ## 構成
 
-| パス | 内容 |
-|---|---|
-| `apps/desktop/src` | React フロントエンド。Tauri コマンドの呼び出しは `src/lib/commands.ts` に集約 |
+| パス                         | 内容                                                                                        |
+| ---------------------------- | ------------------------------------------------------------------------------------------- |
+| `apps/desktop/src`           | React フロントエンド。Tauri コマンドの呼び出しは `src/lib/commands.ts` に集約               |
 | `apps/desktop/src-tauri/src` | Rust バックエンド。コマンドは `commands.rs` に定義し `lib.rs` の `generate_handler!` に登録 |
-| `packages/shared/src` | デスクトップと拡張で共有する型と純粋関数（`@swallow/shared`） |
+| `packages/shared/src`        | デスクトップと拡張で共有する型と純粋関数（`@swallow/shared`）                               |
 
 ライブラリはディレクトリで、アイテムは `images/<id>.info/` に実ファイルと `metadata.json` を置く。タグは `tags.json`。
 
 ## コマンド
 
-| 目的 | コマンド |
-|---|---|
-| 全チェック（CI と同じ） | `pnpm ci:all` |
-| JS のみ | `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm build` |
-| Rust のみ | `pnpm rust:fmt` / `pnpm rust:clippy` / `pnpm rust:test` |
-| 整形 | `pnpm format`（Biome）、`cargo fmt --all` |
-| アプリ起動 | `pnpm dev` |
+| 目的                    | コマンド                                                    |
+| ----------------------- | ----------------------------------------------------------- |
+| 全チェック（CI と同じ） | `pnpm ci:all`                                               |
+| JS のみ                 | `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm build` |
+| Rust のみ               | `pnpm rust:fmt` / `pnpm rust:clippy` / `pnpm rust:test`     |
+| 整形                    | `pnpm format`（Biome）、`cargo fmt --all`                   |
+| アプリ起動              | `pnpm dev`                                                  |
 
 ## 規約
 

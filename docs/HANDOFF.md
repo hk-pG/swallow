@@ -15,11 +15,11 @@
 
 ## 1. プロジェクトの計画
 
-| フェーズ | 内容 | 状態 |
-|---|---|---|
-| **α** | Eagle 代替のデスクトップ最低限（ライブラリ・フォルダ・タグ・ゴミ箱・取り込み・シェル分割・右クリック抑止） | **完了**（main 到達） |
-| **β** | Eagle 基本機能とのギャップ埋め（P1→P2） | **次の本番** |
-| **後続** | P3・拡張別リポ・対象外 | backlog |
+| フェーズ | 内容                                                                                                       | 状態                  |
+| -------- | ---------------------------------------------------------------------------------------------------------- | --------------------- |
+| **α**    | Eagle 代替のデスクトップ最低限（ライブラリ・フォルダ・タグ・ゴミ箱・取り込み・シェル分割・右クリック抑止） | **完了**（main 到達） |
+| **β**    | Eagle 基本機能とのギャップ埋め（P1→P2）                                                                    | **次の本番**          |
+| **後続** | P3・拡張別リポ・対象外                                                                                     | backlog               |
 
 ### α で入れる／外す（確定済み）
 
@@ -43,12 +43,12 @@
 
 ### マージ済み（α デスクトップ）
 
-| PR | 内容 |
-|---|---|
-| [#41](https://github.com/hk-pG/swallow/pull/41) | フォルダ UI |
-| [#42](https://github.com/hk-pG/swallow/pull/42) | 本番右クリック抑止 |
+| PR                                              | 内容                     |
+| ----------------------------------------------- | ------------------------ |
+| [#41](https://github.com/hk-pG/swallow/pull/41) | フォルダ UI              |
+| [#42](https://github.com/hk-pG/swallow/pull/42) | 本番右クリック抑止       |
 | [#47](https://github.com/hk-pG/swallow/pull/47) | App シェル分割を main へ |
-| [#48](https://github.com/hk-pG/swallow/pull/48) | タグ管理 UI |
+| [#48](https://github.com/hk-pG/swallow/pull/48) | タグ管理 UI              |
 
 ### 分類の整備
 
@@ -95,17 +95,17 @@ gh issue list --repo hk-pG/swallow --milestone backlog --state open
 
 ## 4. 「どこを見ればよいか」一覧
 
-| 知りたいこと | 場所 |
-|---|---|
-| **この引き継ぎ（入口）** | **このファイル** [`docs/HANDOFF.md`](./HANDOFF.md) |
-| 予定・進捗の正本の考え方 | [github-tracking.md](./github-tracking.md) |
-| β Issue 一覧・優先度 | [roadmap.md](./roadmap.md) ＋ GitHub Milestone [`beta`](https://github.com/hk-pG/swallow/milestone/2) |
-| α で何を入れたか | [alpha-scope.md](./alpha-scope.md) |
-| Eagle との過不足 | [eagle-vs-swallow.md](./eagle-vs-swallow.md) |
-| 実装の進め方 | [`AGENTS.md`](../AGENTS.md)、[`.agents/skills/issue-to-pr/SKILL.md`](../.agents/skills/issue-to-pr/SKILL.md) |
-| 分類スクリプト | [`scripts/agent/github-taxonomy-setup.sh`](../scripts/agent/github-taxonomy-setup.sh)（冪等） |
-| α トラッカー Issue | [#45](https://github.com/hk-pG/swallow/issues/45) |
-| ライブの Issue | https://github.com/hk-pG/swallow/issues?q=is%3Aopen+milestone%3Abeta+label%3AP1 |
+| 知りたいこと             | 場所                                                                                                         |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| **この引き継ぎ（入口）** | **このファイル** [`docs/HANDOFF.md`](./HANDOFF.md)                                                           |
+| 予定・進捗の正本の考え方 | [github-tracking.md](./github-tracking.md)                                                                   |
+| β Issue 一覧・優先度     | [roadmap.md](./roadmap.md) ＋ GitHub Milestone [`beta`](https://github.com/hk-pG/swallow/milestone/2)        |
+| α で何を入れたか         | [alpha-scope.md](./alpha-scope.md)                                                                           |
+| Eagle との過不足         | [eagle-vs-swallow.md](./eagle-vs-swallow.md)                                                                 |
+| 実装の進め方             | [`AGENTS.md`](../AGENTS.md)、[`.agents/skills/issue-to-pr/SKILL.md`](../.agents/skills/issue-to-pr/SKILL.md) |
+| 分類スクリプト           | [`scripts/agent/github-taxonomy-setup.sh`](../scripts/agent/github-taxonomy-setup.sh)（冪等）                |
+| α トラッカー Issue       | [#45](https://github.com/hk-pG/swallow/issues/45)                                                            |
+| ライブの Issue           | https://github.com/hk-pG/swallow/issues?q=is%3Aopen+milestone%3Abeta+label%3AP1                              |
 
 ---
 
