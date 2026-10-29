@@ -1,13 +1,21 @@
-use std::fs;
-use std::io;
-use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard, PoisonError};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 
 use crate::color_label::ColorLabel;
-use crate::library::{IMAGES_DIR, METADATA_FILE, write_json_atomic};
+use crate::library::METADATA_FILE;
+
+#[path = "item_io.rs"]
+mod item_io;
+#[path = "item_patch.rs"]
+mod item_patch;
+#[path = "item_trash.rs"]
+mod item_trash;
+
+pub use item_io::{item_dir, item_file, load_item, read_item, read_items};
+pub use item_patch::{apply_patch, edit_all_items, edit_items, update_item};
+pub use item_trash::{purge_items, set_items_deleted};
 
 pub const ITEM_DIR_EXT: &str = "info";
 pub const ITEM_METADATA_FILE: &str = METADATA_FILE;
@@ -60,7 +68,7 @@ pub enum ItemError {
     #[error("item is not in the trash: {0}")]
     NotInTrash(String),
     #[error(transparent)]
-    Io(#[from] io::Error),
+    Io(#[from] std::io::Error),
     #[error("invalid metadata.json: {0}")]
     Json(#[from] serde_json::Error),
 }
@@ -75,249 +83,6 @@ fn lock_items() -> MutexGuard<'static, ()> {
         .unwrap_or_else(PoisonError::into_inner)
 }
 
-/// `images/<id>.info`
-pub fn item_dir(library: &Path, id: &str) -> PathBuf {
-    library
-        .join(IMAGES_DIR)
-        .join(format!("{id}.{ITEM_DIR_EXT}"))
-}
-
-/// `images/<id>.info/<name>.<ext>`
-pub fn item_file(item_dir: &Path, item: &ItemMetadata) -> io::Result<PathBuf> {
-    let file_name = format!("{}.{}", item.name, item.ext);
-    if Path::new(&file_name).file_name() != Some(file_name.as_ref()) {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidData,
-            format!("invalid item file name: {file_name}"),
-        ));
-    }
-    Ok(item_dir.join(file_name))
-}
-
-pub fn read_item(item_dir: &Path) -> io::Result<ItemMetadata> {
-    let json = fs::read(item_dir.join(ITEM_METADATA_FILE))?;
-    serde_json::from_slice(&json).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
-}
-
-/// Every `images/*.info` directory, whether or not its metadata is readable.
-fn item_dirs(library: &Path) -> io::Result<Vec<PathBuf>> {
-    let entries = match fs::read_dir(library.join(IMAGES_DIR)) {
-        Ok(entries) => entries,
-        Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
-        Err(e) => return Err(e),
-    };
-    let mut dirs = Vec::new();
-    for entry in entries {
-        let path = entry?.path();
-        if path.extension().is_some_and(|ext| ext == ITEM_DIR_EXT) {
-            dirs.push(path);
-        }
-    }
-    Ok(dirs)
-}
-
-/// Items in the library, newest first. Unreadable item directories are skipped.
-pub fn read_items(library: &Path) -> io::Result<Vec<ItemMetadata>> {
-    let mut items = Vec::new();
-    for path in item_dirs(library)? {
-        match read_item(&path) {
-            Ok(item) => items.push(item),
-            Err(e) => eprintln!("skipping item {}: {e}", path.display()),
-        }
-    }
-    items.sort_by_key(|item| std::cmp::Reverse(item.created_at));
-    Ok(items)
-}
-
-fn checked_item_dir(library: &Path, id: &str) -> Result<PathBuf, ItemError> {
-    // ULIDs are alphanumeric; rejecting anything else keeps `id` from escaping `images/`.
-    if id.is_empty() || !id.chars().all(|c| c.is_ascii_alphanumeric()) {
-        return Err(ItemError::InvalidId(id.to_owned()));
-    }
-    Ok(item_dir(library, id))
-}
-
-pub fn load_item(library: &Path, id: &str) -> Result<ItemMetadata, ItemError> {
-    let path = checked_item_dir(library, id)?.join(ITEM_METADATA_FILE);
-    let json = fs::read_to_string(&path).map_err(|e| match e.kind() {
-        io::ErrorKind::NotFound => ItemError::NotFound(id.to_owned()),
-        _ => ItemError::Io(e),
-    })?;
-    Ok(serde_json::from_str(&json)?)
-}
-
-fn save_item(item_dir: &Path, item: &ItemMetadata) -> io::Result<()> {
-    write_json_atomic(&item_dir.join(ITEM_METADATA_FILE), item)
-}
-
-fn edit_and_save(
-    item_dir: &Path,
-    mut item: ItemMetadata,
-    edit: &mut impl FnMut(&mut ItemMetadata),
-) -> io::Result<()> {
-    let before = item.clone();
-    edit(&mut item);
-    if item == before {
-        return Ok(());
-    }
-    save_item(item_dir, &item)
-}
-
-/// Applies `edit` to each item and saves the ones it changed. Every item is loaded before
-/// any is written, so an invalid or unknown id leaves all items untouched.
-pub fn edit_items(
-    library: &Path,
-    ids: &[String],
-    mut edit: impl FnMut(&mut ItemMetadata),
-) -> Result<(), ItemError> {
-    let _lock = lock_items();
-    let items = ids
-        .iter()
-        .map(|id| Ok((load_item(library, id)?, item_dir(library, id))))
-        .collect::<Result<Vec<_>, ItemError>>()?;
-    for (item, dir) in items {
-        edit_and_save(&dir, item, &mut edit)?;
-    }
-    Ok(())
-}
-
-/// Applies `edit` to every item in the library and saves the ones it changed.
-pub fn edit_all_items(
-    library: &Path,
-    mut edit: impl FnMut(&mut ItemMetadata),
-) -> Result<(), ItemError> {
-    let _lock = lock_items();
-    for dir in item_dirs(library)? {
-        if dir.join(ITEM_METADATA_FILE).is_file() {
-            let item = read_item(&dir)?;
-            edit_and_save(&dir, item, &mut edit)?;
-        }
-    }
-    Ok(())
-}
-
-pub fn apply_patch(
-    item: &mut ItemMetadata,
-    patch: ItemMetadataPatch,
-    now: i64,
-) -> Result<(), ItemError> {
-    if let Some(star) = patch.star
-        && star > MAX_STAR
-    {
-        return Err(ItemError::InvalidStar(star));
-    }
-    let name = match patch.name {
-        Some(name) => {
-            let name = name.trim().to_owned();
-            // The name doubles as the stored file name, see `item_file`.
-            if name.is_empty() || Path::new(&name).file_name() != Some(name.as_ref()) {
-                return Err(ItemError::InvalidName);
-            }
-            Some(name)
-        }
-        None => None,
-    };
-
-    let mut changed = false;
-    if let Some(name) = name
-        && name != item.name
-    {
-        item.name = name;
-        changed = true;
-    }
-    if let Some(annotation) = patch.annotation
-        && annotation != item.annotation
-    {
-        item.annotation = annotation;
-        changed = true;
-    }
-    if let Some(star) = patch.star
-        && star != item.star
-    {
-        item.star = star;
-        changed = true;
-    }
-    if let Some(color_label) = patch.color_label
-        && color_label != item.color_label
-    {
-        item.color_label = color_label;
-        changed = true;
-    }
-    if let Some(url) = patch.url {
-        let url = Some(url.trim().to_owned()).filter(|u| !u.is_empty());
-        if url != item.url {
-            item.url = url;
-            changed = true;
-        }
-    }
-    if changed {
-        item.modified_at = now;
-    }
-    Ok(())
-}
-
-/// Applies `patch` and persists it. Renaming also renames the stored file.
-pub fn update_item(
-    library: &Path,
-    id: &str,
-    patch: ItemMetadataPatch,
-    now: i64,
-) -> Result<ItemMetadata, ItemError> {
-    let _lock = lock_items();
-    let mut item = load_item(library, id)?;
-    let before = item.clone();
-    apply_patch(&mut item, patch, now)?;
-    if item == before {
-        return Ok(item);
-    }
-    let dir = item_dir(library, id);
-    let renamed = item.name != before.name;
-    let (from, to) = (item_file(&dir, &before)?, item_file(&dir, &item)?);
-    if renamed {
-        fs::rename(&from, &to)?;
-    }
-    if let Err(e) = save_item(&dir, &item) {
-        if renamed {
-            let _ = fs::rename(&to, &from);
-        }
-        return Err(e.into());
-    }
-    Ok(item)
-}
-
-/// Moves items to the trash (`deleted = true`) or restores them. Stored files are kept.
-pub fn set_items_deleted(
-    library: &Path,
-    ids: &[String],
-    deleted: bool,
-    now: i64,
-) -> Result<(), ItemError> {
-    edit_items(library, ids, |item| {
-        if item.is_deleted != deleted {
-            item.is_deleted = deleted;
-            item.modified_at = now;
-        }
-    })
-}
-
-/// Removes `images/<id>.info/` of items in the trash. Every item is checked before any is
-/// removed, so an unknown id or an item outside the trash leaves all items untouched.
-pub fn purge_items(library: &Path, ids: &[String]) -> Result<(), ItemError> {
-    let _lock = lock_items();
-    for id in ids {
-        if !load_item(library, id)?.is_deleted {
-            return Err(ItemError::NotInTrash(id.clone()));
-        }
-    }
-    for id in ids {
-        match fs::remove_dir_all(item_dir(library, id)) {
-            Err(e) if e.kind() != io::ErrorKind::NotFound => return Err(e.into()),
-            _ => {}
-        }
-    }
-    Ok(())
-}
-
 pub fn now_millis() -> i64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -327,7 +92,11 @@ pub fn now_millis() -> i64 {
 
 #[cfg(test)]
 pub(crate) mod tests {
+    use std::fs;
+    use std::path::{Path, PathBuf};
+
     use super::*;
+    use crate::library::IMAGES_DIR;
 
     pub fn sample_item(id: &str, name: &str, ext: &str) -> ItemMetadata {
         ItemMetadata {
