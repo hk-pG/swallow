@@ -2,7 +2,12 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import { installDisableDefaultContextMenu } from "./lib/disableDefaultContextMenu";
-import "./styles.css";
+import "./styles/tokens.css";
+import "./styles/layout.css";
+import "./styles/sidebar.css";
+import "./styles/items.css";
+import "./styles/inspector.css";
+import "./styles/quick-look.css";
 
 installDisableDefaultContextMenu();
 

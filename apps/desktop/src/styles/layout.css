@@ -1,0 +1,83 @@
+.layout {
+  display: grid;
+  grid-template-columns: 220px 1fr 280px;
+  height: 100%;
+}
+
+.sidebar {
+  padding: var(--space-3);
+  overflow-y: auto;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--shell-border);
+}
+
+.inspector {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  overflow-y: auto;
+  border-left: 1px solid var(--shell-border);
+}
+
+.error {
+  margin: 8px 12px 0;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, crimson 50%, transparent);
+  border-radius: 6px;
+  color: crimson;
+}
+
+.empty-library {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.recent-libraries {
+  max-width: 480px;
+  text-align: center;
+}
+
+.recent-libraries ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recent-libraries li button {
+  max-width: 100%;
+  padding: 4px 8px;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.recent-libraries li button:hover {
+  text-decoration: underline;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.content.drag-over {
+  outline: 2px dashed color-mix(in srgb, currentColor 40%, transparent);
+  outline-offset: -6px;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}

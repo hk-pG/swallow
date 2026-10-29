@@ -1,0 +1,26 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  font-size: 13px;
+  --border: color-mix(in srgb, currentColor 15%, transparent);
+  --border-strong: color-mix(in srgb, currentColor 26%, transparent);
+  --shell-border: var(--border-strong);
+  --muted: color-mix(in srgb, currentColor 55%, transparent);
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --sidebar-bg: color-mix(in srgb, currentColor 4%, canvas);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
