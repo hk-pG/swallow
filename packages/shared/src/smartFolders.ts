@@ -1,5 +1,6 @@
-import { subtreeIds } from "./folders";
+import { itemMatchesFolderSubtree } from "./folderMatch";
 import type { Folder, FolderId, ItemMetadata } from "./library";
+import { matchesQueryTerms, parseQueryTerms } from "./textSearch";
 
 /** How multiple tag criteria combine. Mirrors P2 advanced search direction (#51). */
 export type SmartFolderTagMatch = "all" | "any";
@@ -45,33 +46,6 @@ export function isSmartFolderCriteriaActive(criteria: SmartFolderCriteria): bool
   );
 }
 
-function normalize(text: string): string {
-  return text.normalize("NFKC").toLowerCase();
-}
-
-function parseQueryTerms(query: string): string[] {
-  return normalize(query)
-    .split(/\s+/)
-    .filter((term) => term.length > 0);
-}
-
-function matchesQueryTerms(item: ItemMetadata, terms: readonly string[]): boolean {
-  if (terms.length === 0) return true;
-  const haystacks = [item.name, item.annotation, ...item.tags].map(normalize);
-  return terms.every((term) => haystacks.some((text) => text.includes(term)));
-}
-
-function matchesFolderCriterion(
-  item: ItemMetadata,
-  folderId: FolderId,
-  folders: readonly Folder[],
-): boolean {
-  if (item.isDeleted) return false;
-  const ids = subtreeIds(folders, folderId);
-  if (ids === null) return item.folders.includes(folderId);
-  return item.folders.some((id) => ids.includes(id));
-}
-
 function matchesTagCriterion(
   item: ItemMetadata,
   tags: readonly string[],
@@ -96,7 +70,7 @@ export function matchesSmartFolderCriteria(
   if (item.isDeleted) return false;
   if (!matchesQueryTerms(item, parseQueryTerms(criteria.query))) return false;
   if (!matchesTagCriterion(item, criteria.tags, criteria.tagMatch)) return false;
-  if (criteria.folderId !== null && !matchesFolderCriterion(item, criteria.folderId, folders)) {
+  if (criteria.folderId !== null && !itemMatchesFolderSubtree(item, criteria.folderId, folders)) {
     return false;
   }
   if (criteria.minStar !== null && item.star < criteria.minStar) return false;
