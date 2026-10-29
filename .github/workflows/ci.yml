@@ -12,13 +12,38 @@ concurrency:
 permissions:
   contents: read
   packages: write
+  pull-requests: read
 
 jobs:
+  # docs / .agents / markdown のみの変更では重いジョブをスキップする（#46 C）
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          # 否定パターンを効かせるには every + 肯定の catch-all が必要
+          predicate-quantifier: every
+          filters: |
+            code:
+              - '**'
+              - '!**/*.md'
+              - '!docs/**'
+              - '!.agents/**'
+              - '!.github/ISSUE_TEMPLATE/**'
+              - '!.github/pull_request_template.md'
+
   image:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     uses: ./.github/workflows/build-image.yml
 
   checks:
-    needs: image
+    needs: [changes, image]
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     container:
       image: ${{ needs.image.outputs.image }}
@@ -38,8 +63,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm ci:all
 
+  # PR では走らせない。main push のみ（#46 A）
   bundle-linux:
-    needs: image
+    needs: [changes, image]
+    if: needs.changes.outputs.code == 'true' && github.event_name == 'push'
     runs-on: ubuntu-latest
     container:
       image: ${{ needs.image.outputs.image }}
@@ -64,7 +91,10 @@ jobs:
           path: target/release/bundle/deb/*.deb
           retention-days: 7
 
+  # PR では走らせない。main push のみ（#46 A）
   build-native:
+    needs: changes
+    if: needs.changes.outputs.code == 'true' && github.event_name == 'push'
     strategy:
       fail-fast: false
       matrix:
