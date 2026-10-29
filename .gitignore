@@ -16,3 +16,5 @@ apps/desktop/src-tauri/gen/schemas/
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
+
+test-library/
