@@ -13,7 +13,7 @@ export interface AppearanceSettings {
 
 export type BehaviorSettings = Record<string, never>;
 
-/** `settings.json` in the app config directory. Mirrors `Settings` in `src-tauri/src/settings.rs`. */
+/** `settings.json` in the app config directory. Mirrors `Settings` in `src-tauri/src/settings.rs` (`AppearanceSettings`, etc.). */
 export interface Settings {
   version: number;
   recentLibraries: string[];

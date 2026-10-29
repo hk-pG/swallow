@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fs;
 use std::io;
 
@@ -11,16 +12,60 @@ pub const SETTINGS_VERSION: u32 = 1;
 
 const MAX_RECENT_LIBRARIES: usize = 10;
 
+/// Mirrors `ItemViewMode` in `packages/shared/src/itemView.ts`.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum ItemViewMode {
+    Grid,
+    List,
+}
+
+/// Mirrors `AppearanceSettings` in `packages/shared/src/settings.ts`.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+#[serde(rename_all = "camelCase", default)]
+pub struct AppearanceSettings {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub item_view_mode: Option<ItemViewMode>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thumbnail_size_index: Option<i32>,
+    #[serde(flatten)]
+    pub extra: BTreeMap<String, Value>,
+}
+
+/// Partial `appearance` patch accepted by `update_settings`.
+#[derive(Debug, Default, Clone, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase", default)]
+pub struct AppearanceSettingsPatch {
+    pub item_view_mode: Option<ItemViewMode>,
+    pub thumbnail_size_index: Option<i32>,
+    #[serde(flatten)]
+    pub extra: BTreeMap<String, Value>,
+}
+
+/// Mirrors `ShortcutSettings` in `packages/shared/src/settings.ts` (`Record<string, never>`).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub struct ShortcutSettings {
+    #[serde(flatten)]
+    pub extra: BTreeMap<String, Value>,
+}
+
+/// Mirrors `BehaviorSettings` in `packages/shared/src/settings.ts` (`Record<string, never>`).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub struct BehaviorSettings {
+    #[serde(flatten)]
+    pub extra: BTreeMap<String, Value>,
+}
+
 /// Mirrors `Settings` in `packages/shared/src/settings.ts`.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Settings {
     pub version: u32,
     /// Most recently opened first.
     pub recent_libraries: Vec<String>,
-    pub shortcuts: Value,
-    pub appearance: Value,
-    pub behavior: Value,
+    pub shortcuts: ShortcutSettings,
+    pub appearance: AppearanceSettings,
+    pub behavior: BehaviorSettings,
 }
 
 impl Default for Settings {
@@ -28,21 +73,21 @@ impl Default for Settings {
         Self {
             version: SETTINGS_VERSION,
             recent_libraries: Vec::new(),
-            shortcuts: empty_object(),
-            appearance: empty_object(),
-            behavior: empty_object(),
+            shortcuts: ShortcutSettings::default(),
+            appearance: AppearanceSettings::default(),
+            behavior: BehaviorSettings::default(),
         }
     }
 }
 
 /// Mirrors `SettingsPatch` in `packages/shared/src/settings.ts`.
-#[derive(Debug, Default, Clone, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase", default)]
 pub struct SettingsPatch {
     pub recent_libraries: Option<Vec<String>>,
-    pub shortcuts: Option<Value>,
-    pub appearance: Option<Value>,
-    pub behavior: Option<Value>,
+    pub shortcuts: Option<ShortcutSettings>,
+    pub appearance: Option<AppearanceSettingsPatch>,
+    pub behavior: Option<BehaviorSettings>,
 }
 
 /// On-disk settings plus keys this binary does not model yet.
@@ -79,13 +124,13 @@ impl SettingsDocument {
                 .truncate(MAX_RECENT_LIBRARIES);
         }
         if let Some(patch) = patch.shortcuts {
-            merge_json(&mut self.settings.shortcuts, patch);
+            merge_shortcut_settings(&mut self.settings.shortcuts, patch);
         }
         if let Some(patch) = patch.appearance {
-            merge_json(&mut self.settings.appearance, patch);
+            merge_appearance_settings(&mut self.settings.appearance, patch);
         }
         if let Some(patch) = patch.behavior {
-            merge_json(&mut self.settings.behavior, patch);
+            merge_behavior_settings(&mut self.settings.behavior, patch);
         }
         self.settings.version = SETTINGS_VERSION;
         self.raw = merge_known_into_raw(&self.raw, &self.settings);
@@ -138,21 +183,23 @@ fn merge_known_into_raw(raw: &Value, settings: &Settings) -> Value {
     out
 }
 
-fn merge_json(base: &mut Value, patch: Value) {
-    match (base, patch) {
-        (Value::Object(base_map), Value::Object(patch_map)) => {
-            for (key, value) in patch_map {
-                match base_map.get_mut(&key) {
-                    Some(existing) if existing.is_object() && value.is_object() => {
-                        merge_json(existing, value);
-                    }
-                    _ => {
-                        base_map.insert(key, value);
-                    }
-                }
-            }
-        }
-        (base_slot, patch) => *base_slot = patch,
+fn merge_shortcut_settings(base: &mut ShortcutSettings, patch: ShortcutSettings) {
+    base.extra.extend(patch.extra);
+}
+
+fn merge_behavior_settings(base: &mut BehaviorSettings, patch: BehaviorSettings) {
+    base.extra.extend(patch.extra);
+}
+
+fn merge_appearance_settings(base: &mut AppearanceSettings, patch: AppearanceSettingsPatch) {
+    if let Some(item_view_mode) = patch.item_view_mode {
+        base.item_view_mode = Some(item_view_mode);
+    }
+    if let Some(thumbnail_size_index) = patch.thumbnail_size_index {
+        base.thumbnail_size_index = Some(thumbnail_size_index);
+    }
+    for (key, value) in patch.extra {
+        base.extra.insert(key, value);
     }
 }
 
@@ -223,6 +270,22 @@ mod tests {
     }
 
     #[test]
+    fn appearance_serializes_with_shared_camel_case_fields() {
+        let appearance = AppearanceSettings {
+            item_view_mode: Some(ItemViewMode::List),
+            thumbnail_size_index: Some(2),
+            ..AppearanceSettings::default()
+        };
+        assert_eq!(
+            serde_json::to_value(&appearance).unwrap(),
+            serde_json::json!({
+                "itemViewMode": "list",
+                "thumbnailSizeIndex": 2
+            })
+        );
+    }
+
+    #[test]
     fn loads_legacy_file_with_only_recent_libraries() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join(SETTINGS_FILE);
@@ -230,7 +293,8 @@ mod tests {
         let settings = SettingsDocument::load(&path).settings;
         assert_eq!(settings.recent_libraries, ["/a"]);
         assert_eq!(settings.version, SETTINGS_VERSION);
-        assert_eq!(settings.shortcuts, empty_object());
+        assert_eq!(settings.shortcuts, ShortcutSettings::default());
+        assert_eq!(settings.appearance, AppearanceSettings::default());
     }
 
     #[test]
@@ -274,12 +338,22 @@ mod tests {
             raw: empty_object(),
         };
         doc.apply_patch(SettingsPatch {
-            appearance: Some(serde_json::json!({ "theme": "dark", "extra": true })),
+            appearance: Some(AppearanceSettingsPatch {
+                extra: BTreeMap::from([
+                    ("theme".into(), serde_json::json!("dark")),
+                    ("extra".into(), serde_json::json!(true)),
+                ]),
+                ..Default::default()
+            }),
             ..Default::default()
         });
         assert_eq!(
-            doc.settings.appearance,
-            serde_json::json!({ "theme": "dark", "extra": true })
+            doc.settings.appearance.extra.get("theme"),
+            Some(&serde_json::json!("dark"))
+        );
+        assert_eq!(
+            doc.settings.appearance.extra.get("extra"),
+            Some(&serde_json::json!(true))
         );
     }
 
@@ -294,5 +368,54 @@ mod tests {
             ..Default::default()
         });
         assert_eq!(doc.settings.recent_libraries, ["/x", "/y"]);
+    }
+
+    #[test]
+    fn appearance_patch_merges_like_use_appearance_settings() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join(SETTINGS_FILE);
+        fs::write(
+            &path,
+            r#"{"appearance":{"itemViewMode":"list","thumbnailSizeIndex":3}}"#,
+        )
+        .unwrap();
+
+        let mut doc = SettingsDocument::load(&path);
+        assert_eq!(
+            doc.settings.appearance.item_view_mode,
+            Some(ItemViewMode::List)
+        );
+        assert_eq!(doc.settings.appearance.thumbnail_size_index, Some(3));
+
+        doc.apply_patch(SettingsPatch {
+            appearance: Some(AppearanceSettingsPatch {
+                thumbnail_size_index: Some(1),
+                ..Default::default()
+            }),
+            ..Default::default()
+        });
+        assert_eq!(
+            doc.settings.appearance.item_view_mode,
+            Some(ItemViewMode::List)
+        );
+        assert_eq!(doc.settings.appearance.thumbnail_size_index, Some(1));
+
+        doc.apply_patch(SettingsPatch {
+            appearance: Some(AppearanceSettingsPatch {
+                item_view_mode: Some(ItemViewMode::Grid),
+                ..Default::default()
+            }),
+            ..Default::default()
+        });
+        assert_eq!(
+            doc.settings.appearance.item_view_mode,
+            Some(ItemViewMode::Grid)
+        );
+        assert_eq!(doc.settings.appearance.thumbnail_size_index, Some(1));
+
+        doc.save(&path).unwrap();
+        let reloaded = SettingsDocument::load(&path).settings.appearance;
+        assert_eq!(reloaded.item_view_mode, Some(ItemViewMode::Grid));
+        assert_eq!(reloaded.thumbnail_size_index, Some(1));
     }
 }
