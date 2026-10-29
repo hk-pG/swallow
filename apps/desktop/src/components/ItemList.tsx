@@ -3,12 +3,18 @@ import { type KeyboardEvent, type MouseEvent, memo, useCallback, useRef, useStat
 import type { Selection, SelectModifiers } from "../lib/selection";
 import { hasThumbnail, thumbnailUrl } from "../lib/thumbnail";
 import {
+  type ItemViewContextHandlers,
+  itemContextMenuEnabled,
+  useItemContextMenu,
+} from "../lib/useItemContextMenu";
+import {
   itemViewTabStop,
   useItemViewFocusSync,
   useItemViewKeyboard,
 } from "../lib/useItemViewKeyboard";
+import { ItemContextMenu } from "./ItemContextMenu";
 
-interface ItemListProps {
+interface ItemListProps extends ItemViewContextHandlers {
   libraryPath: string;
   items: ItemMetadata[];
   selection: Selection;
@@ -28,9 +34,30 @@ export function ItemList({
   onClearSelection,
   onDelete,
   onQuickLook,
+  isTrashView = false,
+  onContextTrash,
+  onContextRestore,
+  onContextPurge,
+  onContextEditTags,
+  onContextRevealInExplorer,
 }: ItemListProps) {
   const listRef = useRef<HTMLElement>(null);
-  const { handleClick, handleKeyDown } = useItemViewKeyboard({
+  const contextHandlers = {
+    isTrashView,
+    onContextTrash,
+    onContextRestore,
+    onContextPurge,
+    onContextEditTags,
+    onContextRevealInExplorer,
+  };
+  const contextMenuEnabled = itemContextMenuEnabled(contextHandlers);
+  const {
+    state: contextMenu,
+    close: closeContextMenu,
+    handleContextMenu,
+  } = useItemContextMenu(contextMenuEnabled, selection, onSelect);
+
+  const { handleClick: selectClick, handleKeyDown } = useItemViewKeyboard({
     items,
     containerRef: listRef,
     columnCount: useCallback(() => 1, []),
@@ -39,30 +66,55 @@ export function ItemList({
     onClearSelection,
     onDelete,
     onQuickLook,
+    onEscape: closeContextMenu,
   });
   useItemViewFocusSync(listRef, selection.focus);
+
+  const handleClick = useCallback(
+    (e: MouseEvent, id: ItemId) => {
+      closeContextMenu();
+      selectClick(e, id);
+    },
+    [closeContextMenu, selectClick],
+  );
+
   const [first] = items;
   if (!first) return <section className="grid-placeholder">アイテムがありません</section>;
   const tabStop = itemViewTabStop(items, selection.focus);
   return (
-    <section ref={listRef} className="item-list" aria-label="アイテム一覧（リスト）">
-      <div className="item-list-header" aria-hidden="true">
-        <span className="item-list-col-name">名前</span>
-        <span className="item-list-col-star">星</span>
-        <span className="item-list-col-tags">タグ</span>
-      </div>
-      {items.map((item) => (
-        <Row
-          key={item.id}
-          item={item}
-          libraryPath={libraryPath}
-          selected={selection.ids.has(item.id)}
-          tabStop={item.id === tabStop}
-          onClick={handleClick}
-          onKeyDown={handleKeyDown}
+    <>
+      <section ref={listRef} className="item-list" aria-label="アイテム一覧（リスト）">
+        <div className="item-list-header" aria-hidden="true">
+          <span className="item-list-col-name">名前</span>
+          <span className="item-list-col-star">星</span>
+          <span className="item-list-col-tags">タグ</span>
+        </div>
+        {items.map((item) => (
+          <Row
+            key={item.id}
+            item={item}
+            libraryPath={libraryPath}
+            selected={selection.ids.has(item.id)}
+            tabStop={item.id === tabStop}
+            onClick={handleClick}
+            onKeyDown={handleKeyDown}
+            onContextMenu={contextMenuEnabled ? handleContextMenu : undefined}
+          />
+        ))}
+      </section>
+      {contextMenuEnabled && (
+        <ItemContextMenu
+          state={contextMenu}
+          isTrashView={isTrashView}
+          onClose={closeContextMenu}
+          onTrash={() => onContextTrash?.()}
+          onRestore={(id) => onContextRestore?.(id)}
+          onPurge={(id) => onContextPurge?.(id)}
+          onEditTags={(id) => onContextEditTags?.(id)}
+          onRevealInExplorer={(id) => onContextRevealInExplorer?.(id)}
         />
-      ))}
-    </section>
+      )}
+    </>
   );
 }
 
@@ -73,6 +125,7 @@ const Row = memo(function Row({
   tabStop,
   onClick,
   onKeyDown,
+  onContextMenu,
 }: {
   item: ItemMetadata;
   libraryPath: string;
@@ -80,6 +133,7 @@ const Row = memo(function Row({
   tabStop: boolean;
   onClick: (e: MouseEvent, id: ItemId) => void;
   onKeyDown: (e: KeyboardEvent, id: ItemId) => void;
+  onContextMenu?: (e: MouseEvent, item: ItemMetadata) => void;
 }) {
   const [failed, setFailed] = useState(false);
   const src = hasThumbnail(item.ext) ? thumbnailUrl(libraryPath, item.id) : null;
@@ -92,6 +146,7 @@ const Row = memo(function Row({
       tabIndex={tabStop ? 0 : -1}
       onClick={(e) => onClick(e, item.id)}
       onKeyDown={(e) => onKeyDown(e, item.id)}
+      onContextMenu={onContextMenu ? (e) => onContextMenu(e, item) : undefined}
     >
       <span className="item-list-col-thumb">
         <span className="item-list-thumb">
