@@ -6,13 +6,13 @@ Cursor 非依存。人が GitHub 上で読む。入口は [HANDOFF.md](./HANDOFF
 
 ## 役割分担
 
-| 層 | GitHub 機能 | 役割 |
-|---|---|---|
-| 実行単位 | **Issues** | 1 機能 = 1 Issue。受け入れ条件は本文。**バグも必ず Issue**（`bug` ラベル） |
-| 期 | **Milestones** | `alpha` / `beta` / `backlog` |
-| 優先・領域 | **Labels** | `P1`/`P2`/`P3`、`area:desktop` 等。不具合は `bug` |
-| 進行状況 | **Projects（ボード）** | Todo / In progress / Done（任意。Milestone+Label でも可） |
-| 入口 | リポ [`docs/roadmap.md`](./roadmap.md) / [`docs/HANDOFF.md`](./HANDOFF.md) | 人が最初に開く。詳細は Milestone/Issue へ |
+| 層         | GitHub 機能                                                                | 役割                                                                       |
+| ---------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| 実行単位   | **Issues**                                                                 | 1 機能 = 1 Issue。受け入れ条件は本文。**バグも必ず Issue**（`bug` ラベル） |
+| 期         | **Milestones**                                                             | `alpha` / `beta` / `backlog`                                               |
+| 優先・領域 | **Labels**                                                                 | `P1`/`P2`/`P3`、`area:desktop` 等。不具合は `bug`                          |
+| 進行状況   | **Projects（ボード）**                                                     | Todo / In progress / Done（任意。Milestone+Label でも可）                  |
+| 入口       | リポ [`docs/roadmap.md`](./roadmap.md) / [`docs/HANDOFF.md`](./HANDOFF.md) | 人が最初に開く。詳細は Milestone/Issue へ                                  |
 
 バグ対応の手順は [`AGENTS.md`](../AGENTS.md) の「バグの扱い」を正とする。チャットや PR だけで直さず、再現・受け入れ条件・原因仮説を Issue 本文に残す。
 
@@ -20,16 +20,15 @@ Cursor Project の notes / Context は当日の作業メモのみ。引き継ぎ
 
 ## マイルストーン定義
 
-| 名前 | 意味 |
-|---|---|
-| `alpha` | α（デスクトップ主要機能は main 到達済み。トラッカー紐づけ） |
-| `beta` | P1/P2（Eagle ギャップ埋め） |
-| `backlog` | P3・後続・α 外（拡張別リポなど） |
+| 名前      | 意味                                                        |
+| --------- | ----------------------------------------------------------- |
+| `alpha`   | α（デスクトップ主要機能は main 到達済み。トラッカー紐づけ） |
+| `beta`    | P1/P2（Eagle ギャップ埋め）                                 |
+| `backlog` | P3・後続・α 外（拡張別リポなど）                            |
 
 ## いま付ける Issue（要約）
 
 詳細は [roadmap.md](./roadmap.md) と [`scripts/agent/github-taxonomy-setup.sh`](../scripts/agent/github-taxonomy-setup.sh)。
-
 - **beta + P1**: #34 #35 #49 #50
 - **beta + P2**: #51–#56
 - **backlog + P3**: #57 #58
@@ -41,7 +40,6 @@ Cursor Project の notes / Context は当日の作業メモのみ。引き継ぎ
 ### 適用済み（2026-10-18 08:12 UTC）
 
 `scripts/agent/github-taxonomy-setup.sh` をリポ書き込み権限のある `GH_TOKEN` で実行し完了。
-
 - マイルストーン `alpha` / `beta` / `backlog` 確認済み
 - ラベル `P1`/`P2`/`P3`/`area:desktop`/`area:extension`/`area:ci` 確認済み
 - 対象オープン Issue 16 件に付与済み（代表確認: #49 #50 #34 → beta+P1、#45 → alpha、#46 → backlog+area:ci）

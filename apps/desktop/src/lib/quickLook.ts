@@ -52,7 +52,7 @@ export function resolveQuickLookTarget(
     : [...visibleItems];
   if (playlist.length === 0) return null;
   const foundIndex = playlist.findIndex((item) => item.id === activeId);
-  const index = foundIndex >= 0 ? foundIndex : 0;
+  const index = Math.max(foundIndex, 0);
   const item = playlist[index];
   if (!item) return null;
   return {
