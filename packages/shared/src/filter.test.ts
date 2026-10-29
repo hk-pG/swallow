@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { filterItems, matchesQuery, matchesView, parseQuery } from "./filter";
 import type { Folder, ItemMetadata } from "./library";
+import { EMPTY_SMART_FOLDER_CRITERIA, type SmartFolder } from "./smartFolders";
 
 function item(overrides: Partial<ItemMetadata> & Pick<ItemMetadata, "id">): ItemMetadata {
   return {
@@ -156,5 +157,41 @@ describe("filterItems", () => {
         }),
       ),
     ).toEqual(["starred"]);
+  });
+
+  it("smart folder view applies saved criteria, toolbar query, and advanced search together", () => {
+    const smartFolders: SmartFolder[] = [
+      {
+        id: "sf1",
+        name: "High rated",
+        criteria: { ...EMPTY_SMART_FOLDER_CRITERIA, minStar: 3 },
+      },
+    ];
+    const low = item({ id: "low", name: "Sunset", star: 2 });
+    const high = item({ id: "high", name: "Sunset Pro", star: 4, tags: ["landscape"] });
+    const list = [low, high];
+
+    expect(
+      ids(filterItems(list, { kind: "smartFolder", smartFolderId: "sf1" }, "", [], smartFolders)),
+    ).toEqual(["high"]);
+    expect(
+      ids(
+        filterItems(list, { kind: "smartFolder", smartFolderId: "sf1" }, "pro", [], smartFolders),
+      ),
+    ).toEqual(["high"]);
+    expect(
+      ids(
+        filterItems(list, { kind: "smartFolder", smartFolderId: "sf1" }, "", [], smartFolders, {
+          ...EMPTY_SMART_FOLDER_CRITERIA,
+          tags: ["landscape"],
+          tagMatch: "all",
+        }),
+      ),
+    ).toEqual(["high"]);
+    expect(
+      ids(
+        filterItems(list, { kind: "smartFolder", smartFolderId: "missing" }, "", [], smartFolders),
+      ),
+    ).toEqual([]);
   });
 });

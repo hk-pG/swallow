@@ -1,14 +1,14 @@
 import type { ColorLabel } from "./colorLabel";
-import { subtreeIds } from "./folders";
+import { itemMatchesFolderSubtree } from "./folderMatch";
 import type { Folder, FolderId, ItemMetadata } from "./library";
 import {
   EMPTY_SMART_FOLDER_CRITERIA,
-  filterItemsBySmartFolder,
   isSmartFolderCriteriaActive,
   matchesSmartFolderCriteria,
   type SmartFolder,
   type SmartFolderCriteria,
 } from "./smartFolders";
+import { matchesQueryTerms, parseQueryTerms } from "./textSearch";
 
 /** Minimum star (1–5) for the fixed favorites smart view. */
 export const FAVORITES_MIN_STAR = 1;
@@ -49,7 +49,7 @@ export function matchesView(
     case "uncategorized":
       return !item.isDeleted && item.folders.length === 0;
     case "folder":
-      return matchesFolder(item, view.folderId, folders);
+      return itemMatchesFolderSubtree(item, view.folderId, folders);
     case "tag":
       return !item.isDeleted && item.tags.includes(view.tag);
     case "colorLabel":
@@ -62,32 +62,13 @@ export function matchesView(
   }
 }
 
-function matchesFolder(
-  item: ItemMetadata,
-  folderId: FolderId,
-  folders: readonly Folder[],
-): boolean {
-  if (item.isDeleted) return false;
-  const ids = subtreeIds(folders, folderId);
-  if (ids === null) return item.folders.includes(folderId);
-  return item.folders.some((id) => ids.includes(id));
-}
-
-function normalize(text: string): string {
-  return text.normalize("NFKC").toLowerCase();
-}
-
 /** Splits on whitespace (including full-width spaces); every term must match. */
 export function parseQuery(query: string): string[] {
-  return normalize(query)
-    .split(/\s+/)
-    .filter((term) => term.length > 0);
+  return parseQueryTerms(query);
 }
 
 export function matchesQuery(item: ItemMetadata, terms: readonly string[]): boolean {
-  if (terms.length === 0) return true;
-  const haystacks = [item.name, item.annotation, ...item.tags].map(normalize);
-  return terms.every((term) => haystacks.some((text) => text.includes(term)));
+  return matchesQueryTerms(item, terms);
 }
 
 function matchesAdvancedCriteria(
@@ -108,15 +89,6 @@ export function filterItems(
   searchCriteria: SmartFolderCriteria = EMPTY_SMART_FOLDER_CRITERIA,
 ): ItemMetadata[] {
   const terms = parseQuery(query);
-  if (view.kind === "smartFolder") {
-    const smart = findSmartFolder(smartFolders, view.smartFolderId);
-    if (!smart) return [];
-    const base = filterItemsBySmartFolder(items, smart.criteria, folders).filter((item) =>
-      matchesAdvancedCriteria(item, searchCriteria, folders),
-    );
-    if (terms.length === 0) return base;
-    return base.filter((item) => matchesQuery(item, terms));
-  }
   return items.filter(
     (item) =>
       matchesView(item, view, folders, smartFolders) &&
