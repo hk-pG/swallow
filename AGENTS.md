@@ -16,9 +16,12 @@ Issue を 1 件担当するときは `.agents/skills/issue-to-pr/SKILL.md` を�
 
 ```sh
 scripts/agent/start-issue.sh <N> [--worktree]   # 重複確認、ブランチ準備、Issue の表示（worktree の置き場所は $SWALLOW_WORKTREE_DIR）
+scripts/agent/review-staged.sh                  # commit 前: staged のセルフレビュー補助 + 軽い機械チェック
 scripts/agent/check.sh                          # CI と同じ pnpm ci:all。通ると PR 作成が許可される
 scripts/agent/open-pr.sh --title "<title>" --body-file <path>
 ```
+
+`pnpm install`（`prepare`）で `.githooks` を有効化する。未設定なら `scripts/agent/install-hooks.sh`。pre-commit は Biome（`--staged`）と staged `.rs` の rustfmt のみ。フル `ci:all` は載せない（`check.sh` 側）。`--no-verify` は使わない。
 
 Orca で作った worktree では手元で実装せず、`scripts/agent/cloud-run.sh <N>` で Cloud Agent に依頼する。`.cursor/cli.json` で書き込みやビルドが禁止されているのはそのため。
 
@@ -48,6 +51,8 @@ Orca で作った worktree では手元で実装せず、`scripts/agent/cloud-ru
 | JS のみ                 | `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm build` |
 | Rust のみ               | `pnpm rust:fmt` / `pnpm rust:clippy` / `pnpm rust:test`     |
 | 整形                    | `pnpm format`（Biome）、`cargo fmt --all`                   |
+| コミット前（staged）    | `scripts/agent/review-staged.sh`                            |
+| フック再インストール    | `scripts/agent/install-hooks.sh`                            |
 | アプリ起動              | `pnpm dev`                                                  |
 
 ## 規約

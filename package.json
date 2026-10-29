@@ -6,6 +6,7 @@
     "node": ">=22"
   },
   "scripts": {
+    "prepare": "scripts/agent/install-hooks.sh",
     "dev": "pnpm --filter @swallow/desktop tauri dev",
     "build": "pnpm -r build",
     "lint": "biome check .",
