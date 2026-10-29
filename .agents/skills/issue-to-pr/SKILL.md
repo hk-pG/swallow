@@ -63,7 +63,20 @@ scripts/agent/start-issue.sh <N> --worktree   # main のチェックアウトか
 
 作業中は速いチェックを回す: `pnpm test` / `pnpm typecheck` / `pnpm rust:test` / `pnpm rust:clippy`。
 
-コミットは意味のある単位で、メッセージは Conventional Commits（日本語の要約）にする。PR は squash マージされるので細かさにはこだわらない。
+### コミットするとき（必須）
+
+`git add` したあと、**毎回** `git commit` の前に:
+
+```sh
+scripts/agent/review-staged.sh
+```
+
+- 出力の意味チェックリストに沿って `git diff --cached` を読む（受け入れ条件・デバッグ残骸・エラー時挙動・無関係な変更）
+- スクリプト内の Biome / rustfmt が落ちたら直して再 stage → 再実行
+- 通ったら Conventional Commits（日本語の要約）で commit する。`--no-verify` は使わない
+- `.githooks/pre-commit` が同じ機械チェックを再度かける（`pnpm install` または `scripts/agent/install-hooks.sh` で有効化）
+
+PR は squash マージされるのでコミットの細かさにはこだわらない。
 
 ## 5. 検証
 
@@ -77,14 +90,14 @@ scripts/agent/check.sh
 - 未コミットのまま実行してよい。通った状態をそのままコミットすれば PR を作れる
 - 画面の変更は可能なら `pnpm dev` で確認する。確認できなければ PR のチェックを外したままにし、理由を書く
 
-## 6. セルフレビュー
+## 6. セルフレビュー（PR 前）
 
-`git diff origin/main...HEAD` を読み、次を確認する:
+各 commit 前の `review-staged.sh` に加え、PR 直前に `git diff origin/main...HEAD` を読み、次を確認する:
 - 受け入れ条件をすべて満たしているか。満たせないものは理由を説明できるか
 - デバッグ用のコード、不要なファイル、関係ない変更が混ざっていないか
 - エラー時の挙動（存在しない ID、壊れた JSON、ライブラリ未オープン）を考えたか
 
-直したら 5 に戻る。
+直したら stage → `review-staged.sh` → commit し、5 に戻る。
 
 ## 7. PR 作成
 

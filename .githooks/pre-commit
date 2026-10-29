@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Light pre-commit gate (Biome --staged, rustfmt on staged .rs). Not full ci:all.
+set -euo pipefail
+root=$(git rev-parse --show-toplevel)
+exec "$root/scripts/agent/run-pre-commit.sh"
