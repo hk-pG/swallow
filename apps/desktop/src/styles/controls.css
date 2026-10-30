@@ -1,0 +1,91 @@
+/*
+ * Control class convention (Issue #88):
+ * - push-button: bordered actions (toolbar, forms, inspector)
+ * - text-button: borderless text actions
+ * - sidebar-icon-button (alias: compact icon-button): icon-only in sidebars
+ * - nav-item: sidebar navigation rows
+ * - grid-item / item-list-row: selectable item cells
+ * Unclassed <button> elements are intentionally unstyled (browser default).
+ */
+
+.push-button {
+  padding: 6px 10px;
+  border: 1px solid var(--color-separator);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.push-button:hover:not(:disabled) {
+  background: var(--color-fill);
+}
+
+.push-button:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.push-button.compact {
+  padding: 4px 8px;
+}
+
+.text-button {
+  padding: 2px 6px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.text-button:hover:not(:disabled) {
+  background: var(--color-fill);
+}
+
+.text-button:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.text-button.danger,
+.push-button.danger {
+  color: var(--color-danger);
+}
+
+.text-button.link {
+  padding: 4px 8px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-button.link:hover:not(:disabled) {
+  text-decoration: underline;
+  background: none;
+}
+
+.sidebar-icon-button {
+  flex: none;
+  padding: 0 4px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sidebar-icon-button:hover:not(:disabled) {
+  color: inherit;
+  background: var(--color-fill);
+}
+
+.sidebar-icon-button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
