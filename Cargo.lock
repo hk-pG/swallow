@@ -3623,6 +3623,7 @@ version = "0.1.0"
 dependencies = [
  "image",
  "imagesize",
+ "libc",
  "percent-encoding",
  "serde",
  "serde_json",
