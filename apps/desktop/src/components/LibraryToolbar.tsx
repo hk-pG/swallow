@@ -64,17 +64,24 @@ export function LibraryToolbar({
       />
       <button
         type="button"
+        className="push-button"
         onClick={onQuickLook}
         disabled={disabled || quickLookDisabled}
         title="選択中のアイテムを拡大プレビュー（Space）"
       >
         クイックルック
       </button>
-      <button type="button" onClick={() => void onPickAndImport()} disabled={disabled || importing}>
+      <button
+        type="button"
+        className="push-button"
+        onClick={() => void onPickAndImport()}
+        disabled={disabled || importing}
+      >
         {importing ? "取り込み中…" : "ファイル取り込み"}
       </button>
       <button
         type="button"
+        className="push-button"
         onClick={() => void onPickFoldersAndImport()}
         disabled={disabled || importing}
       >

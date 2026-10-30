@@ -1,11 +1,37 @@
 :root {
   color-scheme: light dark;
   font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
-  font-size: 13px;
+  font-size: var(--font-body);
+  --font-caption: 11px;
+  --font-body: 13px;
+  --font-title: 15px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-pill: 999px;
+  --color-label: CanvasText;
+  --color-secondary-label: color-mix(in srgb, currentColor 55%, transparent);
+  --color-fill: color-mix(in srgb, currentColor 8%, transparent);
+  --color-fill-subtle: color-mix(in srgb, currentColor 6%, transparent);
+  --color-fill-emphasis: color-mix(in srgb, currentColor 15%, transparent);
+  --color-tint: Highlight;
+  --color-tint-subtle: color-mix(in srgb, var(--color-tint) 12%, transparent);
+  --color-tint-muted: color-mix(in srgb, var(--color-tint) 15%, transparent);
+  --color-tint-focus: color-mix(in srgb, var(--color-tint) 70%, currentColor);
+  --color-tint-ring: color-mix(in srgb, var(--color-tint) 40%, transparent);
+  --color-tint-star: color-mix(in srgb, var(--color-tint) 80%, currentColor);
+  --color-danger: #d33;
+  --color-danger-muted: color-mix(in srgb, var(--color-danger) 60%, transparent);
+  --color-danger-text: color-mix(in srgb, #c0392b 85%, currentColor);
+  --color-star: #f5b400;
+  --color-surface: Canvas;
+  --color-surface-text: CanvasText;
   --border: color-mix(in srgb, currentColor 15%, transparent);
   --border-strong: color-mix(in srgb, currentColor 26%, transparent);
-  --shell-border: var(--border-strong);
-  --muted: color-mix(in srgb, currentColor 55%, transparent);
+  --color-separator: var(--border);
+  --color-separator-strong: var(--border-strong);
+  --shell-border: var(--color-separator-strong);
+  --muted: var(--color-secondary-label);
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -23,4 +49,5 @@ body,
 #root {
   height: 100%;
   margin: 0;
+  color: var(--color-label);
 }

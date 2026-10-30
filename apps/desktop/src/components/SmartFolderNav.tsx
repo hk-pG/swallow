@@ -145,7 +145,11 @@ export function SmartFolderNav({
           disabled={disabled || busy}
           onChange={(e) => setNameDraft(e.target.value)}
         />
-        <button type="submit" disabled={disabled || busy || nameDraft.trim() === ""}>
+        <button
+          type="submit"
+          className="push-button compact"
+          disabled={disabled || busy || nameDraft.trim() === ""}
+        >
           作成
         </button>
       </form>
@@ -182,7 +186,12 @@ export function SmartFolderNav({
             datalistId="smart-folder-tag-suggestions"
           />
           <div className="smart-folder-editor-actions">
-            <button type="button" disabled={disabled || busy} onClick={saveCriteria}>
+            <button
+              type="button"
+              className="push-button compact"
+              disabled={disabled || busy}
+              onClick={saveCriteria}
+            >
               条件を保存
             </button>
           </div>

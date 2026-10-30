@@ -150,7 +150,11 @@ export function TagNav({ libraryTags, view, onChange, mutations, disabled }: Pro
           disabled={disabled || busy}
           onChange={(e) => setTagDraft(e.target.value)}
         />
-        <button type="submit" disabled={disabled || busy || tagDraft.trim() === ""}>
+        <button
+          type="submit"
+          className="push-button compact"
+          disabled={disabled || busy || tagDraft.trim() === ""}
+        >
           追加
         </button>
       </form>
@@ -164,7 +168,11 @@ export function TagNav({ libraryTags, view, onChange, mutations, disabled }: Pro
           disabled={disabled || busy}
           onChange={(e) => setGroupDraft(e.target.value)}
         />
-        <button type="submit" disabled={disabled || busy || groupDraft.trim() === ""}>
+        <button
+          type="submit"
+          className="push-button compact"
+          disabled={disabled || busy || groupDraft.trim() === ""}
+        >
           作成
         </button>
       </form>
