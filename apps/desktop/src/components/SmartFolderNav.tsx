@@ -6,8 +6,10 @@ import {
   type SmartFolderCriteria,
 } from "@swallow/shared";
 import { ask } from "@tauri-apps/plugin-dialog";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, type MouseEvent, useEffect, useState } from "react";
+import { useSidebarContextMenu } from "../lib/useSidebarContextMenu";
 import type { SmartFoldersApi } from "../lib/useSmartFolders";
+import { SidebarContextMenu } from "./SidebarContextMenu";
 import { SmartFolderCriteriaFields } from "./SmartFolderCriteriaFields";
 
 interface Props {
@@ -19,6 +21,8 @@ interface Props {
   mutations: SmartFoldersApi;
   disabled?: boolean;
 }
+
+type SmartFolderMenuTarget = { folder: SmartFolder };
 
 export function SmartFolderNav({
   smartFolders,
@@ -32,25 +36,21 @@ export function SmartFolderNav({
   const [nameDraft, setNameDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [editorId, setEditorId] = useState<string | null>(null);
+  const [criteriaEditorId, setCriteriaEditorId] = useState<string | null>(null);
   const [criteriaDraft, setCriteriaDraft] = useState<SmartFolderCriteria>(
     EMPTY_SMART_FOLDER_CRITERIA,
   );
+  const {
+    state: menuState,
+    close: closeMenu,
+    open: openMenu,
+  } = useSidebarContextMenu<SmartFolderMenuTarget>();
 
   const selectedId = view.kind === "smartFolder" ? view.smartFolderId : null;
 
   useEffect(() => {
-    if (disabled) setEditorId(null);
+    if (disabled) setCriteriaEditorId(null);
   }, [disabled]);
-
-  useEffect(() => {
-    if (!selectedId) return;
-    const folder = smartFolders.find((entry) => entry.id === selectedId);
-    if (folder) {
-      setCriteriaDraft(folder.criteria);
-      setEditorId(folder.id);
-    }
-  }, [selectedId, smartFolders]);
 
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
@@ -75,27 +75,30 @@ export function SmartFolderNav({
     });
   };
 
+  const openCriteriaEditor = (folder: SmartFolder) => {
+    setCriteriaEditorId(folder.id);
+    setCriteriaDraft(folder.criteria);
+  };
+
   const saveCriteria = () => {
-    if (!editorId || disabled || busy) return;
+    if (!criteriaEditorId || disabled || busy) return;
     void run(async () => {
-      await mutations.onUpdateCriteria(editorId, criteriaDraft);
+      await mutations.onUpdateCriteria(criteriaEditorId, criteriaDraft);
     });
   };
 
-  const renameSelected = () => {
-    if (!editorId || disabled || busy) return;
-    const current = smartFolders.find((folder) => folder.id === editorId);
-    if (!current) return;
-    const next = window.prompt("スマートフォルダ名", current.name);
+  const renameFolder = (folder: SmartFolder) => {
+    if (disabled || busy) return;
+    const next = window.prompt("スマートフォルダ名", folder.name);
     if (!next) return;
     const name = next.trim();
-    if (!name || name === current.name) return;
+    if (!name || name === folder.name) return;
     void run(async () => {
-      await mutations.onRename(editorId, name);
+      await mutations.onRename(folder.id, name);
     });
   };
 
-  const deleteSelected = (folder: SmartFolder) => {
+  const deleteFolder = (folder: SmartFolder) => {
     void run(async () => {
       const confirmed = await ask(`スマートフォルダ「${folder.name}」を削除しますか？`, {
         title: "スマートフォルダを削除",
@@ -105,9 +108,27 @@ export function SmartFolderNav({
       });
       if (!confirmed) return;
       await mutations.onDelete(folder.id);
-      setEditorId(null);
+      if (criteriaEditorId === folder.id) setCriteriaEditorId(null);
     });
   };
+
+  const menuItems = menuState
+    ? [
+        {
+          label: "名前を変更…",
+          onClick: () => renameFolder(menuState.folder),
+        },
+        {
+          label: "条件を編集…",
+          onClick: () => openCriteriaEditor(menuState.folder),
+        },
+        {
+          label: "削除",
+          danger: true,
+          onClick: () => deleteFolder(menuState.folder),
+        },
+      ]
+    : [];
 
   return (
     <section className="sidebar-section" aria-label="スマートフォルダ">
@@ -140,29 +161,17 @@ export function SmartFolderNav({
                 className="nav-item"
                 aria-current={selectedId === folder.id ? "page" : undefined}
                 disabled={disabled || busy}
-                onClick={() => {
-                  setEditorId(folder.id);
-                  setCriteriaDraft(folder.criteria);
-                  onChange({ kind: "smartFolder", smartFolderId: folder.id });
-                }}
+                onClick={() => onChange({ kind: "smartFolder", smartFolderId: folder.id })}
+                onContextMenu={(event: MouseEvent) => openMenu(event, { folder })}
               >
                 {folder.name}
-              </button>
-              <button
-                type="button"
-                className="sidebar-icon-button"
-                title="削除"
-                disabled={disabled || busy}
-                onClick={() => deleteSelected(folder)}
-              >
-                ×
               </button>
             </div>
           ))}
         </nav>
       )}
 
-      {editorId && (
+      {criteriaEditorId && (
         <div className="smart-folder-editor">
           <SmartFolderCriteriaFields
             criteria={criteriaDraft}
@@ -173,9 +182,6 @@ export function SmartFolderNav({
             datalistId="smart-folder-tag-suggestions"
           />
           <div className="smart-folder-editor-actions">
-            <button type="button" disabled={disabled || busy} onClick={renameSelected}>
-              名前変更
-            </button>
             <button type="button" disabled={disabled || busy} onClick={saveCriteria}>
               条件を保存
             </button>
@@ -188,6 +194,13 @@ export function SmartFolderNav({
           {error}
         </p>
       )}
+
+      <SidebarContextMenu
+        state={menuState}
+        ariaLabel={menuState ? `${menuState.folder.name} の操作` : "スマートフォルダの操作"}
+        items={menuItems}
+        onClose={closeMenu}
+      />
     </section>
   );
 }

@@ -1,7 +1,9 @@
 import type { ItemView, LibraryTags, TagGroup } from "@swallow/shared";
 import { ask } from "@tauri-apps/plugin-dialog";
-import { type FormEvent, useMemo, useState } from "react";
+import { type FormEvent, type MouseEvent, useMemo, useState } from "react";
 import { tagSections } from "../lib/tags";
+import { useSidebarContextMenu } from "../lib/useSidebarContextMenu";
+import { SidebarContextMenu } from "./SidebarContextMenu";
 
 export interface TagNavMutations {
   addTag: (tag: string) => Promise<void>;
@@ -19,11 +21,24 @@ interface Props {
   disabled?: boolean;
 }
 
+type TagMenuTarget = { tag: string; groupId: string | null };
+type TagGroupMenuTarget = { group: TagGroup };
+
 export function TagNav({ libraryTags, view, onChange, mutations, disabled }: Props) {
   const [tagDraft, setTagDraft] = useState("");
   const [groupDraft, setGroupDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const {
+    state: tagMenuState,
+    close: closeTagMenu,
+    open: openTagMenu,
+  } = useSidebarContextMenu<TagMenuTarget>();
+  const {
+    state: groupMenuState,
+    close: closeGroupMenu,
+    open: openGroupMenu,
+  } = useSidebarContextMenu<TagGroupMenuTarget>();
 
   const sections = useMemo(() => (libraryTags ? tagSections(libraryTags) : []), [libraryTags]);
   const groups = libraryTags?.groups ?? [];
@@ -92,6 +107,34 @@ export function TagNav({ libraryTags, view, onChange, mutations, disabled }: Pro
     });
   };
 
+  const tagMenuItems = tagMenuState
+    ? [
+        ...groups.map((group) => ({
+          label: `グループ: ${group.name}`,
+          onClick: () => void run(() => mutations.setTagGroup(tagMenuState.tag, group.id)),
+        })),
+        {
+          label: "グループ: 未分類",
+          onClick: () => void run(() => mutations.setTagGroup(tagMenuState.tag, null)),
+        },
+        {
+          label: "タグを削除",
+          danger: true,
+          onClick: () => handleRemoveTag(tagMenuState.tag),
+        },
+      ]
+    : [];
+
+  const groupMenuItems = groupMenuState
+    ? [
+        {
+          label: "グループを削除",
+          danger: true,
+          onClick: () => handleDeleteGroup(groupMenuState.group),
+        },
+      ]
+    : [];
+
   return (
     <section className="sidebar-section" aria-label="タグ">
       <div className="sidebar-section-header">
@@ -134,20 +177,19 @@ export function TagNav({ libraryTags, view, onChange, mutations, disabled }: Pro
 
       {sections.map(({ group, tags }) => (
         <div key={group?.id ?? "ungrouped"} className="tag-group">
-          <div className="tag-group-header">
-            <span className="tag-group-name">{group?.name ?? "未分類"}</span>
-            {group && (
-              <button
-                type="button"
-                className="sidebar-icon-button"
-                title="グループを削除"
-                disabled={disabled || busy}
-                onClick={() => handleDeleteGroup(group)}
-              >
-                ×
-              </button>
-            )}
-          </div>
+          {group ? (
+            <button
+              type="button"
+              className="tag-group-header tag-group-header-button"
+              onContextMenu={(event: MouseEvent) => openGroupMenu(event, { group })}
+            >
+              <span className="tag-group-name">{group.name}</span>
+            </button>
+          ) : (
+            <div className="tag-group-header">
+              <span className="tag-group-name">未分類</span>
+            </div>
+          )}
           {tags.length === 0 ? (
             <p className="tag-group-empty">タグなし</p>
           ) : (
@@ -160,34 +202,11 @@ export function TagNav({ libraryTags, view, onChange, mutations, disabled }: Pro
                     aria-current={view.kind === "tag" && view.tag === tag ? "page" : undefined}
                     disabled={disabled || busy}
                     onClick={() => onChange({ kind: "tag", tag })}
+                    onContextMenu={(event: MouseEvent) =>
+                      openTagMenu(event, { tag, groupId: group?.id ?? null })
+                    }
                   >
                     {tag}
-                  </button>
-                  <select
-                    className="tag-group-select"
-                    aria-label={`${tag} のグループ`}
-                    value={group?.id ?? ""}
-                    disabled={disabled || busy}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      void run(() => mutations.setTagGroup(tag, value === "" ? null : value));
-                    }}
-                  >
-                    <option value="">未分類</option>
-                    {groups.map((g) => (
-                      <option key={g.id} value={g.id}>
-                        {g.name}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    className="sidebar-icon-button"
-                    title="タグを削除"
-                    disabled={disabled || busy}
-                    onClick={() => handleRemoveTag(tag)}
-                  >
-                    ×
                   </button>
                 </li>
               ))}
@@ -195,6 +214,21 @@ export function TagNav({ libraryTags, view, onChange, mutations, disabled }: Pro
           )}
         </div>
       ))}
+
+      <SidebarContextMenu
+        state={tagMenuState}
+        ariaLabel={tagMenuState ? `タグ ${tagMenuState.tag} の操作` : "タグの操作"}
+        items={tagMenuItems}
+        onClose={closeTagMenu}
+      />
+      <SidebarContextMenu
+        state={groupMenuState}
+        ariaLabel={
+          groupMenuState ? `グループ ${groupMenuState.group.name} の操作` : "タググループの操作"
+        }
+        items={groupMenuItems}
+        onClose={closeGroupMenu}
+      />
     </section>
   );
 }
