@@ -14,13 +14,15 @@ Tool versions are pinned in `rust-toolchain.toml`, `.nvmrc`, and the `packageMan
 
 ## Local development (host)
 
+Requires **Node 22+** (`corepack` / pnpm), the **Rust toolchain** from `rust-toolchain.toml` (`rustup` recommended), and on Linux the [Tauri system dependencies](https://v2.tauri.app/start/prerequisites/).
+
 ```sh
 corepack enable
 pnpm install
-pnpm dev        # Launch the Tauri app
+pnpm dev        # Launch the Tauri app (needs cargo on PATH)
 ```
 
-Developing on a Linux host requires the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/).
+Without Rust on the host, use the container workflow below or a Dev Container instead of `pnpm dev` / `pnpm ci:all`.
 
 ## Build and test in a container
 
@@ -51,7 +53,9 @@ Errors are returned as `{ "code", "message" }` (`ApiError`). When no library is 
 Conventions and the steps from an issue to a pull request are in `AGENTS.md` and `.agents/skills/issue-to-pr/SKILL.md`. Cursor and Codex load these as skills. Claude Code follows `CLAUDE.md`, which points at `AGENTS.md`. Helper scripts are under `scripts/agent/`.
 
 In a worktree created with Orca, implementation is handed to a Cursor Cloud Agent. The setup in `orca.yaml` replaces `.cursor/cli.json` with `scripts/agent/cloud-only.cli.json`, which blocks the local `cursor-agent` from writing files, building, testing, committing, and pushing. When the worktree is created with a linked issue, the agent calls `scripts/agent/cloud-run.sh` to start a Cloud Agent and reports its URL.
-- The Cloud Agent runs in the same `docker/build.Dockerfile` image as CI, configured by `.cursor/environment.json`
+
+**Cloud Agent environment:** `.cursor/environment.json` points at the same `docker/build.Dockerfile` as CI. When a successful **environment build** exists, agents boot from that snapshot (Node, Rust, and Tauri Linux deps already installed). If no build is available yet, Cursor may start on a generic image instead; `install` then runs `scripts/agent/environment-install.sh`, which installs `pnpm` dependencies and, when `cargo` is missing, Rust via `rustup` from `rust-toolchain.toml`. GUI `pnpm dev` on a bare Linux VM still needs Tauri system packages—prefer the Docker / Dev Container path for full desktop builds.
+
 - Set `CURSOR_API_KEY` (created under API Keys on the Cursor Dashboard) in the shell that launches Orca
 - To let the Cloud Agent use `gh`, set a fine-grained token scoped to this repository as `SWALLOW_CLOUD_GH_TOKEN`. When it is unset, Cursor still opens the pull request automatically
 - These restrictions list the main commands. Writes through the shell remain possible

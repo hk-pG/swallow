@@ -3,5 +3,5 @@
     "dockerfile": "../docker/build.Dockerfile",
     "context": ".."
   },
-  "install": "pnpm install --frozen-lockfile"
+  "install": "scripts/agent/environment-install.sh"
 }

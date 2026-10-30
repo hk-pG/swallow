@@ -18,10 +18,13 @@ Issue を 1 件担当するときは `.agents/skills/issue-to-pr/SKILL.md` を�
 scripts/agent/start-issue.sh <N> [--worktree]   # 重複確認、ブランチ準備、Issue の表示（worktree の置き場所は $SWALLOW_WORKTREE_DIR）
 scripts/agent/review-staged.sh                  # commit 前: staged のセルフレビュー補助 + 軽い機械チェック
 scripts/agent/check.sh                          # CI と同じ pnpm ci:all。通ると PR 作成が許可される
+scripts/agent/check-rust.sh                     # Rust のみ（反復用）。PR 直前は check.sh
 scripts/agent/open-pr.sh --title "<title>" --body-file <path>
 ```
 
 `pnpm install`（`prepare`）で `.githooks` を有効化する。未設定なら `scripts/agent/install-hooks.sh`。pre-commit は Biome（`--staged`）と staged `.rs` の rustfmt のみ。フル `ci:all` は載せない（`check.sh` 側）。`--no-verify` は使わない。
+
+`pnpm ci:all` と `pnpm dev` は **cargo が PATH にあること**が前提。Rust 未導入のホストや Cloud Agent では Dev Container、`docker compose run --rm build`、または `.cursor/environment.json` の Docker ビルドイメージ（推奨）を使う。イメージ無し起動時は `scripts/agent/environment-install.sh` が rustup で toolchain を入れる（Linux で GUI を動かす場合は Tauri のシステム依存も必要。README 参照）。
 
 Orca で作った worktree では手元で実装せず、`scripts/agent/cloud-run.sh <N>` で Cloud Agent に依頼する。`.cursor/cli.json` で書き込みやビルドが禁止されているのはそのため。
 
@@ -45,15 +48,15 @@ Orca で作った worktree では手元で実装せず、`scripts/agent/cloud-ru
 
 ## コマンド
 
-| 目的                    | コマンド                                                    |
-| ----------------------- | ----------------------------------------------------------- |
-| 全チェック（CI と同じ） | `pnpm ci:all`                                               |
-| JS のみ                 | `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm build` |
-| Rust のみ               | `pnpm rust:fmt` / `pnpm rust:clippy` / `pnpm rust:test`     |
-| 整形                    | `pnpm format`（Biome）、`cargo fmt --all`                   |
-| コミット前（staged）    | `scripts/agent/review-staged.sh`                            |
-| フック再インストール    | `scripts/agent/install-hooks.sh`                            |
-| アプリ起動              | `pnpm dev`                                                  |
+| 目的                    | コマンド                                                                           |
+| ----------------------- | ---------------------------------------------------------------------------------- |
+| 全チェック（CI と同じ） | `pnpm ci:all` / `scripts/agent/check.sh`（PR 直前はこちら）                        |
+| JS のみ                 | `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm build`                        |
+| Rust のみ（反復）       | `scripts/agent/check-rust.sh` または `pnpm rust:fmt` → `rust:clippy` → `rust:test` |
+| 整形                    | `pnpm format`（Biome）、`cargo fmt --all`                                          |
+| コミット前（staged）    | `scripts/agent/review-staged.sh`                                                   |
+| フック再インストール    | `scripts/agent/install-hooks.sh`                                                   |
+| アプリ起動              | `pnpm dev`                                                                         |
 
 ## 規約
 

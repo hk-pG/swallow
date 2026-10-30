@@ -12,6 +12,20 @@ info() {
   echo "==> $*" >&2
 }
 
+# Docker / rustup often set CARGO_HOME without updating non-interactive PATH.
+prepend_toolchain_path() {
+  local env_file
+  for env_file in /usr/local/cargo/env "${HOME}/.cargo/env"; do
+    if [[ -f "$env_file" ]]; then
+      # shellcheck disable=SC1090
+      . "$env_file"
+    fi
+  done
+  if [[ -n "${CARGO_HOME:-}" && -d "${CARGO_HOME}/bin" ]]; then
+    export PATH="${CARGO_HOME}/bin:${PATH}"
+  fi
+}
+
 repo_root() {
   git rev-parse --show-toplevel
 }

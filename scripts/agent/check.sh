@@ -7,6 +7,7 @@
 source "$(dirname "$0")/lib.sh"
 
 cd "$(repo_root)"
+prepend_toolchain_path
 
 if [[ ! -d node_modules || pnpm-lock.yaml -nt node_modules/.modules.yaml ]]; then
   info "installing dependencies"
