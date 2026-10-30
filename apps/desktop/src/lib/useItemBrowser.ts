@@ -54,9 +54,10 @@ export function useItemBrowser(
   items: ItemMetadata[],
   folders: readonly Folder[] = [],
   smartFolders: readonly SmartFolder[] = [],
+  viewState: { view: ItemView; setView: Dispatch<SetStateAction<ItemView>> },
 ): ItemBrowser {
+  const { view, setView } = viewState;
   const [selection, setSelection] = useState<Selection>(EMPTY_SELECTION);
-  const [view, setView] = useState<ItemView>({ kind: "all" });
   const [query, setQuery] = useState("");
   const [searchCriteria, setSearchCriteria] = useState<SmartFolderCriteria>(
     EMPTY_SMART_FOLDER_CRITERIA,
