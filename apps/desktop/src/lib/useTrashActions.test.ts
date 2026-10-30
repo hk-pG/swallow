@@ -117,4 +117,34 @@ describe("useTrashActions context helpers", () => {
     });
     expect(onSelectItem).toHaveBeenCalledWith("b", {});
   });
+
+  it("contextHandlers omit trash on trash view", () => {
+    const { result } = setup();
+    expect(result.current.contextHandlers.isTrashView).toBe(true);
+    expect(result.current.contextHandlers.onContextTrash).toBeUndefined();
+    expect(result.current.contextHandlers.onContextRestore).toBe(result.current.restoreItem);
+  });
+
+  it("contextHandlers enable trash outside trash view", () => {
+    const setError = vi.fn();
+    const items = [sample("a"), sample("b")];
+    const { result } = renderHook(() =>
+      useTrashActions({
+        libraryPath: "/lib",
+        view: { kind: "all" },
+        visibleIds: items.map((item) => item.id),
+        visibleItems: items,
+        selection: EMPTY_SELECTION,
+        selected: null,
+        setSelection: vi.fn(),
+        clearSelection: vi.fn(),
+        onSelectItem: vi.fn(),
+        invalidate: vi.fn().mockResolvedValue(undefined),
+        setError,
+      }),
+    );
+    expect(result.current.contextHandlers.isTrashView).toBe(false);
+    expect(result.current.contextHandlers.onContextTrash).toBeTypeOf("function");
+    expect(result.current.contextHandlers.onContextRestore).toBeUndefined();
+  });
 });

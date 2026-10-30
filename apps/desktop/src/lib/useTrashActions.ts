@@ -1,6 +1,6 @@
 import type { ItemId, ItemMetadata, ItemView } from "@swallow/shared";
 import { ask } from "@tauri-apps/plugin-dialog";
-import { type Dispatch, type SetStateAction, useCallback, useRef } from "react";
+import { type Dispatch, type SetStateAction, useCallback, useMemo, useRef } from "react";
 import { purgeItems, restoreItems, revealItemInExplorer, trashItems } from "./commands";
 import { focusInspectorTagInput } from "./focusInspector";
 import {
@@ -11,6 +11,7 @@ import {
   select,
 } from "./selection";
 import { purgeConfirmMessage } from "./trash";
+import type { ItemViewContextHandlers } from "./useItemContextMenu";
 
 export interface TrashActionsApi {
   handleTrash: () => Promise<void>;
@@ -19,6 +20,7 @@ export interface TrashActionsApi {
   purgeSelected: () => Promise<void>;
   /** Grid/list Delete handler; omitted on the trash smart view. */
   onDelete: (() => Promise<void>) | undefined;
+  contextHandlers: ItemViewContextHandlers;
   restoreItem: (itemId: ItemId) => Promise<void>;
   purgeItem: (itemId: ItemId) => Promise<void>;
   revealInExplorer: (itemId: ItemId) => Promise<void>;
@@ -167,12 +169,26 @@ export function useTrashActions({
     [onSelectItem],
   );
 
+  const isTrashView = view.kind === "trash";
+  const contextHandlers = useMemo<ItemViewContextHandlers>(
+    () => ({
+      isTrashView,
+      onContextTrash: isTrashView ? undefined : () => void handleTrash(),
+      onContextRestore: isTrashView ? restoreItem : undefined,
+      onContextPurge: isTrashView ? purgeItem : undefined,
+      onContextEditTags: isTrashView ? undefined : editTags,
+      onContextRevealInExplorer: (itemId) => void revealInExplorer(itemId),
+    }),
+    [isTrashView, handleTrash, restoreItem, purgeItem, editTags, revealInExplorer],
+  );
+
   return {
     handleTrash,
     trashSelected,
     restoreSelected,
     purgeSelected,
-    onDelete: view.kind === "trash" ? undefined : handleTrash,
+    onDelete: isTrashView ? undefined : handleTrash,
+    contextHandlers,
     restoreItem,
     purgeItem,
     revealInExplorer,

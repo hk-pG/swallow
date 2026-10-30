@@ -1,6 +1,9 @@
+import { EMPTY_SMART_FOLDER_CRITERIA } from "@swallow/shared";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { EMPTY_SELECTION } from "../lib/selection";
+import { EMPTY_SELECTION, select } from "../lib/selection";
+import { InspectorPane } from "./InspectorPane";
+import { LibraryToolbar } from "./LibraryToolbar";
 import { MainItemView, resolveMainEmptyState } from "./MainItemView";
 
 describe("resolveMainEmptyState", () => {
@@ -9,6 +12,60 @@ describe("resolveMainEmptyState", () => {
     expect(resolveMainEmptyState("/lib", 0, 0)).toBe("no-items");
     expect(resolveMainEmptyState("/lib", 3, 0)).toBe("no-matches");
     expect(resolveMainEmptyState("/lib", 3, 2)).toBeNull();
+  });
+});
+
+describe("LibraryToolbar", () => {
+  it("renders search and import actions", () => {
+    const html = renderToStaticMarkup(
+      <LibraryToolbar
+        disabled={false}
+        query="q"
+        onQueryChange={() => {}}
+        searchCriteria={EMPTY_SMART_FOLDER_CRITERIA}
+        onSearchCriteriaChange={() => {}}
+        onClearAdvancedSearch={() => {}}
+        folders={[]}
+        libraryTagNames={[]}
+        appearance={{
+          itemView: { itemViewMode: "grid", thumbnailSizeIndex: 1 },
+          setItemViewMode: () => {},
+          setThumbnailSizeIndex: () => {},
+        }}
+        quickLookDisabled={false}
+        onQuickLook={() => {}}
+        importing={false}
+        onPickAndImport={() => {}}
+        onPickFoldersAndImport={() => {}}
+      />,
+    );
+    expect(html).toContain('placeholder="名前・タグ・注釈で検索"');
+    expect(html).toContain("ファイル取り込み");
+  });
+});
+
+describe("InspectorPane", () => {
+  it("shows multi-select summary", () => {
+    const html = renderToStaticMarkup(
+      <InspectorPane
+        selectedCount={2}
+        selection={select(EMPTY_SELECTION, ["a", "b"], "a")}
+        selected={null}
+        folders={[]}
+        libraryTagNames={[]}
+        onSave={async () => {}}
+        onAssignFolder={async () => {}}
+        onUnassignFolder={async () => {}}
+        onAddTags={async () => {}}
+        onRemoveTags={async () => {}}
+        trash={{
+          trashSelected: async () => {},
+          restoreSelected: async () => {},
+          purgeSelected: async () => {},
+        }}
+      />,
+    );
+    expect(html).toContain("2 件を選択中");
   });
 });
 

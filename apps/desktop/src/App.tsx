@@ -1,22 +1,18 @@
-import { thumbnailSizePx } from "@swallow/shared";
-import { type CSSProperties, useLayoutEffect, useRef } from "react";
-import { AdvancedSearch } from "./components/AdvancedSearch";
-import { AppInfo } from "./components/AppInfo";
-import { FolderAssignControl } from "./components/FolderAssignControl";
-import { Inspector } from "./components/Inspector";
+import { useRef } from "react";
+import { InspectorPane } from "./components/InspectorPane";
+import { LibraryToolbar } from "./components/LibraryToolbar";
 import { MainItemView } from "./components/MainItemView";
 import { QuickLook } from "./components/QuickLook";
-import { TrashActions } from "./components/TrashActions";
-import { ViewModeToolbar } from "./components/ViewModeToolbar";
 import { ImportReportBanner } from "./ImportReportBanner";
+import { itemThumbContentStyle } from "./lib/itemThumbContentStyle";
 import { useAppearanceSettings } from "./lib/useAppearanceSettings";
 import { useAssetImport } from "./lib/useAssetImport";
 import { useFolders } from "./lib/useFolders";
 import { useItemBrowser } from "./lib/useItemBrowser";
 import { useItemList } from "./lib/useItemList";
+import { useItemViewState } from "./lib/useItemViewState";
 import { useLibrarySession } from "./lib/useLibrarySession";
 import { useQuickLook } from "./lib/useQuickLook";
-import { useSetViewBridge } from "./lib/useSetViewBridge";
 import { useSmartFolders } from "./lib/useSmartFolders";
 import { useTags } from "./lib/useTags";
 import { useTrashActions } from "./lib/useTrashActions";
@@ -29,27 +25,22 @@ export function App() {
   const session = useLibrarySession();
   const appearance = useAppearanceSettings();
   const { libraryPath } = session;
-  const contentStyle = {
-    "--item-thumb-size": `${thumbnailSizePx(appearance.itemView.thumbnailSizeIndex)}px`,
-  } as CSSProperties;
+  const contentStyle = itemThumbContentStyle(appearance.itemView.thumbnailSizeIndex);
   const { items, invalidate, saveItem } = useItemList(libraryPath);
 
-  const { setView, setViewRef } = useSetViewBridge();
+  const viewState = useItemViewState();
   const folders = useFolders({
     libraryPath,
     invalidateItems: invalidate,
-    setView,
+    setView: viewState.setView,
   });
   const tags = useTags({
     libraryPath,
     invalidateItems: invalidate,
-    setView,
+    setView: viewState.setView,
   });
-  const smartFolders = useSmartFolders({ libraryPath, setView });
-  const browser = useItemBrowser(items, folders.folders, smartFolders.smartFolders);
-  useLayoutEffect(() => {
-    setViewRef.current = browser.setView;
-  });
+  const smartFolders = useSmartFolders({ libraryPath, setView: viewState.setView });
+  const browser = useItemBrowser(items, folders.folders, smartFolders.smartFolders, viewState);
 
   const contentRef = useRef<HTMLElement>(null);
   const refreshAfterImport = async () => {
@@ -71,16 +62,6 @@ export function App() {
     invalidate,
     setError: session.setError,
   });
-
-  const isTrashView = browser.view.kind === "trash";
-  const itemContext = {
-    isTrashView,
-    onContextTrash: isTrashView ? undefined : () => void trash.handleTrash(),
-    onContextRestore: isTrashView ? (id: string) => void trash.restoreItem(id) : undefined,
-    onContextPurge: isTrashView ? (id: string) => void trash.purgeItem(id) : undefined,
-    onContextEditTags: isTrashView ? undefined : trash.editTags,
-    onContextRevealInExplorer: (id: string) => void trash.revealInExplorer(id),
-  };
 
   const disabled = session.library === null;
 
@@ -115,53 +96,22 @@ export function App() {
               className={assetImport.dragOver ? "content drag-over" : "content"}
               style={contentStyle}
             >
-              <header className="toolbar">
-                <input
-                  className="search"
-                  type="search"
-                  placeholder="名前・タグ・注釈で検索"
-                  value={browser.query}
-                  onChange={(e) => browser.setQuery(e.target.value)}
-                  disabled={disabled}
-                />
-                <AdvancedSearch
-                  criteria={browser.searchCriteria}
-                  onChange={browser.setSearchCriteria}
-                  onClear={browser.clearAdvancedSearch}
-                  folders={folders.folders}
-                  libraryTags={tags.libraryTags?.tags ?? []}
-                  disabled={disabled}
-                />
-                <ViewModeToolbar
-                  itemViewMode={appearance.itemView.itemViewMode}
-                  thumbnailSizeIndex={appearance.itemView.thumbnailSizeIndex}
-                  disabled={disabled}
-                  onViewModeChange={appearance.setItemViewMode}
-                  onThumbnailSizeIndexChange={appearance.setThumbnailSizeIndex}
-                />
-                <button
-                  type="button"
-                  onClick={() => quickLook.open()}
-                  disabled={disabled || !quickLook.canOpen}
-                  title="選択中のアイテムを拡大プレビュー（Space）"
-                >
-                  クイックルック
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void assetImport.pickAndImport()}
-                  disabled={disabled || assetImport.importing}
-                >
-                  {assetImport.importing ? "取り込み中…" : "ファイル取り込み"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void assetImport.pickFoldersAndImport()}
-                  disabled={disabled || assetImport.importing}
-                >
-                  フォルダ取り込み
-                </button>
-              </header>
+              <LibraryToolbar
+                disabled={disabled}
+                query={browser.query}
+                onQueryChange={browser.setQuery}
+                searchCriteria={browser.searchCriteria}
+                onSearchCriteriaChange={browser.setSearchCriteria}
+                onClearAdvancedSearch={browser.clearAdvancedSearch}
+                folders={folders.folders}
+                libraryTagNames={tags.libraryTags?.tags ?? []}
+                appearance={appearance}
+                quickLookDisabled={!quickLook.canOpen}
+                onQuickLook={() => quickLook.open()}
+                importing={assetImport.importing}
+                onPickAndImport={() => void assetImport.pickAndImport()}
+                onPickFoldersAndImport={() => void assetImport.pickFoldersAndImport()}
+              />
               {session.error && (
                 <div className="error" role="alert">
                   {session.error}
@@ -187,47 +137,22 @@ export function App() {
                 onCreateLibrary={() => void session.handleCreate()}
                 onOpenLibrary={() => void session.handleOpen()}
                 onOpenRecent={(path) => void session.openPath(path)}
-                {...itemContext}
+                {...trash.contextHandlers}
               />
             </main>
-            <aside className="inspector">
-              {browser.selectedCount > 1 ? (
-                <div className="inspector-body">
-                  <p className="inspector-muted">{browser.selectedCount} 件を選択中</p>
-                  <FolderAssignControl
-                    key={[...browser.selection.ids].sort().join("\n")}
-                    folders={folders.folders}
-                    onAssign={(folderId) =>
-                      folders.assignToFolder([...browser.selection.ids], folderId)
-                    }
-                    onUnassign={(folderId) =>
-                      folders.unassignFromFolder([...browser.selection.ids], folderId)
-                    }
-                  />
-                </div>
-              ) : (
-                <>
-                  <Inspector
-                    item={browser.selected}
-                    folders={folders.folders}
-                    libraryTagNames={tags.libraryTags?.tags ?? []}
-                    onSave={saveItem}
-                    onAssignFolder={(id, folderId) => folders.assignToFolder([id], folderId)}
-                    onUnassignFolder={(id, folderId) => folders.unassignFromFolder([id], folderId)}
-                    onAddTags={tags.addItemTags}
-                    onRemoveTags={tags.removeItemTags}
-                  />
-                  <TrashActions
-                    key={browser.selected?.id}
-                    item={browser.selected}
-                    onTrash={trash.trashSelected}
-                    onRestore={trash.restoreSelected}
-                    onPurge={trash.purgeSelected}
-                  />
-                </>
-              )}
-              <AppInfo />
-            </aside>
+            <InspectorPane
+              selectedCount={browser.selectedCount}
+              selection={browser.selection}
+              selected={browser.selected}
+              folders={folders.folders}
+              libraryTagNames={tags.libraryTags?.tags ?? []}
+              onSave={saveItem}
+              onAssignFolder={(ids, folderId) => folders.assignToFolder(ids, folderId)}
+              onUnassignFolder={(ids, folderId) => folders.unassignFromFolder(ids, folderId)}
+              onAddTags={tags.addItemTags}
+              onRemoveTags={tags.removeItemTags}
+              trash={trash}
+            />
             {quickLook.isOpen && quickLook.target && libraryPath && (
               <QuickLook
                 key={quickLook.target.item.id}
