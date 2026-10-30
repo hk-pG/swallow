@@ -1,8 +1,15 @@
 import type { Folder, FolderId } from "@swallow/shared";
-import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type KeyboardEvent,
+  type MouseEvent,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { flattenFolders, moveParentOptions } from "../lib/folders";
-
-const ROOT_VALUE = "__root__";
+import { useSidebarContextMenu } from "../lib/useSidebarContextMenu";
+import { SidebarContextMenu } from "./SidebarContextMenu";
 
 interface FolderTreeProps {
   folders: Folder[];
@@ -18,6 +25,13 @@ interface FolderTreeProps {
 
 type Editor = { kind: "create"; parentId: FolderId | null } | { kind: "rename"; id: FolderId };
 
+type FolderMenuTarget = {
+  folder: Folder;
+  parentId: FolderId | null;
+  siblingIndex: number;
+  siblingCount: number;
+};
+
 export function FolderTree({
   folders,
   selectedId,
@@ -30,6 +44,11 @@ export function FolderTree({
 }: FolderTreeProps) {
   const [editor, setEditor] = useState<Editor | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const {
+    state: menuState,
+    close: closeMenu,
+    open: openMenu,
+  } = useSidebarContextMenu<FolderMenuTarget>();
 
   useEffect(() => {
     if (disabled) setEditor(null);
@@ -51,6 +70,17 @@ export function FolderTree({
     setError(null);
     void onDelete(id).catch((e: unknown) => setError(String(e)));
   };
+
+  const menuItems = menuState
+    ? buildFolderMenuItems({
+        tree: folders,
+        target: menuState,
+        disabled,
+        onEdit: setEditor,
+        onDelete: remove,
+        onMove: (id, parentId, index) => run(() => onMove(id, parentId, index)),
+      })
+    : [];
 
   return (
     <section className="folder-section" aria-label="フォルダ">
@@ -88,8 +118,7 @@ export function FolderTree({
           onEdit={setEditor}
           onCreate={(parentId, name) => run(() => onCreate(parentId, name))}
           onRename={(id, name) => run(() => onRename(id, name))}
-          onDelete={remove}
-          onMove={(id, parentId, index) => run(() => onMove(id, parentId, index))}
+          onOpenMenu={openMenu}
         />
       )}
       {error && (
@@ -97,8 +126,81 @@ export function FolderTree({
           {error}
         </p>
       )}
+      <SidebarContextMenu
+        state={menuState}
+        ariaLabel={menuState ? `${menuState.folder.name} の操作` : "フォルダの操作"}
+        items={menuItems}
+        onClose={closeMenu}
+      />
     </section>
   );
+}
+
+function buildFolderMenuItems({
+  tree,
+  target,
+  disabled,
+  onEdit,
+  onDelete,
+  onMove,
+}: {
+  tree: Folder[];
+  target: FolderMenuTarget;
+  disabled?: boolean;
+  onEdit: (editor: Editor | null) => void;
+  onDelete: (id: FolderId) => void;
+  onMove: (id: FolderId, parentId: FolderId | null, index: number | null) => Promise<void>;
+}) {
+  if (disabled) return [];
+
+  const { folder, parentId, siblingIndex, siblingCount } = target;
+  const folderId = folder.id;
+  const currentParentId =
+    flattenFolders(tree).find((entry) => entry.id === folderId)?.parentId ?? null;
+  const moveOptions = moveParentOptions(tree, folderId);
+
+  const items: Parameters<typeof SidebarContextMenu>[0]["items"] = [
+    {
+      label: "子フォルダを作成…",
+      onClick: () => onEdit({ kind: "create", parentId: folderId }),
+    },
+    {
+      label: "名前を変更…",
+      onClick: () => onEdit({ kind: "rename", id: folderId }),
+    },
+    {
+      label: "上へ",
+      disabled: siblingIndex === 0,
+      onClick: () => void onMove(folderId, parentId, siblingIndex - 1),
+    },
+    {
+      label: "下へ",
+      disabled: siblingIndex >= siblingCount - 1,
+      onClick: () => void onMove(folderId, parentId, siblingIndex + 1),
+    },
+  ];
+
+  if (currentParentId !== null) {
+    items.push({
+      label: "トップレベルへ移動",
+      onClick: () => void onMove(folderId, null, null),
+    });
+  }
+
+  for (const option of moveOptions) {
+    items.push({
+      label: `${"　".repeat(option.depth)}${option.name} へ移動`,
+      onClick: () => void onMove(folderId, option.id, null),
+    });
+  }
+
+  items.push({
+    label: "削除",
+    danger: true,
+    onClick: () => void onDelete(folderId),
+  });
+
+  return items;
 }
 
 interface NodeProps {
@@ -113,8 +215,7 @@ interface NodeProps {
   onEdit: (editor: Editor | null) => void;
   onCreate: (parentId: FolderId | null, name: string) => Promise<void>;
   onRename: (id: FolderId, name: string) => Promise<void>;
-  onDelete: (id: FolderId) => void;
-  onMove: (id: FolderId, parentId: FolderId | null, index: number | null) => Promise<void>;
+  onOpenMenu: (event: MouseEvent, target: FolderMenuTarget) => void;
 }
 
 function FolderNodes({
@@ -129,8 +230,7 @@ function FolderNodes({
   onEdit,
   onCreate,
   onRename,
-  onDelete,
-  onMove,
+  onOpenMenu,
 }: NodeProps) {
   return folders.map((folder, index) => {
     const selected = folder.id === selectedId;
@@ -138,7 +238,8 @@ function FolderNodes({
     const creatingChild = editor?.kind === "create" && editor.parentId === folder.id;
     return (
       <div key={folder.id} className="folder-node">
-        <div className="folder-line" style={{ paddingLeft: `${depth * 12}px` }}>
+        <div className="folder-line">
+          <FolderDepthGuides depth={depth} />
           {renaming ? (
             <FolderNameField
               initial={folder.name}
@@ -148,59 +249,27 @@ function FolderNodes({
           ) : (
             <button
               type="button"
-              className="nav-item"
+              className="nav-item folder-nav-item"
               aria-current={selected ? "page" : undefined}
               disabled={disabled}
               onClick={() => onSelect(folder.id)}
+              onContextMenu={(event) =>
+                onOpenMenu(event, {
+                  folder,
+                  parentId,
+                  siblingIndex: index,
+                  siblingCount: folders.length,
+                })
+              }
             >
-              {folder.name}
+              <FolderIcon />
+              <span className="folder-nav-label">{folder.name}</span>
             </button>
           )}
         </div>
-        {selected && !renaming && !disabled && (
-          <div className="folder-actions" style={{ paddingLeft: `${depth * 12}px` }}>
-            <button
-              type="button"
-              className="text-button"
-              onClick={() => onEdit({ kind: "create", parentId: folder.id })}
-            >
-              子フォルダ
-            </button>
-            <button
-              type="button"
-              className="text-button"
-              onClick={() => onEdit({ kind: "rename", id: folder.id })}
-            >
-              名前
-            </button>
-            <button
-              type="button"
-              className="text-button"
-              disabled={index === 0}
-              onClick={() => void onMove(folder.id, parentId, index - 1)}
-            >
-              上へ
-            </button>
-            <button
-              type="button"
-              className="text-button"
-              disabled={index === folders.length - 1}
-              onClick={() => void onMove(folder.id, parentId, index + 1)}
-            >
-              下へ
-            </button>
-            <MoveSelect tree={tree} folderId={folder.id} onMove={onMove} />
-            <button
-              type="button"
-              className="text-button danger"
-              onClick={() => void onDelete(folder.id)}
-            >
-              削除
-            </button>
-          </div>
-        )}
         {creatingChild && (
-          <div className="folder-line" style={{ paddingLeft: `${(depth + 1) * 12}px` }}>
+          <div className="folder-line">
+            <FolderDepthGuides depth={depth + 1} />
             <FolderNameField
               initial=""
               placeholder="新しいフォルダ"
@@ -221,45 +290,32 @@ function FolderNodes({
           onEdit={onEdit}
           onCreate={onCreate}
           onRename={onRename}
-          onDelete={onDelete}
-          onMove={onMove}
+          onOpenMenu={onOpenMenu}
         />
       </div>
     );
   });
 }
 
-function MoveSelect({
-  tree,
-  folderId,
-  onMove,
-}: {
-  tree: Folder[];
-  folderId: FolderId;
-  onMove: (id: FolderId, parentId: FolderId | null, index: number | null) => Promise<void>;
-}) {
-  const parentId = flattenFolders(tree).find((folder) => folder.id === folderId)?.parentId ?? null;
-  const options = moveParentOptions(tree, folderId);
-  if (parentId === null && options.length === 0) return null;
+function FolderDepthGuides({ depth }: { depth: number }) {
+  if (depth === 0) return null;
   return (
-    <select
-      className="folder-move"
-      aria-label="移動先"
-      value=""
-      onChange={(e) => {
-        const value = e.target.value;
-        if (value === "") return;
-        void onMove(folderId, value === ROOT_VALUE ? null : value, null);
-      }}
-    >
-      <option value="">移動…</option>
-      {parentId !== null && <option value={ROOT_VALUE}>トップレベル</option>}
-      {options.map((folder) => (
-        <option key={folder.id} value={folder.id}>
-          {"　".repeat(folder.depth) + folder.name}
-        </option>
-      ))}
-    </select>
+    <span
+      className="folder-depth-guides"
+      style={{ "--folder-depth": depth } as CSSProperties}
+      aria-hidden="true"
+    />
+  );
+}
+
+function FolderIcon() {
+  return (
+    <svg className="folder-icon" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M1.5 3.5A1.5 1.5 0 0 1 3 2h3.17a1.5 1.5 0 0 1 1.06.44L8.88 4H13a1.5 1.5 0 0 1 1.5 1.5v7A1.5 1.5 0 0 1 13 14H3a1.5 1.5 0 0 1-1.5-1.5v-9Z"
+      />
+    </svg>
   );
 }
 

@@ -289,26 +289,60 @@ nav {
 
 .folder-line {
   display: flex;
+  align-items: center;
   min-width: 0;
 }
 
-.folder-line .nav-item {
+.folder-depth-guides {
+  flex-shrink: 0;
+  align-self: stretch;
+  width: calc(var(--folder-depth, 0) * 12px);
+  background: repeating-linear-gradient(
+    90deg,
+    var(--border) 0,
+    var(--border) 1px,
+    transparent 1px,
+    transparent 12px
+  );
+}
+
+.tag-group-header-button {
+  display: flex;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: default;
+}
+
+.folder-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   flex: 1;
   min-width: 0;
+}
+
+.folder-nav-label {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.folder-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1);
-  margin: var(--space-1) 0 var(--space-2);
-  padding: var(--space-2);
-  border-radius: 6px;
-  background: color-mix(in srgb, currentColor 6%, transparent);
+.folder-icon {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.folder-line .nav-item:not(.folder-nav-item) {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .folder-name-input {
