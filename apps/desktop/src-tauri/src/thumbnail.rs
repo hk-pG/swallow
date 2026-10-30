@@ -2,7 +2,7 @@ use crate::item::{self, ITEM_DIR_EXT, ItemMetadata};
 use crate::library::IMAGES_DIR;
 use image::{DynamicImage, ImageDecoder, ImageFormat, ImageReader};
 use std::fs;
-use std::io;
+use std::io::{self, Read};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -115,8 +115,10 @@ pub fn is_item_dir(path: &Path) -> bool {
 /// Reads `path` only when it is a regular file under a real (non-symlink) item directory.
 ///
 /// Shape checks alone are not enough: a symlink under `images/<id>.info` would let
-/// `fs::read` escape the item dir. Rejects symlinks and requires the canonical path
-/// to stay under the canonical item dir (which must still match [`is_item_dir`]).
+/// a following read escape the item dir. Rejects symlink item dirs, requires the
+/// parent of `path` to canonicalize under the item dir, and opens the final
+/// component with `O_NOFOLLOW` / Windows reparse-point flags so a TOCTOU swap to a
+/// symlink cannot be followed.
 pub fn read_within_item_dir(item_dir: &Path, path: &Path) -> io::Result<Vec<u8>> {
     let item_meta = fs::symlink_metadata(item_dir)?;
     if item_meta.file_type().is_symlink() || !item_meta.is_dir() {
@@ -133,27 +135,87 @@ pub fn read_within_item_dir(item_dir: &Path, path: &Path) -> io::Result<Vec<u8>>
         ));
     }
 
-    let file_meta = fs::symlink_metadata(path)?;
-    if file_meta.file_type().is_symlink() {
-        return Err(io::Error::new(
-            io::ErrorKind::PermissionDenied,
-            "refusing to follow symlink",
-        ));
-    }
-    if !file_meta.is_file() {
+    let Some(parent) = path.parent() else {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
-            "preview path is not a file",
+            "preview path has no parent",
         ));
-    }
-    let canon_path = fs::canonicalize(path)?;
-    if !canon_path.starts_with(&canon_item) {
+    };
+    let canon_parent = fs::canonicalize(parent)?;
+    if !canon_parent.starts_with(&canon_item) {
         return Err(io::Error::new(
             io::ErrorKind::PermissionDenied,
             "preview path escaped item dir",
         ));
     }
-    fs::read(canon_path)
+
+    let mut file = open_nofollow(path)?;
+    let meta = file.metadata()?;
+    if !meta.is_file() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "preview path is not a file",
+        ));
+    }
+    let mut body = Vec::new();
+    file.read_to_end(&mut body)?;
+    Ok(body)
+}
+
+/// Open `path` without following a final-component symlink / reparse point.
+fn open_nofollow(path: &Path) -> io::Result<fs::File> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        fs::OpenOptions::new()
+            .read(true)
+            .custom_flags(libc::O_NOFOLLOW)
+            .open(path)
+            .map_err(|e| {
+                if e.kind() == io::ErrorKind::PermissionDenied
+                    || e.raw_os_error() == Some(libc::ELOOP)
+                {
+                    io::Error::new(
+                        io::ErrorKind::PermissionDenied,
+                        "refusing to follow symlink",
+                    )
+                } else {
+                    e
+                }
+            })
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::{MetadataExt, OpenOptionsExt};
+        // FILE_FLAG_OPEN_REPARSE_POINT: open the reparse point itself, do not follow.
+        const FILE_FLAG_OPEN_REPARSE_POINT: u32 = 0x0020_0000;
+        const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
+        let file = fs::OpenOptions::new()
+            .read(true)
+            .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT)
+            .open(path)?;
+        let meta = file.metadata()?;
+        if meta.file_type().is_symlink()
+            || meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
+        {
+            return Err(io::Error::new(
+                io::ErrorKind::PermissionDenied,
+                "refusing to follow symlink",
+            ));
+        }
+        Ok(file)
+    }
+    #[cfg(not(any(unix, windows)))]
+    {
+        let meta = fs::symlink_metadata(path)?;
+        if meta.file_type().is_symlink() {
+            return Err(io::Error::new(
+                io::ErrorKind::PermissionDenied,
+                "refusing to follow symlink",
+            ));
+        }
+        fs::File::open(path)
+    }
 }
 
 fn is_raster(ext: &str) -> bool {
