@@ -32,12 +32,17 @@ export function TrashActions({ item, onTrash, onRestore, onPurge }: TrashActions
     <section className="inspector-section trash-actions">
       {item.isDeleted ? (
         <>
-          <button type="button" disabled={busy} onClick={() => void run(onRestore)}>
+          <button
+            type="button"
+            className="push-button"
+            disabled={busy}
+            onClick={() => void run(onRestore)}
+          >
             復元
           </button>
           <button
             type="button"
-            className="danger"
+            className="push-button danger"
             disabled={busy}
             onClick={() => void run(onPurge)}
           >
@@ -45,7 +50,12 @@ export function TrashActions({ item, onTrash, onRestore, onPurge }: TrashActions
           </button>
         </>
       ) : (
-        <button type="button" disabled={busy} onClick={() => void run(onTrash)}>
+        <button
+          type="button"
+          className="push-button"
+          disabled={busy}
+          onClick={() => void run(onTrash)}
+        >
           ゴミ箱へ移動
         </button>
       )}

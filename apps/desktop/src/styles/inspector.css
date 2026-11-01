@@ -32,7 +32,7 @@
 .inspector-label,
 .inspector-section h3 {
   margin: 0;
-  font-size: 11px;
+  font-size: var(--font-caption);
   font-weight: 600;
   color: var(--muted);
 }
@@ -41,7 +41,7 @@
   width: 100%;
   padding: 5px 8px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   background: transparent;
   color: inherit;
   font: inherit;
@@ -58,7 +58,7 @@ textarea.inspector-input {
 
 .inspector-error {
   margin: 0;
-  color: #d33;
+  color: var(--color-danger);
 }
 
 .inspector-section {
@@ -96,8 +96,8 @@ textarea.inspector-input {
 }
 
 .color-label-swatch.active {
-  border-color: Highlight;
-  box-shadow: 0 0 0 1px color-mix(in srgb, Highlight 40%, transparent);
+  border-color: var(--color-tint);
+  box-shadow: 0 0 0 1px var(--color-tint-ring);
 }
 
 .color-label-nav {
@@ -140,7 +140,7 @@ textarea.inspector-input {
 }
 
 .star.active {
-  color: #f5b400;
+  color: var(--color-star);
 }
 
 .chip-list {
@@ -157,8 +157,8 @@ textarea.inspector-input {
   align-items: center;
   gap: 4px;
   padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--color-separator);
 }
 
 .inspector-props {
@@ -182,6 +182,6 @@ textarea.inspector-input {
   margin-top: 12px;
 }
 
-.trash-actions .danger {
-  color: #d33;
+.trash-actions .push-button.danger {
+  color: var(--color-danger);
 }

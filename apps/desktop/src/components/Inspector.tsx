@@ -324,7 +324,11 @@ function EditableTagList({
             <option key={tag} value={tag} />
           ))}
         </datalist>
-        <button type="submit" disabled={busy || draft.trim() === ""}>
+        <button
+          type="submit"
+          className="push-button compact"
+          disabled={busy || draft.trim() === ""}
+        >
           追加
         </button>
       </form>

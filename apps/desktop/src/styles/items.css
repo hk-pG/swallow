@@ -12,7 +12,7 @@
 .view-mode-toggle {
   display: inline-flex;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 
@@ -33,7 +33,7 @@
 .advanced-search-toggle {
   padding: 6px 10px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   background: transparent;
   color: inherit;
   font: inherit;
@@ -55,7 +55,7 @@
 }
 
 .advanced-search-toggle:hover:not(:disabled) {
-  background: color-mix(in srgb, currentColor 8%, transparent);
+  background: var(--color-fill);
 }
 
 .advanced-search-toggle:disabled {
@@ -88,8 +88,8 @@
   width: min(320px, calc(100vw - 48px));
   padding: 10px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: canvas;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
   box-shadow: 0 8px 24px color-mix(in srgb, currentColor 12%, transparent);
 }
 
@@ -111,11 +111,11 @@
   margin: 8px 12px 0;
   padding: 8px 10px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
 }
 
 .import-report.failed {
-  border-color: color-mix(in srgb, #d33 60%, transparent);
+  border-color: var(--color-danger-muted);
 }
 
 .import-report-header {
@@ -166,7 +166,7 @@
   min-width: 0;
   padding: 6px;
   border: 2px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   background: none;
   color: inherit;
   font: inherit;
@@ -180,17 +180,17 @@
 }
 
 .grid-item:focus-visible {
-  outline: 2px solid color-mix(in srgb, Highlight 70%, currentColor);
+  outline: 2px solid var(--color-tint-focus);
   outline-offset: 2px;
 }
 
 .grid-item:hover {
-  background: color-mix(in srgb, currentColor 6%, transparent);
+  background: var(--color-fill-subtle);
 }
 
 .grid-item[aria-pressed="true"] {
-  border-color: Highlight;
-  background: color-mix(in srgb, Highlight 15%, transparent);
+  border-color: var(--color-tint);
+  background: var(--color-tint-muted);
 }
 
 .item-context-menu {
@@ -199,8 +199,8 @@
   min-width: 12rem;
   padding: 4px 0;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface, Canvas);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
   color: inherit;
   box-shadow: 0 8px 24px color-mix(in srgb, currentColor 20%, transparent);
 }
@@ -219,12 +219,12 @@
 
 .item-context-menu-item:hover,
 .item-context-menu-item:focus-visible {
-  background: color-mix(in srgb, Highlight 12%, transparent);
+  background: var(--color-tint-subtle);
   outline: none;
 }
 
 .item-context-menu-item.danger {
-  color: color-mix(in srgb, #c0392b 85%, currentColor);
+  color: var(--color-danger-text);
 }
 
 .grid-thumb {
@@ -293,7 +293,7 @@
   z-index: 1;
   padding: 8px 6px;
   border-bottom: 1px solid var(--border);
-  background: Canvas;
+  background: var(--color-surface);
   color: var(--muted);
   font-size: 11px;
   font-weight: 600;
@@ -305,7 +305,7 @@
   width: 100%;
   padding: 4px 6px;
   border: 2px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   background: none;
   color: inherit;
   font: inherit;
@@ -319,17 +319,17 @@
 }
 
 .item-list-row:focus-visible {
-  outline: 2px solid color-mix(in srgb, Highlight 70%, currentColor);
+  outline: 2px solid var(--color-tint-focus);
   outline-offset: -2px;
 }
 
 .item-list-row:hover {
-  background: color-mix(in srgb, currentColor 6%, transparent);
+  background: var(--color-fill-subtle);
 }
 
 .item-list-row[aria-pressed="true"] {
-  border-color: Highlight;
-  background: color-mix(in srgb, Highlight 15%, transparent);
+  border-color: var(--color-tint);
+  background: var(--color-tint-muted);
 }
 
 .item-list-thumb {
@@ -356,6 +356,6 @@
 }
 
 .item-list-col-star {
-  color: color-mix(in srgb, Highlight 80%, currentColor);
+  color: var(--color-tint-star);
   font-size: 12px;
 }

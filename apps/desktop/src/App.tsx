@@ -76,10 +76,18 @@ export function App() {
                   {session.library?.name ?? "ライブラリ未選択"}
                 </div>
                 <div className="library-actions">
-                  <button type="button" onClick={() => void session.handleCreate()}>
+                  <button
+                    type="button"
+                    className="push-button compact"
+                    onClick={() => void session.handleCreate()}
+                  >
                     新規作成
                   </button>
-                  <button type="button" onClick={() => void session.handleOpen()}>
+                  <button
+                    type="button"
+                    className="push-button compact"
+                    onClick={() => void session.handleOpen()}
+                  >
                     開く
                   </button>
                 </div>

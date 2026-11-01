@@ -12,7 +12,7 @@
   inset: 0;
   padding: 0;
   border: none;
-  background: color-mix(in srgb, Canvas 20%, black);
+  background: color-mix(in srgb, var(--color-surface) 20%, black);
   cursor: default;
 }
 
@@ -25,8 +25,8 @@
   max-height: 92vh;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: Canvas;
-  color: CanvasText;
+  background: var(--color-surface);
+  color: var(--color-surface-text);
   box-shadow: 0 16px 48px color-mix(in srgb, black 35%, transparent);
 }
 
@@ -45,7 +45,7 @@
 
 .quick-look-title {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--font-title);
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -55,7 +55,7 @@
 .quick-look-meta,
 .quick-look-hint {
   margin: 4px 0 0;
-  font-size: 11px;
+  font-size: var(--font-caption);
   color: var(--muted);
 }
 

@@ -62,10 +62,20 @@ export function AdvancedSearch({
             footerNote={EXIF_NOTE}
           />
           <div className="advanced-search-actions">
-            <button type="button" disabled={disabled || !active} onClick={handleClear}>
+            <button
+              type="button"
+              className="push-button"
+              disabled={disabled || !active}
+              onClick={handleClear}
+            >
               条件をクリア
             </button>
-            <button type="button" disabled={disabled} onClick={() => setOpen(false)}>
+            <button
+              type="button"
+              className="push-button"
+              disabled={disabled}
+              onClick={() => setOpen(false)}
+            >
               閉じる
             </button>
           </div>

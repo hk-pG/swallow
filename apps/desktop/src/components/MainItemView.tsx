@@ -74,10 +74,10 @@ export function MainItemView({
           <div className="empty-library">
             <p>ライブラリが開かれていません</p>
             <div className="library-actions">
-              <button type="button" onClick={onCreateLibrary}>
+              <button type="button" className="push-button" onClick={onCreateLibrary}>
                 新規ライブラリを作成
               </button>
-              <button type="button" onClick={onOpenLibrary}>
+              <button type="button" className="push-button" onClick={onOpenLibrary}>
                 ライブラリを開く
               </button>
             </div>
@@ -87,7 +87,12 @@ export function MainItemView({
                 <ul>
                   {recentLibraries.map((path) => (
                     <li key={path}>
-                      <button type="button" title={path} onClick={() => onOpenRecent(path)}>
+                      <button
+                        type="button"
+                        className="text-button link"
+                        title={path}
+                        onClick={() => onOpenRecent(path)}
+                      >
                         {path}
                       </button>
                     </li>

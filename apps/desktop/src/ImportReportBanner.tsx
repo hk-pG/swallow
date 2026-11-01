@@ -17,7 +17,7 @@ export function ImportReportBanner({ report, error, onDismiss }: Props) {
     <div className={failed ? "import-report failed" : "import-report"} role="status">
       <div className="import-report-header">
         <span>{report ? summarizeImport(report) : `取り込みに失敗しました: ${error}`}</span>
-        <button type="button" onClick={onDismiss}>
+        <button type="button" className="text-button" onClick={onDismiss}>
           閉じる
         </button>
       </div>
