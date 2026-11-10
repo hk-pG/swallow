@@ -53,6 +53,7 @@ Orca で作った worktree では手元で実装せず、`scripts/agent/cloud-ru
 - **feature 間**: `features/<A>` から別 feature の内部（`components/`・`lib/` など実装ディレクトリ）へ直接入らない。利用は相手 feature の公開面（`features/<B>/index.ts`・`api.ts`）または `shared/`・`@swallow/shared` の契約経由。
 - **Tauri IPC**: フロントは上記のとおり `features/*/api.ts` のみ。Rust は `commands/<feature>.rs` を `commands/mod.rs` の `swallow_invoke_handler!` に載せる。Rust と `invoke` 名の整合は CI の `scripts/ci/tauri-command-contract.mjs` が検証する（`pnpm test` に含まれる）。
 - **境界の CI**: feature 間 import のルールは `scripts/ci/feature-boundaries.mjs` が検証する（`pnpm test` に含まれる。`tauri-command-contract.mjs` と併用）。
+- **HTTP API**: Chrome 拡張向けループバック API のルート表は `packages/shared/src/api/httpContract.ts`（`HTTP_API_ROUTES`）が正本。Rust の `infra/http_api.rs` 内 `HTTP_API_ROUTE_SPECS` および拡張の呼び出しとの整合は `scripts/ci/http-api-contract.mjs` が検証する（`pnpm test` に含まれる）。
 
 ### モジュール境界（Rust バックエンド）
 

@@ -17,7 +17,32 @@ pub const DEFAULT_API_PORT: u16 = 41600;
 /// Mirrors `ITEMS_IMPORTED_EVENT` in `apps/desktop/src/features/items/api.ts`.
 pub const ITEMS_IMPORTED_EVENT: &str = "items-imported";
 
-/// Mirrors `API_PATHS` in `packages/shared/src/api.ts`.
+/// One row of the route table mirrored in `packages/shared/src/api/httpContract.ts`.
+/// Parsed by `scripts/ci/http-api-contract.mjs`.
+#[derive(Debug, Clone, Copy)]
+struct HttpRouteSpec {
+    method: &'static str,
+    path: &'static str,
+    request_type: Option<&'static str>,
+    response_type: &'static str,
+}
+
+/// Keep field order stable so CI can parse this table mechanically.
+const HTTP_API_ROUTE_SPECS: &[HttpRouteSpec] = &[
+    HttpRouteSpec {
+        method: "GET",
+        path: "/api/app/info",
+        request_type: None,
+        response_type: "AppInfo",
+    },
+    HttpRouteSpec {
+        method: "POST",
+        path: "/api/items",
+        request_type: Some("AddItemQuery"),
+        response_type: "ItemMetadata",
+    },
+];
+
 const APP_INFO_PATH: &str = "/api/app/info";
 const ADD_ITEM_PATH: &str = "/api/items";
 
@@ -199,18 +224,29 @@ impl From<ImportError> for ApiError {
 pub fn handle(head: &RequestHead<'_>, body: &mut dyn Read, ctx: &impl Context) -> ApiResponse {
     let result = check_access(head).and_then(|()| {
         let (path, query) = head.url.split_once('?').unwrap_or((head.url, ""));
-        match (path, head.method) {
-            (APP_INFO_PATH, "GET") => Ok(ApiResponse::json(200, &ctx.app_info())),
-            (ADD_ITEM_PATH, "POST") => add_item(head, query, body, ctx),
-            (APP_INFO_PATH | ADD_ITEM_PATH, _) => Err(ApiError::new(
-                ApiErrorCode::MethodNotAllowed,
-                format!("{} {path} には対応していません", head.method),
-            )),
-            _ => Err(ApiError::new(
-                ApiErrorCode::NotFound,
-                format!("{path} は存在しません"),
-            )),
+        if let Some(spec) = HTTP_API_ROUTE_SPECS.iter().find(|route| route.path == path) {
+            if spec.method != head.method {
+                return Err(ApiError::new(
+                    ApiErrorCode::MethodNotAllowed,
+                    format!("{} {path} には対応していません", head.method),
+                ));
+            }
+            return match (spec.path, spec.response_type) {
+                (APP_INFO_PATH, "AppInfo") => Ok(ApiResponse::json(200, &ctx.app_info())),
+                (ADD_ITEM_PATH, "ItemMetadata") => {
+                    debug_assert_eq!(spec.request_type, Some("AddItemQuery"));
+                    add_item(head, query, body, ctx)
+                }
+                _ => Err(ApiError::new(
+                    ApiErrorCode::Internal,
+                    "HTTP_API_ROUTE_SPECS と handler の対応が壊れています".to_string(),
+                )),
+            };
         }
+        Err(ApiError::new(
+            ApiErrorCode::NotFound,
+            format!("{path} は存在しません"),
+        ))
     });
     result.unwrap_or_else(ApiResponse::from)
 }
@@ -360,6 +396,14 @@ fn sanitize_name(raw: Option<&str>) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn http_api_route_specs_match_path_constants() {
+        let paths: Vec<_> = HTTP_API_ROUTE_SPECS.iter().map(|s| s.path).collect();
+        assert!(paths.contains(&APP_INFO_PATH));
+        assert!(paths.contains(&ADD_ITEM_PATH));
+        assert_eq!(HTTP_API_ROUTE_SPECS.len(), 2);
+    }
     use std::cell::RefCell;
     use std::fs;
     use std::io::Write;
