@@ -26,6 +26,7 @@ Swallow リポジトリの GitHub Issue 1 件を、ブランチ作成から実�
 ## 0. バグのとき（Issue がまだ無い場合）
 
 不具合を直す前に **必ず GitHub Issue を作る**（記録用。チャットだけで直さない）。
+
 1. `gh issue list` / 検索で重複を確認する
 2. 無ければ `gh issue create`（ラベル `bug` + `area:*` + `P1`/`P2`/`P3`、Milestone）
 3. 本文に再現手順・受け入れ条件・原因仮説（分かれば）を書く
@@ -57,6 +58,7 @@ scripts/agent/start-issue.sh <N> --worktree   # main のチェックアウトか
 ## 4. 実装
 
 `AGENTS.md` の規約に従う。特に注意すること:
+
 - Rust の型を変えたら `packages/shared` の型と `apps/desktop/src/lib/commands.ts` も揃える
 - 新しい Tauri コマンドは `commands.rs` に定義し、`lib.rs` の `generate_handler!` に登録する
 - 振る舞いの変更には必ずテストを付ける
@@ -93,6 +95,7 @@ scripts/agent/check.sh
 ## 6. セルフレビュー（PR 前）
 
 各 commit 前の `review-staged.sh` に加え、PR 直前に `git diff origin/main...HEAD` を読み、次を確認する:
+
 - 受け入れ条件をすべて満たしているか。満たせないものは理由を説明できるか
 - デバッグ用のコード、不要なファイル、関係ない変更が混ざっていないか
 - エラー時の挙動（存在しない ID、壊れた JSON、ライブラリ未オープン）を考えたか
@@ -102,6 +105,7 @@ scripts/agent/check.sh
 ## 7. PR 作成
 
 `.github/pull_request_template.md` を元に本文を一時ファイル（例: `/tmp/pr-<N>.md`）に書く。
+
 - 1 行目は受け入れ条件をすべて満たすなら `Closes #<N>`、一部だけなら `Refs #<N>`
 - 「受け入れ条件」に Issue のチェックリストを転記し、状態を反映する
 - 「判断したこと」に Issue に書かれていなかった決定を書く
@@ -120,6 +124,7 @@ PR の URL、満たせなかった受け入れ条件、レビューで見てほ�
 ## 中断する条件
 
 次のときは実装を止め、Issue に状況をコメントし（`gh issue comment <N> --body-file <path>`）、利用者に報告する。
+
 - 依存先の Issue が未完了で、受け入れ条件を満たせない
 - 受け入れ条件同士が矛盾している、または既存の設計と両立しない
 - 秘密情報や外部アカウントなど、エージェントが用意できないものが必要

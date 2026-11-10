@@ -29,6 +29,7 @@ Cursor Project の notes / Context は当日の作業メモのみ。引き継ぎ
 ## いま付ける Issue（要約）
 
 詳細は [roadmap.md](./roadmap.md) と [`scripts/agent/github-taxonomy-setup.sh`](../scripts/agent/github-taxonomy-setup.sh)。
+
 - **beta + P1**: #34 #35 #49 #50
 - **beta + P2**: #51–#56
 - **backlog + P3**: #57 #58
@@ -40,6 +41,7 @@ Cursor Project の notes / Context は当日の作業メモのみ。引き継ぎ
 ### 適用済み（2026-10-18 08:12 UTC）
 
 `scripts/agent/github-taxonomy-setup.sh` をリポ書き込み権限のある `GH_TOKEN` で実行し完了。
+
 - マイルストーン `alpha` / `beta` / `backlog` 確認済み
 - ラベル `P1`/`P2`/`P3`/`area:desktop`/`area:extension`/`area:ci` 確認済み
 - 対象オープン Issue 16 件に付与済み（代表確認: #49 #50 #34 → beta+P1、#45 → alpha、#46 → backlog+area:ci）
