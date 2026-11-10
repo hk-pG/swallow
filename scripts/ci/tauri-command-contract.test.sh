@@ -17,14 +17,43 @@ node --input-type=module -e "
     rustCommandNames,
     tsInvokeCommandNames,
     diffCommandSets,
-    findTauriApiBoundaryViolations,
+    stripComments,
+    findTauriApiBoundaryViolationsUnderDesktopSrc,
   } from './scripts/ci/tauri-command-contract.mjs';
 
   const mod = readFileSync('apps/desktop/src-tauri/src/commands/mod.rs', 'utf8');
   const rust = rustCommandNames(mod);
-  if (rust.length < 30) fail('expected many Rust commands');
+  if (rust.length < 30) {
+    throw new Error('expected many Rust commands');
+  }
   if (!rust.includes('list_items') || !rust.includes('app_info')) {
     throw new Error('missing known commands in parse');
+  }
+
+  const handlerNoTrailingComma = \`
+    tauri::generate_handler![
+      \$crate::commands::items::list_items,
+      \$crate::commands::items::get_item
+    ]
+  \`;
+  const fromNoComma = rustCommandNames(handlerNoTrailingComma);
+  if (fromNoComma.join(',') !== 'get_item,list_items') {
+    throw new Error('trailing comma omit: ' + fromNoComma.join(','));
+  }
+
+  const handlerCommented = \`
+    tauri::generate_handler![
+      \$crate::commands::items::list_items,
+      // \$crate::commands::items::commented_out_cmd,
+      \$crate::commands::app::app_info,
+    ]
+  \`;
+  const fromCommented = rustCommandNames(handlerCommented);
+  if (fromCommented.includes('commented_out_cmd')) {
+    throw new Error('commented handler must not be parsed');
+  }
+  if (!fromCommented.includes('app_info') || !fromCommented.includes('list_items')) {
+    throw new Error('commented handler parse lost real commands: ' + fromCommented.join(','));
   }
 
   const fakeApi = [
@@ -41,7 +70,15 @@ node --input-type=module -e "
     throw new Error('diffCommandSets');
   }
 
-  const violations = findTauriApiBoundaryViolations('apps/desktop/src/features');
+  const commentedInvoke = stripComments(\`
+    import { convertFileSrc } from \"@tauri-apps/api/core\";
+    // invoke(\"bad\", {})
+  \`);
+  if (/\\binvoke\\b/.test(commentedInvoke)) {
+    throw new Error('stripComments should remove commented invoke');
+  }
+
+  const violations = findTauriApiBoundaryViolationsUnderDesktopSrc();
   if (violations.length !== 0) {
     throw new Error('unexpected boundary violations: ' + violations.join('; '));
   }

@@ -3,13 +3,22 @@
  * Keeps Tauri command names in sync between Rust and feature api.ts modules,
  * and restricts invoke and listen to those api modules.
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const commandsMod = path.join(repoRoot, "apps/desktop/src-tauri/src/commands/mod.rs");
-const featuresRoot = path.join(repoRoot, "apps/desktop/src");
+const desktopSrc = path.join(repoRoot, "apps/desktop/src");
+
+const BOUNDARY_SCAN_DIRS = ["features", "app", "shared"];
+
+/** Strips line and block comments (Rust and TS subset). */
+export function stripComments(source) {
+  const blockComment = /\/\*[\s\S]*?\*\//g;
+  const lineComment = /\/\/[^\n\r]*/g;
+  return source.replace(blockComment, "").replace(lineComment, "");
+}
 
 export function rustCommandNames(modSource) {
   const names = [];
@@ -18,8 +27,9 @@ export function rustCommandNames(modSource) {
   if (!match) {
     throw new Error("generate_handler! block not found in commands/mod.rs");
   }
-  const fnRe = /::(\w+)\s*,/g;
-  for (const segment of match[1].matchAll(fnRe)) {
+  const body = stripComments(match[1]);
+  const fnRe = /::(\w+)\s*(?:,|$)/gm;
+  for (const segment of body.matchAll(fnRe)) {
     names.push(segment[1]);
   }
   return [...new Set(names)].sort();
@@ -52,7 +62,7 @@ function listFilesRecursive(dir, predicate) {
 
 export function readFeatureApiSources() {
   const apiFiles = listFilesRecursive(
-    path.join(featuresRoot, "features"),
+    path.join(desktopSrc, "features"),
     (p) => p.endsWith("/api.ts") || p.endsWith(`${path.sep}api.ts`),
   );
   return apiFiles.map((file) => readFileSync(file, "utf8"));
@@ -66,10 +76,20 @@ export function diffCommandSets(rustNames, tsNames) {
   return { onlyRust, onlyTs };
 }
 
-export function findTauriApiBoundaryViolations(featuresDir) {
+function isExemptBoundaryFile(rel) {
+  if (rel.endsWith("features/import/hooks/useAssetImport.ts")) {
+    return true;
+  }
+  if (/\/features\/[^/]+\/api\.ts$/.test(rel)) {
+    return true;
+  }
+  return false;
+}
+
+export function findTauriApiBoundaryViolations(scanDir) {
   const violations = [];
   const files = listFilesRecursive(
-    featuresDir,
+    scanDir,
     (p) =>
       (p.endsWith(".ts") || p.endsWith(".tsx")) &&
       !p.endsWith(".test.ts") &&
@@ -77,19 +97,29 @@ export function findTauriApiBoundaryViolations(featuresDir) {
   );
   for (const file of files) {
     const rel = path.relative(repoRoot, file).replaceAll("\\", "/");
-    if (rel.endsWith("features/import/hooks/useAssetImport.ts")) {
-      continue;
-    }
-    if (rel.endsWith("/api.ts")) {
+    if (isExemptBoundaryFile(rel)) {
       continue;
     }
     const source = readFileSync(file, "utf8");
     if (!source.includes("@tauri-apps/api/")) {
       continue;
     }
-    if (/\binvoke\b/.test(source) || /\blisten\b/.test(source)) {
+    const code = stripComments(source);
+    if (/\binvoke\b/.test(code) || /\blisten\b/.test(code)) {
       violations.push(rel);
     }
+  }
+  return violations;
+}
+
+export function findTauriApiBoundaryViolationsUnderDesktopSrc() {
+  const violations = [];
+  for (const segment of BOUNDARY_SCAN_DIRS) {
+    const dir = path.join(desktopSrc, segment);
+    if (!existsSync(dir)) {
+      continue;
+    }
+    violations.push(...findTauriApiBoundaryViolations(dir));
   }
   return violations;
 }
@@ -112,7 +142,7 @@ function main() {
     }
   }
 
-  const boundaryViolations = findTauriApiBoundaryViolations(path.join(featuresRoot, "features"));
+  const boundaryViolations = findTauriApiBoundaryViolationsUnderDesktopSrc();
   if (boundaryViolations.length > 0) {
     failed = true;
     console.error(
