@@ -13,7 +13,7 @@ use crate::domain::item::ItemMetadata;
 
 /// Mirrors `DEFAULT_API_PORT` in `packages/shared/src/api.ts`.
 pub const DEFAULT_API_PORT: u16 = 41600;
-/// Mirrors `ITEMS_IMPORTED_EVENT` in `apps/desktop/src/lib/commands.ts`.
+/// Mirrors `ITEMS_IMPORTED_EVENT` in `apps/desktop/src/features/items/api.ts`.
 pub const ITEMS_IMPORTED_EVENT: &str = "items-imported";
 
 /// Mirrors `API_PATHS` in `packages/shared/src/api.ts`.
