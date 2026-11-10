@@ -3,18 +3,15 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 
-use crate::color_label::ColorLabel;
-use crate::library::METADATA_FILE;
+use crate::domain::color_label::ColorLabel;
+use crate::domain::library::METADATA_FILE;
 
-#[path = "item_io.rs"]
 mod item_io;
-#[path = "item_patch.rs"]
 mod item_patch;
-#[path = "item_trash.rs"]
 mod item_trash;
 
 pub use item_io::{item_dir, item_file, load_item, read_item, read_items};
-pub use item_patch::{apply_patch, edit_all_items, edit_items, update_item};
+pub use item_patch::{edit_all_items, edit_items, update_item};
 pub use item_trash::{purge_items, set_items_deleted};
 
 pub const ITEM_DIR_EXT: &str = "info";
@@ -95,8 +92,9 @@ pub(crate) mod tests {
     use std::fs;
     use std::path::{Path, PathBuf};
 
+    use super::item_patch::apply_patch;
     use super::*;
-    use crate::library::IMAGES_DIR;
+    use crate::domain::library::IMAGES_DIR;
 
     pub fn sample_item(id: &str, name: &str, ext: &str) -> ItemMetadata {
         ItemMetadata {

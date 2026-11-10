@@ -1,4 +1,4 @@
-use crate::thumbnail;
+use crate::infra::thumbnail;
 use percent_encoding::percent_decode_str;
 use std::path::PathBuf;
 use std::sync::LazyLock;
@@ -85,8 +85,8 @@ fn status(code: StatusCode) -> Response<Vec<u8>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::item::tests::{sample_item, write_item};
-    use crate::library::IMAGES_DIR;
+    use crate::domain::item::tests::{sample_item, write_item};
+    use crate::domain::library::IMAGES_DIR;
     use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
     use std::fs;
 

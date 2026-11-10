@@ -5,8 +5,8 @@ use std::path::{Path, PathBuf};
 
 use serde_json::Value;
 
-use crate::item::{self, ItemError};
-use crate::library::{Folder, METADATA_FILE, write_json_atomic};
+use crate::domain::item::{self, ItemError};
+use crate::domain::library::{Folder, METADATA_FILE, write_json_atomic};
 
 #[derive(Debug, thiserror::Error)]
 pub enum FolderError {
@@ -296,9 +296,9 @@ pub fn unassign_items(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::item::ItemMetadata;
-    use crate::item::tests::{sample_item, write_item};
-    use crate::library::IMAGES_DIR;
+    use crate::domain::item::ItemMetadata;
+    use crate::domain::item::tests::{sample_item, write_item};
+    use crate::domain::library::IMAGES_DIR;
 
     fn library() -> tempfile::TempDir {
         let dir = tempfile::tempdir().unwrap();

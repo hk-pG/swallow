@@ -6,9 +6,10 @@ use percent_encoding::percent_decode_str;
 use serde::Serialize;
 use tauri::{Emitter, Manager};
 
-use crate::commands::{self, AppInfo, AppState};
-use crate::import::{self, BytesImport, ImportError};
-use crate::item::ItemMetadata;
+use crate::app::state::AppState;
+use crate::commands::{self, AppInfo};
+use crate::domain::import::{self, BytesImport, ImportError};
+use crate::domain::item::ItemMetadata;
 
 /// Mirrors `DEFAULT_API_PORT` in `packages/shared/src/api.ts`.
 pub const DEFAULT_API_PORT: u16 = 41600;
@@ -35,7 +36,7 @@ pub trait Context {
 
 impl Context for tauri::AppHandle {
     fn app_info(&self) -> AppInfo {
-        commands::app_info(self.clone())
+        commands::app::app_info(self.clone())
     }
 
     fn library(&self) -> Option<PathBuf> {
@@ -364,7 +365,7 @@ mod tests {
     use std::net::TcpStream;
     use std::path::Path;
 
-    use crate::library::IMAGES_DIR;
+    use crate::domain::library::IMAGES_DIR;
 
     #[derive(Default)]
     struct TestContext {
@@ -465,7 +466,7 @@ mod tests {
         assert_eq!((item.width, item.height), (Some(4), Some(3)));
         assert_eq!(item.url.as_deref(), Some("https://example.com/?q=1&r=2"));
         assert_eq!(*ctx.imported.borrow(), std::slice::from_ref(&item.id));
-        let dir = crate::item::item_dir(lib.path(), &item.id);
+        let dir = crate::domain::item::item_dir(lib.path(), &item.id);
         assert_eq!(fs::read(dir.join("sunset photo.png")).unwrap(), png(4, 3));
     }
 
