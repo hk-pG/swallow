@@ -8,8 +8,6 @@ pub mod settings;
 pub mod smart_folders;
 pub mod tags;
 
-pub use app::AppInfo;
-
 /// Tauri command handlers in one place; registered names are unchanged.
 #[macro_export]
 macro_rules! swallow_invoke_handler {

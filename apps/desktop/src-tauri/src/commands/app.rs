@@ -1,19 +1,9 @@
-use serde::Serialize;
-
-/// Mirrors `AppInfo` in `packages/shared/src/api.ts`.
-#[derive(Debug, Serialize, PartialEq, Eq)]
-pub struct AppInfo {
-    pub name: String,
-    pub version: String,
-}
+pub use crate::domain::app_info::AppInfo;
+use crate::infra::app_info::from_app_handle;
 
 #[tauri::command]
 pub fn app_info(app: tauri::AppHandle) -> AppInfo {
-    let pkg = app.package_info();
-    AppInfo {
-        name: pkg.name.clone(),
-        version: pkg.version.to_string(),
-    }
+    from_app_handle(&app)
 }
 
 #[cfg(test)]
