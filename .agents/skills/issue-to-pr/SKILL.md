@@ -59,8 +59,8 @@ scripts/agent/start-issue.sh <N> --worktree   # main のチェックアウトか
 
 `AGENTS.md` の規約に従う。特に注意すること:
 
-- Rust の型を変えたら `packages/shared` の型と `apps/desktop/src/lib/commands.ts` も揃える
-- 新しい Tauri コマンドは `commands.rs` に定義し、`lib.rs` の `generate_handler!` に登録する
+- Rust の型を変えたら `packages/shared` と、必要なら `features/*/api.ts` の戻り型・引数を揃える
+- 新しい Tauri コマンドは `commands/<領域>.rs` に実装し、`commands/mod.rs` の `swallow_invoke_handler!` に登録する。フロントの `invoke` は対応する `features/<domain>/api.ts` に置く
 - 振る舞いの変更には必ずテストを付ける
 
 作業中は速いチェックを回す: `pnpm test` / `pnpm typecheck` / `pnpm rust:test` / `pnpm rust:clippy`。
