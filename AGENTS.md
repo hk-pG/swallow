@@ -54,6 +54,12 @@ Orca で作った worktree では手元で実装せず、`scripts/agent/cloud-ru
 - **Tauri IPC**: フロントは上記のとおり `features/*/api.ts` のみ。Rust は `commands/<feature>.rs` を `commands/mod.rs` の `swallow_invoke_handler!` に載せる。Rust と `invoke` 名の整合は CI の `scripts/ci/tauri-command-contract.mjs` が検証する（`pnpm test` に含まれる）。
 - **境界の CI**: feature 間 import のルールは `scripts/ci/feature-boundaries.mjs` が検証する（`pnpm test` に含まれる。`tauri-command-contract.mjs` と併用）。
 
+### モジュール境界（Rust バックエンド）
+
+- **依存の向き**: `commands` → `domain` + `infra`（+ `app::state` で共有状態）。`domain` は `commands` / `infra` / `app` / `tauri` / `axum` に依存しない。`infra` は `domain`（と必要なら `app::state`）+ `tauri` / HTTP 用クレートを使い、`commands` や `app::run` には入らない。
+- **lib.rs**: モジュール宣言と `pub use app::run` のファサードのみ（ビジネスロジックや `#[tauri::command]` は載せない）。
+- **境界の CI**: レイヤー依存は `scripts/ci/rust-module-boundaries.mjs` が検証する（`pnpm test` に含まれる。`tauri-command-contract.mjs` / `feature-boundaries.mjs` と併用）。Tauri コマンド名とフロント IPC 境界は「モジュール境界（フロント）」の **Tauri IPC** と同じ契約。
+
 ## コマンド
 
 | 目的                    | コマンド                                                                           |

@@ -7,9 +7,10 @@ use serde::Serialize;
 use tauri::{Emitter, Manager};
 
 use crate::app::state::AppState;
-use crate::commands::{self, AppInfo};
+use crate::domain::app_info::AppInfo;
 use crate::domain::import::{self, BytesImport, ImportError};
 use crate::domain::item::ItemMetadata;
+use crate::infra::app_info::from_app_handle;
 
 /// Mirrors `DEFAULT_API_PORT` in `packages/shared/src/api.ts`.
 pub const DEFAULT_API_PORT: u16 = 41600;
@@ -36,7 +37,7 @@ pub trait Context {
 
 impl Context for tauri::AppHandle {
     fn app_info(&self) -> AppInfo {
-        commands::app::app_info(self.clone())
+        from_app_handle(self)
     }
 
     fn library(&self) -> Option<PathBuf> {

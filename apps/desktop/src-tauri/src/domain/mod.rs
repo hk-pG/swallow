@@ -1,3 +1,4 @@
+pub mod app_info;
 pub mod color_label;
 pub mod folders;
 pub mod import;
