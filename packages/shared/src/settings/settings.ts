@@ -1,5 +1,5 @@
-import type { ItemViewMode } from "./itemView";
-import { DEFAULT_THUMBNAIL_SIZE_INDEX } from "./itemView";
+import type { ItemViewMode } from "../items/itemView";
+import { DEFAULT_THUMBNAIL_SIZE_INDEX } from "../items/itemView";
 
 /** Schema version written to `Settings.version`. */
 export const SETTINGS_VERSION = 1;

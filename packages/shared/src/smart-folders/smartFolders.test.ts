@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Folder, ItemMetadata } from "./library";
+import type { Folder, ItemMetadata } from "../library/library";
 import {
   EMPTY_SMART_FOLDER_CRITERIA,
   filterItemsBySmartFolder,

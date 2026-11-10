@@ -1,4 +1,4 @@
-import type { ItemMetadata } from "./library";
+import type { ItemMetadata } from "../library/library";
 
 /** Lowercase, without the leading dot. Mirrors `SUPPORTED_EXTENSIONS` in `src-tauri/src/import.rs`. */
 export const SUPPORTED_IMPORT_EXTENSIONS = [

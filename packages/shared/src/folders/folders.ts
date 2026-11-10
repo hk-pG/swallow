@@ -1,4 +1,4 @@
-import type { Folder, FolderId } from "./library";
+import type { Folder, FolderId } from "../library/library";
 
 function find(folders: readonly Folder[], id: FolderId): Folder | undefined {
   for (const folder of folders) {

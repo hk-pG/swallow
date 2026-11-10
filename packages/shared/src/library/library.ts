@@ -1,7 +1,7 @@
 /** Format version written to `LibraryMetadata.version`. */
 export const LIBRARY_VERSION = 1;
 
-import type { ColorLabel } from "./colorLabel";
+import type { ColorLabel } from "../color-label/colorLabel";
 
 /** ULID */
 export type ItemId = string;

@@ -1,4 +1,4 @@
-import type { ItemMetadata } from "./library";
+import type { ItemMetadata } from "../library/library";
 
 export function normalizeSearchText(text: string): string {
   return text.normalize("NFKC").toLowerCase();

@@ -1,4 +1,4 @@
-import type { ItemMetadata, LibraryTags } from "./library";
+import type { ItemMetadata, LibraryTags } from "../library/library";
 
 /** `all`: item has every selected tag. `any`: item has at least one. */
 export type TagMatchMode = "all" | "any";

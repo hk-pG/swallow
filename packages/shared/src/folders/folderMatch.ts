@@ -1,5 +1,5 @@
+import type { Folder, FolderId, ItemMetadata } from "../library/library";
 import { subtreeIds } from "./folders";
-import type { Folder, FolderId, ItemMetadata } from "./library";
 
 /**
  * Whether a non-deleted item belongs to `folderId` or a descendant when `folders` contains the tree.

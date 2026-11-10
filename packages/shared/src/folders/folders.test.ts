@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
+import type { Folder } from "../library/library";
 import { subtreeIds } from "./folders";
-import type { Folder } from "./library";
 
 const tree: Folder[] = [
   {

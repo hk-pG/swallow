@@ -1,6 +1,6 @@
-import { itemMatchesFolderSubtree } from "./folderMatch";
-import type { Folder, FolderId, ItemMetadata } from "./library";
-import { matchesQueryTerms, parseQueryTerms } from "./textSearch";
+import { itemMatchesFolderSubtree } from "../folders/folderMatch";
+import { matchesQueryTerms, parseQueryTerms } from "../items/textSearch";
+import type { Folder, FolderId, ItemMetadata } from "../library/library";
 
 /** How multiple tag criteria combine. Mirrors P2 advanced search direction (#51). */
 export type SmartFolderTagMatch = "all" | "any";
