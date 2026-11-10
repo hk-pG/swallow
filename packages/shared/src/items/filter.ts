@@ -1,13 +1,13 @@
-import type { ColorLabel } from "./colorLabel";
-import { itemMatchesFolderSubtree } from "./folderMatch";
-import type { Folder, FolderId, ItemMetadata } from "./library";
+import type { ColorLabel } from "../color-label/colorLabel";
+import { itemMatchesFolderSubtree } from "../folders/folderMatch";
+import type { Folder, FolderId, ItemMetadata } from "../library/library";
 import {
   EMPTY_SMART_FOLDER_CRITERIA,
   isSmartFolderCriteriaActive,
   matchesSmartFolderCriteria,
   type SmartFolder,
   type SmartFolderCriteria,
-} from "./smartFolders";
+} from "../smart-folders/smartFolders";
 import { matchesQueryTerms, parseQueryTerms } from "./textSearch";
 
 /** Minimum star (1–5) for the fixed favorites smart view. */

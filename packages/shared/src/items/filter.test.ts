@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
+import type { Folder, ItemMetadata } from "../library/library";
+import { EMPTY_SMART_FOLDER_CRITERIA, type SmartFolder } from "../smart-folders/smartFolders";
 import { filterItems, matchesQuery, matchesView, parseQuery } from "./filter";
-import type { Folder, ItemMetadata } from "./library";
-import { EMPTY_SMART_FOLDER_CRITERIA, type SmartFolder } from "./smartFolders";
 
 function item(overrides: Partial<ItemMetadata> & Pick<ItemMetadata, "id">): ItemMetadata {
   return {

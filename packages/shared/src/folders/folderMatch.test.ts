@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
+import type { Folder, ItemMetadata } from "../library/library";
 import { itemMatchesFolderSubtree } from "./folderMatch";
-import type { Folder, ItemMetadata } from "./library";
 
 function item(overrides: Partial<ItemMetadata> & Pick<ItemMetadata, "id">): ItemMetadata {
   return {

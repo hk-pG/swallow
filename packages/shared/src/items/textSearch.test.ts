@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ItemMetadata } from "./library";
+import type { ItemMetadata } from "../library/library";
 import { matchesQueryTerms, parseQueryTerms } from "./textSearch";
 
 const filed: ItemMetadata = {
