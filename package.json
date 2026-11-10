@@ -6,13 +6,13 @@
     "node": ">=22"
   },
   "scripts": {
-    "prepare": "scripts/agent/install-hooks.sh",
+    "prepare": "node ./scripts/agent/install-hooks.mjs",
     "dev": "pnpm --filter @swallow/desktop tauri dev",
     "build": "pnpm -r build",
     "lint": "biome check .",
     "format": "biome check --write .",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r test && bash scripts/ci/dependabot-auto-merge.test.sh",
+    "test": "pnpm -r test && bash scripts/ci/dependabot-auto-merge.test.sh && bash scripts/agent/install-hooks.test.sh",
     "rust:fmt": "cargo fmt --all --check",
     "rust:clippy": "cargo clippy --workspace --all-targets --locked -- -D warnings",
     "rust:test": "cargo test --workspace --locked",
