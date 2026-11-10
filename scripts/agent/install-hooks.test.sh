@@ -17,6 +17,14 @@ case $first in
 esac
 [[ $first == node ]] || fail "prepare は node から起動する: $prepare"
 
+# checks のコンテナでは git rev-parse が work tree を認めず、install-hooks.sh はスキップする。
+# その環境ではスキップが exit 0 であることだけ確認する。
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  node ./scripts/agent/install-hooks.mjs
+  echo "ok (not a git work tree)"
+  exit 0
+fi
+
 # core.hooksPath が Cursor の dispatcher のときは、元の hooks パスを一時的に壊して復元を確認する。
 current=$(git config --local --get core.hooksPath || true)
 marker=""
