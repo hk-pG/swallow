@@ -1,0 +1,73 @@
+name: Dependabot auto-merge
+
+# Dependabot 起点の pull_request は GITHUB_TOKEN が読み取り専用で、マージできない。
+# pull_request_target はベースブランチのこのファイルと、書き込み可能なトークンで動く。
+# グループ更新の update-type は、含まれる更新のうち最も高い semver（major > minor > patch）。
+# major が 1 つでも入っていれば patch / minor の条件に合わず、自動マージしない。
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+# 既定は読み取りのみ。書き込みはマージするジョブだけに付ける。
+permissions:
+  contents: read
+
+concurrency:
+  group: dependabot-auto-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  metadata:
+    if: >-
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      update-type: ${{ steps.metadata.outputs.update-type }}
+    steps:
+      # 浮動タグではなく commit SHA（release.yml の tauri-action と同じ）。
+      - name: Dependabot の更新種別を取得
+        id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+        with:
+          github-token: ${{ github.token }}
+
+      - name: 更新種別を記録する
+        env:
+          UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
+        run: echo "update-type=${UPDATE_TYPE}"
+
+  merge:
+    needs: metadata
+    if: >-
+      needs.metadata.outputs.update-type == 'version-update:semver-patch' ||
+      needs.metadata.outputs.update-type == 'version-update:semver-minor'
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    permissions:
+      contents: write
+      pull-requests: write
+      checks: read
+    steps:
+      # pull_request_target の github.sha はベースブランチの先端であり、PR ヘッドではない。
+      # PR のコードは取らない。資格情報も残さない。
+      - name: ベースブランチをチェックアウトする
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: CI の checks 成功後に squash マージする
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          REPO: ${{ github.repository }}
+          UPDATE_TYPE: ${{ needs.metadata.outputs.update-type }}
+        run: |
+          echo "update-type=${UPDATE_TYPE} head=${HEAD_SHA}"
+          bash scripts/ci/dependabot-auto-merge.sh
