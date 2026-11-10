@@ -39,13 +39,19 @@ Orca で作った worktree では手元で実装せず、`scripts/agent/cloud-ru
 
 ## 構成
 
-| パス                         | 内容                                                                                        |
-| ---------------------------- | ------------------------------------------------------------------------------------------- |
-| `apps/desktop/src`           | React フロントエンド。Tauri コマンドの呼び出しは `src/lib/commands.ts` に集約               |
-| `apps/desktop/src-tauri/src` | Rust バックエンド。コマンドは `commands.rs` に定義し `lib.rs` の `generate_handler!` に登録 |
-| `packages/shared/src`        | デスクトップと拡張で共有する型と純粋関数（`@swallow/shared`）                               |
+| パス                         | 内容                                                                                                                                                                                                                                                                                                                                                                                               |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/desktop/src`           | React フロントエンド（機能ベース）。`app/`（`main.tsx`・`bootstrap.ts`・`App.tsx`・`AppProviders.tsx`・`AppLayout.tsx`・`useAppSession.ts`・`sidebarRegistry`）、`features/<domain>/`（公開面 `api.ts`・`index.ts`、`hooks/`・`components/`・`lib/`）、`platform/tauri/`、`shared/`（`components/`・`hooks/`・`lib/`・`types/`）。**Tauri の `invoke` / `listen` は各 `features/*/api.ts` に限定** |
+| `apps/desktop/src-tauri/src` | Rust バックエンド。`lib.rs` はファサードで `app/`（`run.rs`・`state.rs`）、`commands/`（機能別モジュール + `mod.rs` の `swallow_invoke_handler!` で登録）、`domain/`（`item/`・`library`・`settings`・`tag`・`folder`・`smart_folder`・`color_label` など）、`infra/`（`http_api`・`protocol`・`thumbnail`）へ委譲                                                                                 |
+| `packages/shared/src`        | デスクトップと拡張で共有する型と純粋関数（`@swallow/shared`）。`api/`・`library/`・`settings/`・`folders/`・`tags/`・`smart-folders/`・`items/`・`import/`・`color-label/` などドメイン別フォルダを `index.ts` で再エクスポート                                                                                                                                                                    |
 
 ライブラリはディレクトリで、アイテムは `images/<id>.info/` に実ファイルと `metadata.json` を置く。タグは `tags.json`。
+
+### モジュール境界（フロント）
+
+- **依存の向き**: `app` → `features` → `shared` / `platform`（単方向）。`shared` と `platform` は `features` や `app` を import しない。`features` は `app` を import しない。
+- **feature 間**: `features/<A>` から別 feature の内部（`components/`・`lib/` など実装ディレクトリ）へ直接入らない。利用は相手 feature の公開面（`features/<B>/api.ts`・`index.ts`）または `shared/`・`@swallow/shared` の契約経由。
+- **Tauri IPC**: フロントは上記のとおり `features/*/api.ts` のみ。Rust は `commands/<feature>.rs` を `commands/mod.rs` の `swallow_invoke_handler!` に載せる。Rust と `invoke` 名の整合は CI の `scripts/ci/tauri-command-contract.mjs` が検証する（`pnpm test` に含まれる）。
 
 ## コマンド
 
@@ -61,6 +67,7 @@ Orca で作った worktree では手元で実装せず、`scripts/agent/cloud-ru
 
 ## 規約
 
+- 上記「モジュール境界」に従う。新規 Tauri コマンドは Rust の `commands/<領域>.rs` に実装し `commands/mod.rs` の `swallow_invoke_handler!` に追加し、フロントは対応する `features/<domain>/api.ts` に `invoke` を置く（契約テストを更新しないと CI が落ちる）
 - Rust と TS で同じデータを扱う型は `#[serde(rename_all = "camelCase")]` で `packages/shared` の型と一致させる。片方を変えたらもう片方も変える
 - 振る舞いを変えたらテストを追加する。Rust は同じファイルの `#[cfg(test)] mod tests`、TS は隣に `*.test.ts`（Vitest）
 - ファイル書き込みは一時ファイル経由で行い、書きかけの `metadata.json` を残さない

@@ -1,6 +1,6 @@
 # Swallow α→β — Agent 引き継ぎ（最初に読む）
 
-最終更新: 2026-10-29  
+最終更新: 2026-11-10  
 対象: 次の Cursor Project coordinator / Cloud Agent（まっさらな状態で可）
 
 ## 30 秒でやること
@@ -116,18 +116,19 @@ gh issue list --repo hk-pG/swallow --milestone backlog --state open
 
 ## 4. 「どこを見ればよいか」一覧
 
-| 知りたいこと             | 場所                                                                                                         |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| **この引き継ぎ（入口）** | **このファイル** [`docs/HANDOFF.md`](./HANDOFF.md)                                                           |
-| 予定・進捗の正本の考え方 | [github-tracking.md](./github-tracking.md)                                                                   |
-| β Issue 一覧・優先度     | [roadmap.md](./roadmap.md) ＋ GitHub Milestone [`beta`](https://github.com/hk-pG/swallow/milestone/2)        |
-| α で何を入れたか         | [alpha-scope.md](./alpha-scope.md)                                                                           |
-| Eagle との過不足         | [eagle-vs-swallow.md](./eagle-vs-swallow.md)                                                                 |
-| 実装の進め方             | [`AGENTS.md`](../AGENTS.md)、[`.agents/skills/issue-to-pr/SKILL.md`](../.agents/skills/issue-to-pr/SKILL.md) |
-| 分類スクリプト           | [`scripts/agent/github-taxonomy-setup.sh`](../scripts/agent/github-taxonomy-setup.sh)（冪等）                |
-| α トラッカー Issue       | [#45](https://github.com/hk-pG/swallow/issues/45)                                                            |
-| ライブの Issue（P1）     | https://github.com/hk-pG/swallow/issues?q=is%3Aopen+label%3AP1                                               |
-| ライブの Issue（beta）   | https://github.com/hk-pG/swallow/issues?q=is%3Aopen+milestone%3Abeta                                         |
+| 知りたいこと             | 場所                                                                                                                          |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| **この引き継ぎ（入口）** | **このファイル** [`docs/HANDOFF.md`](./HANDOFF.md)                                                                            |
+| 予定・進捗の正本の考え方 | [github-tracking.md](./github-tracking.md)                                                                                    |
+| β Issue 一覧・優先度     | [roadmap.md](./roadmap.md) ＋ GitHub Milestone [`beta`](https://github.com/hk-pG/swallow/milestone/2)                         |
+| α で何を入れたか         | [alpha-scope.md](./alpha-scope.md)                                                                                            |
+| Eagle との過不足         | [eagle-vs-swallow.md](./eagle-vs-swallow.md)                                                                                  |
+| 実装の進め方             | [`AGENTS.md`](../AGENTS.md)、[`.agents/skills/issue-to-pr/SKILL.md`](../.agents/skills/issue-to-pr/SKILL.md)                  |
+| コードベース構成・境界   | [AGENTS.md の「構成」「規約（モジュール境界）](../AGENTS.md#構成)（機能ベース `app/`・`features/*`・Tauri `commands/mod.rs`） |
+| 分類スクリプト           | [`scripts/agent/github-taxonomy-setup.sh`](../scripts/agent/github-taxonomy-setup.sh)（冪等）                                 |
+| α トラッカー Issue       | [#45](https://github.com/hk-pG/swallow/issues/45)                                                                             |
+| ライブの Issue（P1）     | https://github.com/hk-pG/swallow/issues?q=is%3Aopen+label%3AP1                                                                |
+| ライブの Issue（beta）   | https://github.com/hk-pG/swallow/issues?q=is%3Aopen+milestone%3Abeta                                                          |
 
 ---
 
