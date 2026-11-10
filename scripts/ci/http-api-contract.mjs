@@ -41,7 +41,7 @@ export function parseSharedHttpRoutes(contractSource) {
 }
 
 /**
- * @returns {{ method: string, path: string, requestType: string | null, responseType: string }[]}
+ * @returns {{ id: string, method: string, path: string, requestType: string | null, responseType: string }[]}
  */
 export function parseRustHttpRoutes(rustSource) {
   const code = stripComments(rustSource);
@@ -52,16 +52,72 @@ export function parseRustHttpRoutes(rustSource) {
   }
   const routes = [];
   const rowRe =
-    /HttpRouteSpec\s*\{\s*method:\s*"([^"]+)",\s*path:\s*"([^"]+)",\s*request_type:\s*(None|Some\("([^"]*)"\)),\s*response_type:\s*"([^"]+)"\s*,?\s*\}/gs;
+    /HttpRouteSpec\s*\{\s*id:\s*"([^"]+)",\s*method:\s*"([^"]+)",\s*path:\s*"([^"]+)",\s*request_type:\s*(None|Some\("([^"]*)"\)),\s*response_type:\s*"([^"]+)"\s*,?\s*\}/gs;
   for (const match of block[1].matchAll(rowRe)) {
     routes.push({
-      method: match[1],
-      path: match[2],
-      requestType: match[3] === "None" ? null : match[4],
-      responseType: match[5],
+      id: match[1],
+      method: match[2],
+      path: match[3],
+      requestType: match[4] === "None" ? null : match[5],
+      responseType: match[6],
     });
   }
   return routes;
+}
+
+export function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Ensures `HttpApiRouteId` and `HttpApiContractMap` stay derived from `HTTP_API_ROUTES`,
+ * not hand-maintained parallel tables.
+ */
+export function findHttpApiContractTypeDrift(routes, contractSource) {
+  const code = stripComments(contractSource);
+  const issues = [];
+  const routeIds = routes.map((r) => r.id);
+  const routeIdSet = new Set(routeIds);
+
+  if (!/export type HttpApiRouteId\s*=\s*\(typeof HTTP_API_ROUTES\)\[number\]\["id"\]/.test(code)) {
+    issues.push("HttpApiRouteId must be derived from HTTP_API_ROUTES");
+  }
+  if (
+    !/export type HttpApiContractMap\s*=\s*\{[\s\S]*\[R in \(typeof HTTP_API_ROUTES\)/.test(code)
+  ) {
+    issues.push("HttpApiContractMap must be a mapped type over HTTP_API_ROUTES ids");
+  }
+
+  if (!code.includes("[R in (typeof HTTP_API_ROUTES)")) {
+    const mapSlice = code.slice(code.indexOf("export type HttpApiContractMap"));
+    const mapKeys = [];
+    const keyRe = /^\s+(\w+)\s*:\s*\{/gm;
+    for (const match of mapSlice.matchAll(keyRe)) {
+      mapKeys.push(match[1]);
+    }
+    const mapSet = new Set(mapKeys);
+    for (const id of routeIds) {
+      if (!mapSet.has(id)) {
+        issues.push(`HttpApiContractMap missing route id: ${id}`);
+      }
+    }
+    for (const key of mapKeys) {
+      if (!routeIdSet.has(key)) {
+        issues.push(`HttpApiContractMap has unknown route id: ${key}`);
+      }
+    }
+  }
+
+  for (const route of routes) {
+    const rowLiteralRe = new RegExp(
+      `id:\\s*"${escapeRegExp(route.id)}"[\\s\\S]*?method:\\s*"${escapeRegExp(route.method)}"[\\s\\S]*?path:\\s*"${escapeRegExp(route.path)}"`,
+    );
+    if (!rowLiteralRe.test(code)) {
+      issues.push(`HTTP_API_ROUTES row for ${route.id} has method/path drift in source`);
+    }
+  }
+
+  return issues;
 }
 
 export function routeKey(method, pathName) {
@@ -117,13 +173,30 @@ export function findMissingRouteTypes(sharedRoutes, exportedTypes) {
   return missing;
 }
 
-export function findRustResponseTypeMismatches(rustRoutes, rustSource) {
+export function findRustHandlerMismatches(rustRoutes, rustSource) {
   const code = stripComments(rustSource);
   const mismatches = [];
   for (const route of rustRoutes) {
-    if (!code.includes(route.responseType)) {
+    const responseRe = new RegExp(`\\b${escapeRegExp(route.responseType)}\\b`);
+    if (!responseRe.test(code)) {
       mismatches.push(
         `${routeKey(route.method, route.path)}: response type ${route.responseType} not referenced in http_api.rs`,
+      );
+    }
+    if (route.requestType) {
+      const requestRe = new RegExp(`\\b${escapeRegExp(route.requestType)}\\b`);
+      if (!requestRe.test(code)) {
+        mismatches.push(
+          `${routeKey(route.method, route.path)}: request type ${route.requestType} not referenced in http_api.rs`,
+        );
+      }
+    }
+    const dispatchRe = new RegExp(
+      `"${escapeRegExp(route.responseType)}"\\s*=>|"${escapeRegExp(route.path)}"[\\s\\S]{0,80}"${escapeRegExp(route.responseType)}"`,
+    );
+    if (!dispatchRe.test(code)) {
+      mismatches.push(
+        `${routeKey(route.method, route.path)}: no handler dispatch arm for response type ${route.responseType}`,
       );
     }
   }
@@ -242,9 +315,22 @@ function main() {
     }
   }
 
+  const contractDrift = findHttpApiContractTypeDrift(sharedRoutes, contractSource);
+  if (contractDrift.length > 0) {
+    failed = true;
+    console.error("HTTP API contract type table drift in httpContract.ts:");
+    for (const item of contractDrift) {
+      console.error(`  ${item}`);
+    }
+  }
+
   for (const shared of sharedRoutes) {
     const rust = rustRoutes.find((r) => r.path === shared.path);
     if (!rust) continue;
+    if (rust.id !== shared.id) {
+      failed = true;
+      console.error(`Route id mismatch for ${shared.path}: shared=${shared.id}, Rust=${rust.id}`);
+    }
     if (rust.method !== shared.method) {
       failed = true;
       console.error(
@@ -277,10 +363,10 @@ function main() {
     }
   }
 
-  const rustTypeMismatches = findRustResponseTypeMismatches(rustRoutes, rustSource);
+  const rustTypeMismatches = findRustHandlerMismatches(rustRoutes, rustSource);
   if (rustTypeMismatches.length > 0) {
     failed = true;
-    console.error("Rust handler types not found for HTTP API routes:");
+    console.error("Rust handler types or dispatch not found for HTTP API routes:");
     for (const item of rustTypeMismatches) {
       console.error(`  ${item}`);
     }

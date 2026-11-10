@@ -21,6 +21,7 @@ pub const ITEMS_IMPORTED_EVENT: &str = "items-imported";
 /// Parsed by `scripts/ci/http-api-contract.mjs`.
 #[derive(Debug, Clone, Copy)]
 struct HttpRouteSpec {
+    id: &'static str,
     method: &'static str,
     path: &'static str,
     request_type: Option<&'static str>,
@@ -30,21 +31,20 @@ struct HttpRouteSpec {
 /// Keep field order stable so CI can parse this table mechanically.
 const HTTP_API_ROUTE_SPECS: &[HttpRouteSpec] = &[
     HttpRouteSpec {
+        id: "appInfo",
         method: "GET",
         path: "/api/app/info",
         request_type: None,
         response_type: "AppInfo",
     },
     HttpRouteSpec {
+        id: "addItem",
         method: "POST",
         path: "/api/items",
         request_type: Some("AddItemQuery"),
         response_type: "ItemMetadata",
     },
 ];
-
-const APP_INFO_PATH: &str = "/api/app/info";
-const ADD_ITEM_PATH: &str = "/api/items";
 
 const MAX_BODY_BYTES: u64 = 256 * 1024 * 1024;
 const MAX_NAME_CHARS: usize = 200;
@@ -231,9 +231,17 @@ pub fn handle(head: &RequestHead<'_>, body: &mut dyn Read, ctx: &impl Context) -
                     format!("{} {path} には対応していません", head.method),
                 ));
             }
-            return match (spec.path, spec.response_type) {
-                (APP_INFO_PATH, "AppInfo") => Ok(ApiResponse::json(200, &ctx.app_info())),
-                (ADD_ITEM_PATH, "ItemMetadata") => {
+            return match spec.response_type {
+                "AppInfo" => {
+                    debug_assert_eq!(spec.id, "appInfo");
+                    debug_assert_eq!(spec.path, "/api/app/info");
+                    debug_assert_eq!(spec.method, "GET");
+                    Ok(ApiResponse::json(200, &ctx.app_info()))
+                }
+                "ItemMetadata" => {
+                    debug_assert_eq!(spec.id, "addItem");
+                    debug_assert_eq!(spec.path, "/api/items");
+                    debug_assert_eq!(spec.method, "POST");
                     debug_assert_eq!(spec.request_type, Some("AddItemQuery"));
                     add_item(head, query, body, ctx)
                 }
@@ -398,11 +406,16 @@ mod tests {
     use super::*;
 
     #[test]
-    fn http_api_route_specs_match_path_constants() {
-        let paths: Vec<_> = HTTP_API_ROUTE_SPECS.iter().map(|s| s.path).collect();
-        assert!(paths.contains(&APP_INFO_PATH));
-        assert!(paths.contains(&ADD_ITEM_PATH));
-        assert_eq!(HTTP_API_ROUTE_SPECS.len(), 2);
+    fn http_api_route_specs_match_shared_contract() {
+        const EXPECTED: &[(&str, &str, &str)] = &[
+            ("appInfo", "GET", "/api/app/info"),
+            ("addItem", "POST", "/api/items"),
+        ];
+        assert_eq!(HTTP_API_ROUTE_SPECS.len(), EXPECTED.len());
+        for (spec, expect) in HTTP_API_ROUTE_SPECS.iter().zip(EXPECTED) {
+            let (id, method, path) = *expect;
+            assert_eq!((spec.id, spec.method, spec.path), (id, method, path));
+        }
     }
     use std::cell::RefCell;
     use std::fs;

@@ -20,7 +20,8 @@ node --input-type=module -e "
     routeKey,
     collectSharedExportedTypeNames,
     findMissingRouteTypes,
-    findRustResponseTypeMismatches,
+    findRustHandlerMismatches,
+    findHttpApiContractTypeDrift,
     findExtensionApiLiteralViolations,
     findExtensionRawApiPathLiterals,
   } from './scripts/ci/http-api-contract.mjs';
@@ -68,11 +69,41 @@ node --input-type=module -e "
   const missing = findMissingRouteTypes(shared, exported);
   if (missing.length) throw new Error('missing types in prod tree: ' + missing.join(', '));
 
-  const fakeRustMissing = findRustResponseTypeMismatches(
-    [{ method: 'GET', path: '/api/x', requestType: null, responseType: 'NotHere' }],
+  const fakeRustMissing = findRustHandlerMismatches(
+    [{ id: 'x', method: 'GET', path: '/api/x', requestType: null, responseType: 'NotHere' }],
     'fn x() {}',
   );
-  if (fakeRustMissing.length !== 1) throw new Error('rust type mismatch detection');
+  if (fakeRustMissing.length < 2) throw new Error('rust handler mismatch detection');
+
+  const substringFalsePass = findRustHandlerMismatches(
+    [{ id: 'appInfo', method: 'GET', path: '/api/app/info', requestType: null, responseType: 'AppInfo' }],
+    'struct FakeAppInfo {}\nfn x() { let _ = FakeAppInfo; }',
+  );
+  if (substringFalsePass.length === 0) throw new Error('word boundary must reject FakeAppInfo');
+
+  const dispatchMissing = findRustHandlerMismatches(
+    [{ id: 'appInfo', method: 'GET', path: '/api/app/info', requestType: null, responseType: 'AppInfo' }],
+    'use crate::domain::item::ItemMetadata;\nstruct AppInfo;',
+  );
+  if (!dispatchMissing.some((m) => m.includes('dispatch'))) throw new Error('dispatch arm check');
+
+  const contractIssues = findHttpApiContractTypeDrift(shared, contract);
+  if (contractIssues.length) throw new Error('prod contract drift: ' + contractIssues.join(', '));
+
+  const manualSource = \`
+    export const HTTP_API_ROUTES = [
+      { id: \"appInfo\", method: \"GET\", path: \"/api/app/info\", requestType: null, responseType: \"AppInfo\" },
+    ] as const;
+    export type HttpApiRouteId = \"appInfo\" | \"orphan\";
+    export type HttpApiContractMap = {
+      appInfo: { method: \"GET\"; path: \"/api/app/info\"; request: undefined; response: unknown };
+      orphan: { method: \"GET\"; path: \"/api/nope\"; request: undefined; response: unknown };
+    };
+  \`;
+  const manualRoutes = parseSharedHttpRoutes(manualSource);
+  const manualMap = findHttpApiContractTypeDrift(manualRoutes, manualSource);
+  if (!manualMap.some((m) => m.includes('must be derived'))) throw new Error('derived map enforcement');
+  if (!manualMap.some((m) => m.includes('unknown route id'))) throw new Error('manual map key drift');
 
   const allowed = new Set(shared.map((r) => r.path));
   const extDir = 'apps/extension/src';
