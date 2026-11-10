@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { assertValidSidebarRegistry } from "./assertValidSidebarRegistry";
 import { sidebarSections } from "./sidebarRegistry";
 
 describe("sidebarSections", () => {
@@ -10,6 +11,10 @@ describe("sidebarSections", () => {
       "color-labels",
       "tags",
     ]);
+  });
+
+  it("passes registry invariants", () => {
+    expect(() => assertValidSidebarRegistry(sidebarSections)).not.toThrow();
   });
 
   it("exposes a stable id on every entry so sections can be appended without touching App", () => {
