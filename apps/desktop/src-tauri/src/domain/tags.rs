@@ -2,8 +2,8 @@ use std::fs;
 use std::io;
 use std::path::Path;
 
-use crate::item::{self, ItemError};
-use crate::library::{LibraryTags, TAGS_FILE, TagGroup, write_json_atomic};
+use crate::domain::item::{self, ItemError};
+use crate::domain::library::{LibraryTags, TAGS_FILE, TagGroup, write_json_atomic};
 
 #[derive(Debug, thiserror::Error)]
 pub enum TagError {
@@ -180,9 +180,9 @@ pub fn remove_item_tags(root: &Path, item_ids: &[String], tags: &[String]) -> Re
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::item::ItemMetadata;
-    use crate::item::tests::{sample_item, write_item};
-    use crate::library::IMAGES_DIR;
+    use crate::domain::item::ItemMetadata;
+    use crate::domain::item::tests::{sample_item, write_item};
+    use crate::domain::library::IMAGES_DIR;
     use std::path::PathBuf;
 
     struct TempLibrary(PathBuf);

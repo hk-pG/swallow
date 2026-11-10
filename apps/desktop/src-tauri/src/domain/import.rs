@@ -5,9 +5,9 @@ use std::path::{Path, PathBuf};
 use serde::Serialize;
 use ulid::Ulid;
 
-use crate::folders::{FolderError, FolderHierarchy};
-use crate::item::{ITEM_DIR_EXT, ITEM_METADATA_FILE, ItemMetadata, now_millis};
-use crate::library::IMAGES_DIR;
+use crate::domain::folders::{FolderError, FolderHierarchy};
+use crate::domain::item::{ITEM_DIR_EXT, ITEM_METADATA_FILE, ItemMetadata, now_millis};
+use crate::domain::library::IMAGES_DIR;
 
 /// Mirrors `SUPPORTED_IMPORT_EXTENSIONS` in `packages/shared/src/import.ts`.
 pub const SUPPORTED_EXTENSIONS: &[&str] = &["png", "jpg", "jpeg", "webp", "gif", "svg", "pdf"];
@@ -336,7 +336,7 @@ fn import_one(
 
 fn write_item(dir: &Path, content: Content<'_>, item: &ItemMetadata) -> io::Result<()> {
     fs::create_dir(dir)?;
-    let file = crate::item::item_file(dir, item)?;
+    let file = crate::domain::item::item_file(dir, item)?;
     match content {
         Content::File(source) => fs::copy(source, file).map(drop)?,
         Content::Bytes(bytes) => fs::write(file, bytes)?,
@@ -426,7 +426,7 @@ mod tests {
 
     fn library() -> tempfile::TempDir {
         let dir = tempfile::tempdir().unwrap();
-        crate::library::create(dir.path()).unwrap();
+        crate::domain::library::create(dir.path()).unwrap();
         dir
     }
 
@@ -449,9 +449,9 @@ mod tests {
         assert!(item.created_at > 0);
         assert_eq!(item.created_at, item.modified_at);
 
-        let item_dir = crate::item::item_dir(lib.path(), &item.id);
+        let item_dir = crate::domain::item::item_dir(lib.path(), &item.id);
         assert_eq!(fs::read(item_dir.join("Photo.png")).unwrap(), png(640, 480));
-        assert_eq!(&crate::item::read_item(&item_dir).unwrap(), item);
+        assert_eq!(&crate::domain::item::read_item(&item_dir).unwrap(), item);
     }
 
     #[test]
@@ -499,9 +499,9 @@ mod tests {
         assert_eq!(item.size, bytes.len() as u64);
         assert_eq!((item.width, item.height), (Some(32), Some(16)));
         assert_eq!(item.url.as_deref(), Some("https://example.com/page"));
-        let item_dir = crate::item::item_dir(lib.path(), &item.id);
+        let item_dir = crate::domain::item::item_dir(lib.path(), &item.id);
         assert_eq!(fs::read(item_dir.join("cat.png")).unwrap(), bytes);
-        assert_eq!(crate::item::read_item(&item_dir).unwrap(), item);
+        assert_eq!(crate::domain::item::read_item(&item_dir).unwrap(), item);
     }
 
     #[test]
@@ -557,7 +557,7 @@ mod tests {
             ImportFailureReason::UnsupportedExtension
         );
 
-        let folders = crate::folders::list(lib.path()).unwrap();
+        let folders = crate::domain::folders::list(lib.path()).unwrap();
         assert_eq!(folders.len(), 1);
         assert_eq!(folders[0].name, "Photos");
         assert_eq!(folders[0].children.len(), 1);

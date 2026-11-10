@@ -1,5 +1,5 @@
-use crate::item::{self, ITEM_DIR_EXT, ItemMetadata};
-use crate::library::IMAGES_DIR;
+use crate::domain::item::{self, ITEM_DIR_EXT, ItemMetadata};
+use crate::domain::library::IMAGES_DIR;
 use image::{DynamicImage, ImageDecoder, ImageFormat, ImageReader};
 use std::fs;
 use std::io::{self, Read};
@@ -244,7 +244,7 @@ fn decode(path: &Path) -> image::ImageResult<DynamicImage> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::item::tests::{sample_item, write_item};
+    use crate::domain::item::tests::{sample_item, write_item};
     use image::{GenericImageView, RgbaImage};
 
     fn write_png(dir: &Path, name: &str, width: u32, height: u32) {

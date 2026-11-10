@@ -4,7 +4,7 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
-use crate::library::{SMART_FOLDERS_FILE, write_json_atomic};
+use crate::domain::library::{SMART_FOLDERS_FILE, write_json_atomic};
 
 /// Mirrors `SmartFolderTagMatch` in `packages/shared/src/smartFolders.ts`.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
@@ -72,7 +72,7 @@ fn normalize_name(name: &str) -> Result<String> {
 
 fn validate_criteria(criteria: &SmartFolderCriteria) -> Result<()> {
     if let Some(star) = criteria.min_star
-        && star > crate::item::MAX_STAR
+        && star > crate::domain::item::MAX_STAR
     {
         return Err(SmartFolderError::InvalidStar);
     }
@@ -167,18 +167,18 @@ pub fn delete(root: &Path, id: &str) -> Result<Vec<SmartFolder>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::library::IMAGES_DIR;
+    use crate::domain::library::IMAGES_DIR;
 
     fn library() -> tempfile::TempDir {
         let dir = tempfile::tempdir().unwrap();
         std::fs::create_dir(dir.path().join(IMAGES_DIR)).unwrap();
         std::fs::write(
-            dir.path().join(crate::library::METADATA_FILE),
+            dir.path().join(crate::domain::library::METADATA_FILE),
             r#"{ "name": "lib", "version": 1, "folders": [] }"#,
         )
         .unwrap();
         std::fs::write(
-            dir.path().join(crate::library::TAGS_FILE),
+            dir.path().join(crate::domain::library::TAGS_FILE),
             r#"{ "tags": [], "groups": [] }"#,
         )
         .unwrap();

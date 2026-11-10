@@ -2,7 +2,7 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
-use crate::library::{IMAGES_DIR, write_json_atomic};
+use crate::domain::library::{IMAGES_DIR, write_json_atomic};
 
 use super::{ITEM_DIR_EXT, ITEM_METADATA_FILE, ItemError, ItemMetadata};
 
