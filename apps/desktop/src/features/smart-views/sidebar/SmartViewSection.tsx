@@ -1,4 +1,4 @@
-import type { SidebarSectionProps } from "../../sidebar/lib/types";
+import type { SidebarSectionProps } from "../../sidebar";
 import { SmartViewNav } from "../components/SmartViewNav";
 
 /** First sidebar section: smart views. */

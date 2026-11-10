@@ -1,4 +1,4 @@
-import type { SidebarSectionProps } from "../../sidebar/lib/types";
+import type { SidebarSectionProps } from "../../sidebar";
 import { ColorLabelNav } from "../components/ColorLabelNav";
 
 export function ColorLabelSection({ view, onViewChange, disabled }: SidebarSectionProps) {

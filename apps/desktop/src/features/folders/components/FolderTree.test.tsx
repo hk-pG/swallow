@@ -2,7 +2,7 @@ import type { Folder, ItemMetadata } from "@swallow/shared";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { Inspector } from "../../inspector/components/Inspector";
+import { Inspector } from "../../inspector";
 import { FolderTree } from "./FolderTree";
 
 const folders: Folder[] = [

@@ -23,7 +23,7 @@ import {
   type SelectModifiers,
   select,
   selectAll,
-} from "../../items/lib/selection";
+} from "../../items";
 
 export interface ItemBrowser {
   view: ItemView;

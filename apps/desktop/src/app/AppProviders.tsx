@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
-import { FoldersProvider } from "../features/folders/hooks/FoldersContext";
-import { SmartFoldersProvider } from "../features/smart-folders/hooks/SmartFoldersContext";
-import { TagsProvider } from "../features/tags/hooks/TagsContext";
+import { FoldersProvider } from "../features/folders";
+import { SmartFoldersProvider } from "../features/smart-folders";
+import { TagsProvider } from "../features/tags";
 import type { AppSession } from "./useAppSession";
 
 export function AppProviders({ session, children }: { session: AppSession; children: ReactNode }) {

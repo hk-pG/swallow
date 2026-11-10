@@ -1,5 +1,5 @@
 import type { ItemId, ItemMetadata } from "@swallow/shared";
-import type { Selection } from "../../items/lib/selection";
+import type { Selection } from "../../items";
 
 export type QuickLookScaleMode = "fit" | "actual";
 

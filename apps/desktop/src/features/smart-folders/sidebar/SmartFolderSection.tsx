@@ -1,6 +1,6 @@
-import { useFoldersApi } from "../../folders/hooks/FoldersContext";
-import type { SidebarSectionProps } from "../../sidebar/lib/types";
-import { useTagsApi } from "../../tags/hooks/TagsContext";
+import { useFoldersApi } from "../../folders";
+import type { SidebarSectionProps } from "../../sidebar";
+import { useTagsApi } from "../../tags";
 import { SmartFolderNav } from "../components/SmartFolderNav";
 import { useSmartFoldersApi } from "../hooks/SmartFoldersContext";
 

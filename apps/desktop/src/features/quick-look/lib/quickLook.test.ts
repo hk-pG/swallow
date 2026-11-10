@@ -1,6 +1,6 @@
 import type { ItemMetadata } from "@swallow/shared";
 import { describe, expect, it } from "vitest";
-import { EMPTY_SELECTION, type Selection } from "../../items/lib/selection";
+import { EMPTY_SELECTION, type Selection } from "../../items";
 import { initialQuickLookId, resolveQuickLookTarget, stepQuickLookId } from "./quickLook";
 
 function makeItem(id: string): ItemMetadata {

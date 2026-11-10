@@ -1,7 +1,7 @@
 import type { Folder, SmartFolderCriteria } from "@swallow/shared";
 import type { Dispatch, SetStateAction } from "react";
-import type { AppearanceSettingsState } from "../../settings/hooks/useAppearanceSettings";
-import { AdvancedSearch } from "../../smart-views/components/AdvancedSearch";
+import type { AppearanceSettingsState } from "../../settings";
+import { AdvancedSearch } from "../../smart-views";
 import { ViewModeToolbar } from "./ViewModeToolbar";
 
 interface LibraryToolbarProps {
