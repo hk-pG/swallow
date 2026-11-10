@@ -1,10 +1,13 @@
 import type { ItemView } from "@swallow/shared";
 import { cleanup, render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { afterEach, describe, expect, it } from "vitest";
 import { FolderSection, useFoldersApi } from "../features/folders";
 import { AppProviders } from "./AppProviders";
+import { type AppFeatureProviderId, composeAppFeatureProviders } from "./appFeatureProviders";
 import { SidebarSections, sidebarSections } from "./sidebarRegistry";
 import { asAppSession, minimalProviderSession } from "./testSessionFixtures";
+import type { AppSession } from "./useAppSession";
 
 afterEach(() => cleanup());
 
@@ -13,6 +16,18 @@ const defaultView: ItemView = { kind: "all" };
 function FoldersApiProbe() {
   const api = useFoldersApi();
   return <span data-testid="probe">{api.folders.length}</span>;
+}
+
+function AppProvidersExcluding({
+  session,
+  excludeIds,
+  children,
+}: {
+  session: AppSession;
+  excludeIds: readonly AppFeatureProviderId[];
+  children: ReactNode;
+}) {
+  return <>{composeAppFeatureProviders(session, children, { excludeIds })}</>;
 }
 
 describe("AppProviders wiring", () => {
@@ -69,4 +84,26 @@ describe("AppProviders wiring", () => {
     );
     expect(screen.getByTestId("probe").textContent).toBe("0");
   });
+
+  it.each(
+    sidebarSections.flatMap((entry) =>
+      entry.requiredProviders.map((providerId) => ({
+        sectionId: entry.id,
+        providerId,
+        Component: entry.Component,
+      })),
+    ),
+  )(
+    'fails fast when "$sectionId" mounts without $providerId provider',
+    ({ providerId, Component }) => {
+      const session = asAppSession(minimalProviderSession());
+      expect(() =>
+        render(
+          <AppProvidersExcluding session={session} excludeIds={[providerId]}>
+            <Component libraryPath={null} view={defaultView} onViewChange={() => {}} disabled />
+          </AppProvidersExcluding>,
+        ),
+      ).toThrow();
+    },
+  );
 });

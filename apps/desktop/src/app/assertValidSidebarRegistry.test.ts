@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
-import type { SidebarSectionEntry } from "../features/sidebar";
 import { assertValidSidebarRegistry } from "./assertValidSidebarRegistry";
+import type { AppSidebarSectionEntry } from "./sidebarRegistryTypes";
 
 function StubSidebarSection() {
   return null;
 }
 
-function stubSection(id: string): SidebarSectionEntry {
-  return { id, Component: StubSidebarSection };
+function stubSection(
+  id: string,
+  requiredProviders: AppSidebarSectionEntry["requiredProviders"] = [],
+): AppSidebarSectionEntry {
+  return { id, Component: StubSidebarSection, requiredProviders };
 }
 
 describe("assertValidSidebarRegistry", () => {
@@ -15,10 +18,10 @@ describe("assertValidSidebarRegistry", () => {
     expect(() =>
       assertValidSidebarRegistry([
         stubSection("smart-views"),
-        stubSection("smart-folders"),
-        stubSection("folders"),
+        stubSection("smart-folders", ["folders", "smart-folders", "tags"]),
+        stubSection("folders", ["folders"]),
         stubSection("color-labels"),
-        stubSection("tags"),
+        stubSection("tags", ["tags"]),
       ]),
     ).not.toThrow();
   });
@@ -39,7 +42,27 @@ describe("assertValidSidebarRegistry", () => {
 
   it("rejects entries without a Component", () => {
     expect(() =>
-      assertValidSidebarRegistry([{ id: "broken", Component: null as unknown as () => null }]),
+      assertValidSidebarRegistry([
+        {
+          id: "broken",
+          Component: null as unknown as () => null,
+          requiredProviders: [],
+        },
+      ]),
     ).toThrow(/mountable Component/);
+  });
+
+  it("rejects unknown requiredProviders ids", () => {
+    expect(() =>
+      assertValidSidebarRegistry([
+        stubSection("broken", ["not-a-provider" as AppSidebarSectionEntry["requiredProviders"][0]]),
+      ]),
+    ).toThrow(/unknown provider/);
+  });
+
+  it("rejects duplicate requiredProviders on one entry", () => {
+    expect(() =>
+      assertValidSidebarRegistry([stubSection("folders", ["folders", "folders"])]),
+    ).toThrow(/duplicate requiredProviders/);
   });
 });

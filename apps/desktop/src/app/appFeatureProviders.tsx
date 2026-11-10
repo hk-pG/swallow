@@ -4,12 +4,15 @@ import { SmartFoldersProvider } from "../features/smart-folders";
 import { TagsProvider } from "../features/tags";
 import type { AppSession } from "./useAppSession";
 
+export const APP_FEATURE_PROVIDER_IDS = ["folders", "smart-folders", "tags"] as const;
+export type AppFeatureProviderId = (typeof APP_FEATURE_PROVIDER_IDS)[number];
+
 type SessionFolders = AppSession["folders"];
 type SessionSmartFolders = AppSession["smartFolders"];
 type SessionTags = AppSession["tags"];
 
 export interface AppFeatureProviderSpec {
-  id: string;
+  id: AppFeatureProviderId;
   selectValue: (session: AppSession) => SessionFolders | SessionSmartFolders | SessionTags;
   wrap: (
     value: SessionFolders | SessionSmartFolders | SessionTags,
@@ -54,8 +57,18 @@ export function assertUniqueAppFeatureProviderIds(specs: readonly { id: string }
 
 assertUniqueAppFeatureProviderIds(APP_FEATURE_PROVIDERS);
 
-export function composeAppFeatureProviders(session: AppSession, children: ReactNode): ReactNode {
-  return APP_FEATURE_PROVIDERS.reduceRight<ReactNode>((tree, spec) => {
+export interface ComposeAppFeatureProvidersOptions {
+  excludeIds?: readonly AppFeatureProviderId[];
+}
+
+export function composeAppFeatureProviders(
+  session: AppSession,
+  children: ReactNode,
+  options?: ComposeAppFeatureProvidersOptions,
+): ReactNode {
+  const exclude = new Set(options?.excludeIds ?? []);
+  const specs = APP_FEATURE_PROVIDERS.filter((spec) => !exclude.has(spec.id));
+  return specs.reduceRight<ReactNode>((tree, spec) => {
     const value = spec.selectValue(session);
     return spec.wrap(value, tree);
   }, children);
