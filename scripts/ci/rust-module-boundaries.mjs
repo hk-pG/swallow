@@ -101,6 +101,46 @@ export function layerFromFile(relPosix) {
   return top ?? "unknown";
 }
 
+function extractBraceBody(source, openBrace) {
+  let depth = 0;
+  for (let i = openBrace; i < source.length; i++) {
+    if (source[i] === "{") depth += 1;
+    else if (source[i] === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return source.slice(openBrace + 1, i);
+      }
+    }
+  }
+  return null;
+}
+
+function splitBraceItems(body) {
+  const items = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < body.length; i++) {
+    const ch = body[i];
+    if (ch === "{") depth += 1;
+    else if (ch === "}") depth -= 1;
+    else if (ch === "," && depth === 0) {
+      items.push(body.slice(start, i));
+      start = i + 1;
+    }
+  }
+  items.push(body.slice(start));
+  return items;
+}
+
+function joinUsePath(prefix, segment) {
+  const left = prefix.replace(/::$/, "").trim();
+  const right = segment.trim();
+  if (!right) return left;
+  if (right === "self") return left;
+  if (!left) return right;
+  return `${left}::${right}`;
+}
+
 /** Splits a `use` clause into root path strings (e.g. crate::domain::item). */
 export function expandUseClause(clause) {
   const trimmed = clause.trim();
@@ -113,12 +153,30 @@ export function expandUseClause(clause) {
     .slice(0, brace)
     .replace(/::{?\s*$/, "")
     .trim();
-  if (!prefix) return [];
-  return [normalizeUsePath(prefix)];
+  const body = extractBraceBody(trimmed, brace);
+  if (!body) {
+    return prefix ? [normalizeUsePath(prefix)] : [];
+  }
+  const roots = [];
+  for (const item of splitBraceItems(body)) {
+    const piece = item.trim();
+    if (!piece || piece === "*") {
+      if (prefix) roots.push(normalizeUsePath(prefix));
+      continue;
+    }
+    if (piece.includes("{")) {
+      const nested = prefix ? `${prefix}::${piece}` : piece;
+      roots.push(...expandUseClause(nested));
+      continue;
+    }
+    roots.push(normalizeUsePath(joinUsePath(prefix, piece)));
+  }
+  return roots.length > 0 ? roots : prefix ? [normalizeUsePath(prefix)] : [];
 }
 
 function normalizeUsePath(p) {
-  return p.replace(/\s+/g, "").replace(/::$/, "");
+  const withoutAlias = p.replace(/\s+as\s+[A-Za-z_][A-Za-z0-9_]*\s*$/u, "");
+  return withoutAlias.replace(/\s+/g, "").replace(/::$/, "");
 }
 
 export function extractUseRoots(source) {

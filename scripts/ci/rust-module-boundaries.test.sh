@@ -20,9 +20,11 @@ node --input-type=module -e "
     stripComments,
     stripStringLiterals,
     prepareSource,
+    expandUseClause,
     extractUseRoots,
     resolveUsePath,
     checkUseViolation,
+    checkLibRsFacade,
     findCratePathViolations,
     findRustBoundaryViolations,
     modulePathFromFile,
@@ -128,6 +130,50 @@ node --input-type=module -e "
 
   const pathHits = findCratePathViolations('domain', domainFoo, 'fn x() { let _ = crate::infra::thumb; }');
   if (!pathHits.includes('crate::infra')) throw new Error('inline crate path');
+
+  const grouped = expandUseClause('crate::{commands::error::CommandError, domain::item}');
+  const groupedSet = new Set(grouped);
+  if (
+    !groupedSet.has('crate::commands::error::CommandError') ||
+    !groupedSet.has('crate::domain::item')
+  ) {
+    throw new Error('grouped use: ' + grouped.join(','));
+  }
+  if (checkUseViolation('domain', domainFoo, 'crate::commands::error::CommandError') === null) {
+    throw new Error('grouped commands path should fail domain');
+  }
+
+  const aliasRoots = extractUseRoots('use crate::commands as cmd;');
+  if (aliasRoots.join(',') !== 'crate::commands') {
+    throw new Error('use as alias: ' + aliasRoots.join(','));
+  }
+  if (checkUseViolation('infra', ['infra', 'http_api'], 'crate::commands') === null) {
+    throw new Error('alias-resolved commands path should fail infra');
+  }
+
+  const rawSrc = prepareSource(\`
+    use crate::domain::library;
+    let doc = r#\" mention crate::commands here \"#\";
+  \`);
+  if (extractUseRoots(rawSrc).join(',') !== 'crate::domain::library') {
+    throw new Error('raw string should not add use roots');
+  }
+  const rawPath = findCratePathViolations(
+    'domain',
+    domainFoo,
+    \`let s = r#\" crate::commands::x \"#\";\`,
+  );
+  if (rawPath.length > 0) throw new Error('raw string inline path false positive');
+
+  if (checkLibRsFacade('#[tauri::command]\\npub fn evil() {}').length === 0) {
+    throw new Error('lib.rs tauri command should fail facade check');
+  }
+
+  write('lib.rs', 'mod app;\\n#[tauri::command]\\nfn bad() {}\\n');
+  const libViolations = findRustBoundaryViolations({ rustSrc });
+  if (!libViolations.some((v) => v.file === 'lib.rs' && v.rule === 'facade')) {
+    throw new Error('lib.rs integration facade violation');
+  }
 "
 
 node "$checker" || fail "boundary check on main tree"
