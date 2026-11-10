@@ -31,6 +31,7 @@ Orca で作った worktree では手元で実装せず、`scripts/agent/cloud-ru
 ## バグの扱い
 
 不具合対応は **先に GitHub Issue を作り、記録を残してから** 修正 PR に進む（口頭やチャットだけで直さない）。
+
 1. 既存 Issue を検索し、無ければ `gh issue create` で新規作成する（ラベル `bug`、領域 `area:*`、優先度 `P1`/`P2`/`P3`、Milestone を付ける）
 2. 本文に再現手順・受け入れ条件・原因仮説（分かれば）を書く。チャットでの調査結果もここに要約する
 3. その後 `scripts/agent/start-issue.sh <N>` から通常どおり PR まで進める（PR は `Closes #<N>`）

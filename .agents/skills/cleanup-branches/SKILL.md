@@ -53,6 +53,7 @@ gh pr list --state all --limit 50 --json number,title,state,headRefName,mergedAt
 | **残す**   | `main`、現在のブランチ、利用者が明示したブランチ、worktree がアクティブ作業中と分かるもの                                                        |
 
 補足:
+
 - worktree 付き（`git branch -vv` の `+`）は、ブランチ削除の前に worktree 削除が必要
 - squash マージだと `git branch --merged` に出ないことがある。そのときは PR の `MERGED` + head ブランチ名、または upstream `[gone]` を優先する
 - リモート追跡が消えたあともローカルだけ残るのが典型的な掃除対象
@@ -103,6 +104,7 @@ git push origin --delete <branch>
 ```
 
 やってはいけないこと:
+
 - `main` / 現在のブランチの削除
 - 承認されていないブランチの削除
 - force push、`git push --delete` 以外の破壊操作
