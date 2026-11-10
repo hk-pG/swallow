@@ -4,6 +4,7 @@ import type { SidebarSectionEntry, SidebarSectionProps } from "../features/sideb
 import { SmartFolderSection } from "../features/smart-folders";
 import { SmartViewSection } from "../features/smart-views";
 import { TagSection } from "../features/tags";
+import { assertValidSidebarRegistry } from "./assertValidSidebarRegistry";
 
 export type { SidebarSectionEntry, SidebarSectionProps } from "../features/sidebar";
 
@@ -18,6 +19,8 @@ export const sidebarSections: SidebarSectionEntry[] = [
   { id: "color-labels", Component: ColorLabelSection },
   { id: "tags", Component: TagSection },
 ];
+
+assertValidSidebarRegistry(sidebarSections);
 
 export function SidebarSections(props: SidebarSectionProps) {
   return (
