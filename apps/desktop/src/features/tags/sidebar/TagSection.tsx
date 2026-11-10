@@ -1,4 +1,4 @@
-import type { SidebarSectionProps } from "../../sidebar/lib/types";
+import type { SidebarSectionProps } from "../../sidebar";
 import { TagNav } from "../components/TagNav";
 import { useTagsApi } from "../hooks/TagsContext";
 

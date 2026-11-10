@@ -1,10 +1,9 @@
 import type { Folder, FolderId, ItemId, ItemMetadata, ItemMetadataPatch } from "@swallow/shared";
 import { type FormEvent, type KeyboardEvent, useEffect, useId, useMemo, useState } from "react";
 import { formatBytes, formatDateTime, formatResolution } from "../../../shared/format";
-import { ColorLabelPicker } from "../../color-labels/components/ColorLabelPicker";
-import { FolderAssignControl } from "../../folders/components/FolderAssignControl";
-import { flattenFolderNames } from "../../folders/lib/folders";
-import { suggestTags } from "../../tags/lib/tags";
+import { ColorLabelPicker } from "../../color-labels";
+import { FolderAssignControl, flattenFolderNames } from "../../folders";
+import { suggestTags } from "../../tags";
 
 const MAX_STAR = 5;
 

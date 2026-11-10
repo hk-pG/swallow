@@ -1,16 +1,14 @@
 import { useRef } from "react";
-import { useFolders } from "../features/folders/hooks/useFolders";
-import { useAssetImport } from "../features/import/hooks/useAssetImport";
-import { useItemList } from "../features/items/hooks/useItemList";
-import { itemThumbContentStyle } from "../features/items/lib/itemThumbContentStyle";
-import { useLibrarySession } from "../features/library/hooks/useLibrarySession";
-import { useQuickLook } from "../features/quick-look/hooks/useQuickLook";
-import { useAppearanceSettings } from "../features/settings/hooks/useAppearanceSettings";
-import { useSmartFolders } from "../features/smart-folders/hooks/useSmartFolders";
-import { useItemBrowser } from "../features/smart-views/hooks/useItemBrowser";
-import { useItemViewState } from "../features/smart-views/hooks/useItemViewState";
-import { useTags } from "../features/tags/hooks/useTags";
-import { useTrashActions } from "../features/trash/hooks/useTrashActions";
+import { useFolders } from "../features/folders";
+import { useAssetImport } from "../features/import";
+import { itemThumbContentStyle, useItemList } from "../features/items";
+import { useLibrarySession } from "../features/library";
+import { useQuickLook } from "../features/quick-look";
+import { useAppearanceSettings } from "../features/settings";
+import { useSmartFolders } from "../features/smart-folders";
+import { useItemBrowser, useItemViewState } from "../features/smart-views";
+import { useTags } from "../features/tags";
+import { useTrashActions } from "../features/trash";
 
 export function useAppSession() {
   const session = useLibrarySession();

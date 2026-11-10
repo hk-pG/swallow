@@ -1,9 +1,8 @@
 import type { Folder, FolderId, ItemId, ItemMetadata, ItemMetadataPatch } from "@swallow/shared";
-import { FolderAssignControl } from "../../folders/components/FolderAssignControl";
-import type { Selection } from "../../items/lib/selection";
-import { AppInfo } from "../../library/components/AppInfo";
-import { TrashActions } from "../../trash/components/TrashActions";
-import type { TrashActionsApi } from "../../trash/hooks/useTrashActions";
+import { FolderAssignControl } from "../../folders";
+import type { Selection } from "../../items";
+import { AppInfo } from "../../library";
+import { TrashActions, type TrashActionsApi } from "../../trash";
 import { Inspector } from "./Inspector";
 
 interface InspectorPaneProps {

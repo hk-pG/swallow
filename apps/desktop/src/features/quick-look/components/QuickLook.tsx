@@ -1,6 +1,6 @@
 import { type KeyboardEvent, useCallback, useEffect, useId, useState } from "react";
 import { formatResolution } from "../../../shared/format";
-import { hasThumbnail, originalImageUrl } from "../../items/lib/thumbnail";
+import { hasThumbnail, originalImageUrl } from "../../items";
 import type { QuickLookScaleMode, QuickLookTarget } from "../lib/quickLook";
 
 interface QuickLookProps {

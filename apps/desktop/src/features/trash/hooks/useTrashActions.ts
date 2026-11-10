@@ -2,15 +2,15 @@ import type { ItemId, ItemMetadata, ItemView } from "@swallow/shared";
 import { ask } from "@tauri-apps/plugin-dialog";
 import { type Dispatch, type SetStateAction, useCallback, useMemo, useRef } from "react";
 import { focusInspectorTagInput } from "../../../shared/focusInspector";
-import { purgeItems, restoreItems, revealItemInExplorer, trashItems } from "../../items/api";
-import type { ItemViewContextHandlers } from "../../items/hooks/useItemContextMenu";
 import {
   EMPTY_SELECTION,
+  type ItemViewContextHandlers,
   nextAfterRemoval,
   type Selection,
   type SelectModifiers,
   select,
-} from "../../items/lib/selection";
+} from "../../items";
+import { purgeItems, restoreItems, revealItemInExplorer, trashItems } from "../../items/api";
 import { purgeConfirmMessage } from "../lib/trash";
 
 export interface TrashActionsApi {

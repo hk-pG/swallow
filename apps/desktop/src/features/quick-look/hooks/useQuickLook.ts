@@ -1,6 +1,6 @@
 import type { ItemId, ItemMetadata } from "@swallow/shared";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Selection } from "../../items/lib/selection";
+import type { Selection } from "../../items";
 import {
   initialQuickLookId,
   type QuickLookScaleMode,

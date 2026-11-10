@@ -7,8 +7,7 @@ import {
 } from "@swallow/shared";
 import { ask } from "@tauri-apps/plugin-dialog";
 import { type FormEvent, type MouseEvent, useEffect, useState } from "react";
-import { SidebarContextMenu } from "../../sidebar/components/SidebarContextMenu";
-import { useSidebarContextMenu } from "../../sidebar/hooks/useSidebarContextMenu";
+import { SidebarContextMenu, useSidebarContextMenu } from "../../sidebar";
 import type { SmartFoldersApi } from "../hooks/useSmartFolders";
 import { SmartFolderCriteriaFields } from "./SmartFolderCriteriaFields";
 

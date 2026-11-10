@@ -1,11 +1,11 @@
-import { ColorLabelSection } from "../features/color-labels/sidebar/ColorLabelSection";
-import { FolderSection } from "../features/folders/sidebar/FolderSection";
-import type { SidebarSectionEntry, SidebarSectionProps } from "../features/sidebar/lib/types";
-import { SmartFolderSection } from "../features/smart-folders/sidebar/SmartFolderSection";
-import { SmartViewSection } from "../features/smart-views/sidebar/SmartViewSection";
-import { TagSection } from "../features/tags/sidebar/TagSection";
+import { ColorLabelSection } from "../features/color-labels";
+import { FolderSection } from "../features/folders";
+import type { SidebarSectionEntry, SidebarSectionProps } from "../features/sidebar";
+import { SmartFolderSection } from "../features/smart-folders";
+import { SmartViewSection } from "../features/smart-views";
+import { TagSection } from "../features/tags";
 
-export type { SidebarSectionEntry, SidebarSectionProps } from "../features/sidebar/lib/types";
+export type { SidebarSectionEntry, SidebarSectionProps } from "../features/sidebar";
 
 /**
  * Ordered sidebar sections. Feature UIs append an entry here —

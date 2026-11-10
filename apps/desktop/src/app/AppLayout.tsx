@@ -1,8 +1,7 @@
-import { ImportReportBanner } from "../features/import/components/ImportReportBanner";
-import { InspectorPane } from "../features/inspector/components/InspectorPane";
-import { LibraryToolbar } from "../features/items/components/LibraryToolbar";
-import { MainItemView } from "../features/items/components/MainItemView";
-import { QuickLook } from "../features/quick-look/components/QuickLook";
+import { ImportReportBanner } from "../features/import";
+import { InspectorPane } from "../features/inspector";
+import { LibraryToolbar, MainItemView } from "../features/items";
+import { QuickLook } from "../features/quick-look";
 import { SidebarSections } from "./sidebarRegistry";
 import type { AppSession } from "./useAppSession";
 

@@ -1,4 +1,4 @@
-import type { SidebarSectionProps } from "../../sidebar/lib/types";
+import type { SidebarSectionProps } from "../../sidebar";
 import { FolderTree } from "../components/FolderTree";
 import { useFoldersApi } from "../hooks/FoldersContext";
 

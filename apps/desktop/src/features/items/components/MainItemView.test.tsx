@@ -1,7 +1,7 @@
 import { EMPTY_SMART_FOLDER_CRITERIA } from "@swallow/shared";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { InspectorPane } from "../../inspector/components/InspectorPane";
+import { InspectorPane } from "../../inspector";
 import { EMPTY_SELECTION, select } from "../lib/selection";
 import { LibraryToolbar } from "./LibraryToolbar";
 import { MainItemView, resolveMainEmptyState } from "./MainItemView";

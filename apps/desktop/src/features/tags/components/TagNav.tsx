@@ -1,8 +1,7 @@
 import type { ItemView, LibraryTags, TagGroup } from "@swallow/shared";
 import { ask } from "@tauri-apps/plugin-dialog";
 import { type FormEvent, type MouseEvent, useMemo, useState } from "react";
-import { SidebarContextMenu } from "../../sidebar/components/SidebarContextMenu";
-import { useSidebarContextMenu } from "../../sidebar/hooks/useSidebarContextMenu";
+import { SidebarContextMenu, useSidebarContextMenu } from "../../sidebar";
 import { tagSections } from "../lib/tags";
 
 export interface TagNavMutations {

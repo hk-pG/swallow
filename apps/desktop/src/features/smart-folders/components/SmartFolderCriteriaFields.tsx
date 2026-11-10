@@ -1,5 +1,5 @@
 import type { Folder, SmartFolderCriteria, SmartFolderTagMatch } from "@swallow/shared";
-import { flattenFolders } from "../../folders/lib/folders";
+import { flattenFolders } from "../../folders";
 
 export interface SmartFolderCriteriaFieldsProps {
   criteria: SmartFolderCriteria;

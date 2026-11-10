@@ -1,7 +1,7 @@
 import type { ItemMetadata } from "@swallow/shared";
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { EMPTY_SELECTION, select } from "../../items/lib/selection";
+import { EMPTY_SELECTION, select } from "../../items";
 
 const { restoreItems, purgeItems, revealItemInExplorer, trashItems, ask } = vi.hoisted(() => ({
   restoreItems: vi.fn(),
