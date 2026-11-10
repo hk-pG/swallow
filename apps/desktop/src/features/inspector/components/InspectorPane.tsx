@@ -1,0 +1,75 @@
+import type { Folder, FolderId, ItemId, ItemMetadata, ItemMetadataPatch } from "@swallow/shared";
+import { FolderAssignControl } from "../../folders/components/FolderAssignControl";
+import type { Selection } from "../../items/lib/selection";
+import { AppInfo } from "../../library/components/AppInfo";
+import { TrashActions } from "../../trash/components/TrashActions";
+import type { TrashActionsApi } from "../../trash/hooks/useTrashActions";
+import { Inspector } from "./Inspector";
+
+interface InspectorPaneProps {
+  selectedCount: number;
+  selection: Selection;
+  selected: ItemMetadata | null;
+  folders: readonly Folder[];
+  libraryTagNames: string[];
+  onSave: (id: ItemId, patch: ItemMetadataPatch) => Promise<void>;
+  onAssignFolder: (ids: ItemId[], folderId: FolderId) => Promise<void>;
+  onUnassignFolder: (ids: ItemId[], folderId: FolderId) => Promise<void>;
+  onAddTags: (itemId: ItemId, tags: string[]) => Promise<void>;
+  onRemoveTags: (itemId: ItemId, tags: string[]) => Promise<void>;
+  trash: Pick<TrashActionsApi, "trashSelected" | "restoreSelected" | "purgeSelected">;
+}
+
+export function InspectorPane({
+  selectedCount,
+  selection,
+  selected,
+  folders,
+  libraryTagNames,
+  onSave,
+  onAssignFolder,
+  onUnassignFolder,
+  onAddTags,
+  onRemoveTags,
+  trash,
+}: InspectorPaneProps) {
+  const multiIds = [...selection.ids];
+  const folderList = [...folders];
+
+  return (
+    <aside className="inspector">
+      {selectedCount > 1 ? (
+        <div className="inspector-body">
+          <p className="inspector-muted">{selectedCount} 件を選択中</p>
+          <FolderAssignControl
+            key={multiIds.sort().join("\n")}
+            folders={folderList}
+            onAssign={(folderId) => onAssignFolder(multiIds, folderId)}
+            onUnassign={(folderId) => onUnassignFolder(multiIds, folderId)}
+          />
+        </div>
+      ) : (
+        <>
+          <Inspector
+            item={selected}
+            folders={folderList}
+            libraryTagNames={libraryTagNames}
+            onSave={onSave}
+            onAssignFolder={(id, folderId) => onAssignFolder([id], folderId)}
+            onUnassignFolder={(id, folderId) => onUnassignFolder([id], folderId)}
+            onAddTags={onAddTags}
+            onRemoveTags={onRemoveTags}
+          />
+          <TrashActions
+            key={selected?.id}
+            item={selected}
+            onTrash={trash.trashSelected}
+            onRestore={trash.restoreSelected}
+            onPurge={trash.purgeSelected}
+          />
+        </>
+      )}
+      <AppInfo />
+    </aside>
+  );
+}
