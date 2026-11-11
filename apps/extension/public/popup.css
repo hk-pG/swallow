@@ -1,0 +1,102 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  font-size: 13px;
+  color: CanvasText;
+  background: Canvas;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  width: 320px;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 12px 4px;
+}
+
+header img {
+  border-radius: 4px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+#status {
+  margin: 0;
+  min-height: 1.2em;
+  padding: 4px 12px 8px;
+  color: color-mix(in srgb, CanvasText 65%, transparent);
+}
+
+#status[data-kind="error"] {
+  color: #c0392b;
+}
+
+#status[data-kind="success"] {
+  color: color-mix(in srgb, CanvasText 88%, transparent);
+}
+
+#images {
+  list-style: none;
+  margin: 0;
+  padding: 0 8px 8px;
+  max-height: 420px;
+  overflow: auto;
+}
+
+#images li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 6px;
+}
+
+#images li:hover {
+  background: color-mix(in srgb, CanvasText 6%, transparent);
+}
+
+.text {
+  min-width: 0;
+  flex: 1;
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta {
+  margin-top: 2px;
+  color: color-mix(in srgb, CanvasText 55%, transparent);
+  font-size: 11px;
+}
+
+button {
+  flex: none;
+  border: 0;
+  border-radius: 6px;
+  padding: 6px 8px;
+  background: Highlight;
+  color: HighlightText;
+  font: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
