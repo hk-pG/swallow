@@ -45,7 +45,11 @@ jobs:
     needs: [changes, image]
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
-    container: ${{ fromJSON(format('{"image":"%s"%s}', needs.image.outputs.image, env.ACT != 'true' && format(',"credentials":{"username":"%s","password":"%s"}', github.actor, secrets.GITHUB_TOKEN) || '')) }}
+    container:
+      image: ${{ needs.image.outputs.image }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/cache@v6
@@ -64,7 +68,11 @@ jobs:
     needs: [changes, image]
     if: needs.changes.outputs.code == 'true' && github.event_name == 'push'
     runs-on: ubuntu-latest
-    container: ${{ fromJSON(format('{"image":"%s"%s}', needs.image.outputs.image, env.ACT != 'true' && format(',"credentials":{"username":"%s","password":"%s"}', github.actor, secrets.GITHUB_TOKEN) || '')) }}
+    container:
+      image: ${{ needs.image.outputs.image }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/cache@v6
