@@ -2,7 +2,7 @@
 
 最終更新: 2026-11-11
 
-雛形で決めたこと。画像の保存 UI とデスクトップ側の拡張 ID allowlist は、この文書のあとに実装する。デスクトップの HTTP API 実装は変えない。
+雛形で決めたことと、デスクトップ HTTP API が受け付ける拡張 ID。画像の保存 UI は、この文書のあとに実装する。
 
 ## 対象
 
@@ -10,23 +10,45 @@ Chrome のみ（Manifest V3、`minimum_chrome_version` 120）。Firefox 用の `
 
 ## 拡張 ID
 
-| 項目    | 値                                                                                                          |
-| ------- | ----------------------------------------------------------------------------------------------------------- |
-| 拡張 ID | `fpcegcbemljdnihmoaejmmbpijdffgfn`                                                                          |
-| 正本    | `apps/extension/public/manifest.json` の `key`（RSA 公開鍵 SPKI DER の Base64）                             |
-| 定数    | `apps/extension/src/pinnedExtensionId.ts` の `PINNED_EXTENSION_ID`                                          |
-| 計算    | 公開鍵バイト列の SHA-256 の先頭 16 バイトを、16 進の `0-9a-f` ではなく `a-p` に写像する（Chrome の拡張 ID） |
+| 項目       | 値                                                                                                          |
+| ---------- | ----------------------------------------------------------------------------------------------------------- |
+| 開発用 ID  | `fpcegcbemljdnihmoaejmmbpijdffgfn`                                                                          |
+| ストア ID  | 未設定。記入箇所は下の `STORE_EXTENSION_ID` だけ                                                            |
+| 正本       | `apps/extension/public/manifest.json` の `key`（RSA 公開鍵 SPKI DER の Base64）                             |
+| 拡張の定数 | `apps/extension/src/pinnedExtensionId.ts` の `PINNED_EXTENSION_ID`                                          |
+| 計算       | 公開鍵バイト列の SHA-256 の先頭 16 バイトを、16 進の `0-9a-f` ではなく `a-p` に写像する（Chrome の拡張 ID） |
 
-秘密鍵はリポジトリに置かない。`key` があるので、未パックの読み込みではこの ID が安定する。CRX の署名や、同じ ID での Chrome Web Store 公開には、リポジトリ外で保管した秘密鍵が別途必要になる。この雛形の生成では秘密鍵を残していない。ストア公開で別 ID になる場合は、allowlist にその ID を足す（#92）。
+秘密鍵はリポジトリに置かない。`key` があるので、未パックの読み込みではこの ID が安定する。CRX の署名や、同じ ID での Chrome Web Store 公開には、リポジトリ外で保管した秘密鍵が別途必要になる。この雛形の生成では秘密鍵を残していない。
 
-#92 はこの ID をデスクトップの Origin allowlist に使う。この変更では allowlist を実装しない。ランタイムは従来どおり `chrome-extension://` 接頭辞のみを見る。
+## サイドロードとストア ID
 
-## API の前提（デスクトップは変更しない）
+デスクトップの Origin 判定は `apps/desktop/src-tauri/src/infra/http_api.rs` にある。許可するのは次の ID だけである。
+
+| 定数                       | 役割                                             | いまの値                           |
+| -------------------------- | ------------------------------------------------ | ---------------------------------- |
+| `DEVELOPMENT_EXTENSION_ID` | 未パック / サイドロード                          | `fpcegcbemljdnihmoaejmmbpijdffgfn` |
+| `STORE_EXTENSION_ID`       | Chrome Web Store。未公開のあいだの唯一の記入箇所 | `None`                             |
+
+比較は `Origin` 全体が `chrome-extension://` とその ID を繋げた文字列と完全一致すること。大文字、末尾の `/`、余分な文字、別 ID は 403 になる。`chrome-extension://` という接頭辞だけでは許可しない。
+
+### サイドロード
+
+開発時は、ビルドした拡張を Chrome の「パッケージ化されていない拡張機能を読み込む」で読み込む。`manifest.json` の `key`（公開鍵）が ID を決めるので、秘密鍵は要らない。読み込むたびに Origin は `chrome-extension://fpcegcbemljdnihmoaejmmbpijdffgfn` になる。デスクトップはこの Origin を許可する。
+
+`key` を外した拡張や、別の公開鍵の拡張は別 ID になり、`GET /api/app/info` も `POST /api/items` も 403 になる。ライブラリには書き込まない。
+
+### ストア ID を足すとき
+
+Chrome Web Store の拡張 ID は未定。決まるまで `STORE_EXTENSION_ID` は `None` のままにし、別の定数やリストは足さない。
+
+いまの公開鍵に対応する秘密鍵は残していない。同じ ID でストア公開するには、その秘密鍵でパッケージに署名する必要がある。秘密鍵が無い状態で公開すると、ストア側の ID は開発用 ID と別になる。公開後に分かった 32 文字（`a-p`）を `STORE_EXTENSION_ID` にだけ入れる。開発用 ID はサイドロード用に残す。両方と完全一致する Origin だけが通る。
+
+## API の前提
 
 - 待ち受けは `127.0.0.1:41600`（`DEFAULT_API_PORT`）。`localhost` は `::1` に解決されることがあり、その場合は接続できない。リクエストの Host は `127.0.0.1:41600` にする。
 - `GET /api/app/info` → `AppInfo`。`POST /api/items?name=&ext=&url=` にファイル本体を載せ、成功は `201` と `ItemMetadata`。
 - `url` クエリは元ページの URL（`ItemMetadata.url`）であり、画像の取得先ではない。デスクトップは画像 URL を取りに行かない。
-- Origin が無いリクエストは拒否される。許される Origin は `chrome-extension://` だけ。CORS ヘッダも OPTIONS も無い。
+- Origin が無い、`chrome-extension://` ではない、または公式 ID と完全一致しないリクエストは拒否される。CORS ヘッダも OPTIONS も無い。
 
 パスと型は `@swallow/shared` の `HTTP_API_ROUTES` / `API_PATHS` を使う。拡張のソースに `/api/...` の直書きを置かない（`scripts/ci/http-api-contract.mjs` が失敗させる）。
 
@@ -74,4 +96,4 @@ API を呼ぶ `fetch` はサービスワーカーから行う。コンテンツ�
 ## この雛形がやらないこと
 
 - コンテキストメニューと保存（#12 の残り）
-- デスクトップの拡張 ID allowlist と、未知 ID を 403 にするテスト（#92）
+- Chrome Web Store の拡張 ID（未定。`STORE_EXTENSION_ID` は `None`）

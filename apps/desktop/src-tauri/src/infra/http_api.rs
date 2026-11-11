@@ -50,7 +50,14 @@ const MAX_BODY_BYTES: u64 = 256 * 1024 * 1024;
 const MAX_NAME_CHARS: usize = 200;
 const DEFAULT_NAME: &str = "image";
 const ALLOWED_HOSTS: &[&str] = &["127.0.0.1", "localhost", "[::1]"];
-const ALLOWED_ORIGIN_PREFIX: &str = "chrome-extension://";
+const CHROME_EXTENSION_ORIGIN_PREFIX: &str = "chrome-extension://";
+/// Unpacked / sideload ID. Comes from the public `key` in
+/// `apps/extension/public/manifest.json`. The private key is not in the repo.
+/// See `docs/extension-design.md`.
+const DEVELOPMENT_EXTENSION_ID: &str = "fpcegcbemljdnihmoaejmmbpijdffgfn";
+/// Chrome Web Store extension ID. This is the only place to set it once the listing
+/// exists. `None` allows the development ID only.
+const STORE_EXTENSION_ID: Option<&str> = None;
 
 /// What the API needs from the running app.
 pub trait Context {
@@ -260,8 +267,8 @@ pub fn handle(head: &RequestHead<'_>, body: &mut dyn Read, ctx: &impl Context) -
 }
 
 /// Binding to 127.0.0.1 already keeps other machines out. The `Host` check stops DNS
-/// rebinding, and requiring a `chrome-extension://` `Origin` stops ordinary web pages
-/// and non-browser local clients from using the API.
+/// rebinding. `Origin` must be exactly `chrome-extension://` plus an official extension
+/// ID. A scheme prefix alone would accept any other installed extension.
 fn check_access(head: &RequestHead<'_>) -> Result<(), ApiError> {
     let forbidden = |message: &str| Err(ApiError::new(ApiErrorCode::Forbidden, message));
     if !head.peer.is_some_and(|peer| peer.ip().is_loopback()) {
@@ -271,9 +278,25 @@ fn check_access(head: &RequestHead<'_>) -> Result<(), ApiError> {
         return forbidden("Host が localhost ではありません");
     }
     match head.origin {
-        Some(origin) if origin.starts_with(ALLOWED_ORIGIN_PREFIX) => Ok(()),
+        Some(origin) if is_official_extension_origin(origin) => Ok(()),
         _ => forbidden("この Origin からのリクエストは受け付けません"),
     }
+}
+
+fn is_official_extension_origin(origin: &str) -> bool {
+    let Some(id) = origin.strip_prefix(CHROME_EXTENSION_ORIGIN_PREFIX) else {
+        return false;
+    };
+    official_extension_ids().any(|allowed| allowed == id)
+}
+
+/// Development ID, plus the store ID when `STORE_EXTENSION_ID` is set.
+/// Empty strings are not IDs: `chrome-extension://` alone must stay forbidden.
+fn official_extension_ids() -> impl Iterator<Item = &'static str> {
+    [Some(DEVELOPMENT_EXTENSION_ID), STORE_EXTENSION_ID]
+        .into_iter()
+        .flatten()
+        .filter(|id| !id.is_empty())
 }
 
 fn is_allowed_host(host: &str) -> bool {
@@ -471,13 +494,18 @@ mod tests {
         bytes
     }
 
+    fn official_origin() -> &'static str {
+        static ORIGIN: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+        ORIGIN.get_or_init(|| format!("{CHROME_EXTENSION_ORIGIN_PREFIX}{DEVELOPMENT_EXTENSION_ID}"))
+    }
+
     fn head<'a>(method: &'a str, url: &'a str) -> RequestHead<'a> {
         RequestHead {
             method,
             url,
             peer: Some(SocketAddr::from((Ipv4Addr::LOCALHOST, 50000))),
             host: Some("127.0.0.1:41600"),
-            origin: Some("chrome-extension://abcdefghijklmnop"),
+            origin: Some(official_origin()),
             content_type: None,
             content_length: None,
         }
@@ -682,11 +710,71 @@ mod tests {
         ] {
             let head = RequestHead {
                 host: Some(host),
-                origin: Some("chrome-extension://abcdefghijklmnop"),
+                origin: Some(official_origin()),
                 ..head("GET", "/api/app/info")
             };
             assert_eq!(call(&head, b"", &ctx).0, 200, "{host}");
         }
+    }
+
+    #[test]
+    fn allowlist_is_the_development_id_until_a_store_id_is_set() {
+        assert_eq!(DEVELOPMENT_EXTENSION_ID, "fpcegcbemljdnihmoaejmmbpijdffgfn");
+        assert_eq!(DEVELOPMENT_EXTENSION_ID.len(), 32);
+        assert!(
+            DEVELOPMENT_EXTENSION_ID
+                .bytes()
+                .all(|byte| (b'a'..=b'p').contains(&byte))
+        );
+        assert!(STORE_EXTENSION_ID.is_none());
+        assert_eq!(
+            official_extension_ids().collect::<Vec<_>>(),
+            vec![DEVELOPMENT_EXTENSION_ID]
+        );
+        assert!(is_official_extension_origin(official_origin()));
+    }
+
+    #[test]
+    fn rejects_unknown_extension_origins() {
+        let ctx = TestContext::default();
+        let dev = DEVELOPMENT_EXTENSION_ID;
+        let origins = [
+            "chrome-extension://abcdefghijklmnop".to_owned(),
+            "chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_owned(),
+            format!("chrome-extension://{dev}extra"),
+            format!("chrome-extension://{dev}/"),
+            format!("chrome-extension://{}", dev.to_ascii_uppercase()),
+            "chrome-extension://".to_owned(),
+            format!("chrome-extension://{dev} "),
+            format!("Chrome-extension://{dev}"),
+            format!("chrome-extension://.{dev}"),
+        ];
+        for origin in &origins {
+            let head = RequestHead {
+                origin: Some(origin),
+                ..head("GET", "/api/app/info")
+            };
+            let (status, json) = call(&head, b"", &ctx);
+            assert_eq!((status, error_code(&json)), (403, "forbidden"), "{origin}");
+        }
+    }
+
+    #[test]
+    fn unknown_extension_origin_does_not_write_library() {
+        let lib = library();
+        let ctx = TestContext::with_library(lib.path());
+        let head = RequestHead {
+            origin: Some("chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+            content_type: Some("image/png"),
+            ..head("POST", "/api/items?ext=png")
+        };
+        let (status, json) = call(&head, &png(1, 1), &ctx);
+        assert_eq!((status, error_code(&json)), (403, "forbidden"));
+        assert!(ctx.imported.borrow().is_empty());
+        assert_eq!(
+            fs::read_dir(lib.path().join(IMAGES_DIR)).unwrap().count(),
+            0
+        );
     }
 
     #[test]
@@ -735,8 +823,9 @@ mod tests {
         let mut stream = TcpStream::connect(addr).unwrap();
         write!(
             stream,
-            "GET /api/app/info HTTP/1.1\r\nHost: localhost:{}\r\nOrigin: chrome-extension://abcdefghijklmnop\r\nConnection: close\r\n\r\n",
-            addr.port()
+            "GET /api/app/info HTTP/1.1\r\nHost: localhost:{}\r\nOrigin: {}\r\nConnection: close\r\n\r\n",
+            addr.port(),
+            official_origin()
         )
         .unwrap();
         let mut response = String::new();
