@@ -56,9 +56,28 @@ In a worktree created with Orca, implementation is handed to a Cursor Cloud Agen
 
 **Cloud Agent environment:** `.cursor/environment.json` points at the same `docker/build.Dockerfile` as CI. When a successful **environment build** exists, agents boot from that snapshot (Node, Rust, and Tauri Linux deps already installed). If no build is available yet, Cursor may start on a generic image instead; `install` then runs `scripts/agent/environment-install.sh`, which installs `pnpm` dependencies and, when `cargo` is missing, Rust via `rustup` from `rust-toolchain.toml`. GUI `pnpm dev` on a bare Linux VM still needs Tauri system packages—prefer the Docker / Dev Container path for full desktop builds.
 
-- Set `CURSOR_API_KEY` (created under API Keys on the Cursor Dashboard) in the shell that launches Orca
-- To let the Cloud Agent use `gh`, set a fine-grained token scoped to this repository as `SWALLOW_CLOUD_GH_TOKEN`. When it is unset, Cursor still opens the pull request automatically
+- Copy `.env.example` to `.env` on the host that runs Orca (do not commit `.env`). See [Environment variables](#environment-variables) below.
+- Set `CURSOR_API_KEY` (Cursor Dashboard → API Keys) before `scripts/agent/cloud-run.sh`
+- To let the Cloud Agent use `gh` for Issues and labels, provide a repository-scoped token: on the host use `SWALLOW_CLOUD_GH_TOKEN` (mapped to `GH_TOKEN` inside the agent), or set Runtime Secret **`GH_TOKEN`** on the Cloud Agent directly
+- When no GitHub token is set, Cursor still opens the pull request automatically in many cases
 - These restrictions list the main commands. Writes through the shell remain possible
+
+## Environment variables
+
+Repository-local secrets and agent tokens are documented in `.env.example` (Japanese comments). Overview:
+
+| Purpose                           | Name you set (host / Dashboard)             | Name read at runtime    | Required              | Notes                                                                   |
+| --------------------------------- | ------------------------------------------- | ----------------------- | --------------------- | ----------------------------------------------------------------------- |
+| Cloud Agents API (`cloud-run.sh`) | `CURSOR_API_KEY`                            | same                    | Yes for Orca launches | Shell or `.env` on the machine running Orca                             |
+| GitHub API inside Cloud Agent     | **`GH_TOKEN`** (recommended Runtime Secret) | `GH_TOKEN`              | No                    | Fine-grained PAT scoped to this repo; enables `gh issue` / label writes |
+| Same token from Orca host only    | `SWALLOW_CLOUD_GH_TOKEN`                    | → `GH_TOKEN` in agent   | No                    | Set in shell or `.env`; `cloud-run.sh` maps it when starting the agent  |
+| Parallel worktrees                | `SWALLOW_WORKTREE_DIR`                      | same                    | No                    | `start-issue.sh --worktree` parent directory                            |
+| Taxonomy bootstrap target         | `REPO`                                      | same                    | No                    | Default `hk-pG/swallow`; `github-taxonomy-setup.sh`                     |
+| Rust / Compose image              | `CARGO_HOME`, `RUSTUP_HOME`                 | same                    | No                    | Set in `docker/build.Dockerfile`; agents usually inherit                |
+| Tauri dev build                   | `TAURI_DEV_HOST`, `TAURI_ENV_*`             | same                    | No                    | Set by `pnpm dev` / Tauri CLI, not usually in `.env`                    |
+| GitHub Actions CI                 | `GITHUB_TOKEN`                              | `GH_TOKEN` in some jobs | CI only               | Provided by Actions; not for local `.env`                               |
+
+Agent onboarding details: [`docs/HANDOFF.md`](docs/HANDOFF.md) §6.
 
 ## CI
 
