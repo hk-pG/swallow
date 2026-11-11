@@ -155,25 +155,26 @@ write_file() {
   fi
   mkdir -p "$(dirname "$full")"
   printf '%s' "$body" >"$full"
+  [[ "$body" == *$'\n' ]] || printf '\n' >>"$full"
   info "wrote $full"
 }
 
-INDEX_BODY='/**
- * Public facade for this feature — re-export hooks, components, and sidebar entries here.
- * Do not import other feature internal paths; use their index.ts or api.ts only.
- */
-
-export {};
-'
-
-if [[ "$WITH_SIDEBAR" == 1 ]]; then
-  INDEX_BODY="/**
+feature_index_body() {
+  local exports=$1
+  cat <<EOF
+/**
  * Public facade for this feature — re-export hooks, components, and sidebar entries here.
  * Do not import other features' internal paths; use their index.ts or api.ts only.
  */
 
-export { ${SECTION_COMPONENT} } from \"./sidebar/${SECTION_COMPONENT}\";
-"
+${exports}
+EOF
+}
+
+if [[ "$WITH_SIDEBAR" == 1 ]]; then
+  INDEX_BODY=$(feature_index_body "export { ${SECTION_COMPONENT} } from \"./sidebar/${SECTION_COMPONENT}\";")
+else
+  INDEX_BODY=$(feature_index_body "export {};")
 fi
 
 API_BODY='/**
