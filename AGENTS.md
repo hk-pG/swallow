@@ -56,6 +56,13 @@ Orca で作った worktree では手元で実装せず、`scripts/agent/cloud-ru
 - **境界の CI**: feature 間 import のルールは `scripts/ci/feature-boundaries.mjs` が検証する（`pnpm test` に含まれる。`tauri-command-contract.mjs` と併用）。
 - **HTTP API**: Chrome 拡張向けループバック API のルート表は `packages/shared/src/api/httpContract.ts`（`HTTP_API_ROUTES`）が正本。Rust の `infra/http_api.rs` 内 `HTTP_API_ROUTE_SPECS` および拡張の呼び出しとの整合は `scripts/ci/http-api-contract.mjs` が検証する（`pnpm test` に含まれる）。
 
+### スタイル／デザイントークン（フロント）
+
+- **ルール**: 色・余白・角丸・フォント・影・blur は `apps/desktop/src/styles/tokens.css` のセマンティック変数だけを参照する。`features/`・`app/` のコンポーネントに見た目の値を直書きしない（動的レイアウト用の `left` / `top` や `--item-thumb-size` などの CSS 変数は可）。
+- **構成**: `apps/desktop/src/styles/` は `tokens.css` を正本とし、領域別 CSS が `var(--...)` とセマンティッククラスでトークンを消費する。詳細は [`apps/desktop/src/styles/README.md`](apps/desktop/src/styles/README.md)。
+- **テーマ切替**: 本タスク範囲ではテーマ切替機構は作らない。
+- **境界の CI**: 直書き検出は `scripts/ci/style-token-boundaries.mjs` が検証する（`pnpm test` に含まれる）。
+
 ### モジュール境界（Rust バックエンド）
 
 - **依存の向き**: `commands` → `domain` + `infra`（+ `app::state` で共有状態）。`domain` は `commands` / `infra` / `app` / `tauri` / `axum` に依存しない。`infra` は `domain`（と必要なら `app::state`）+ `tauri` / HTTP 用クレートを使い、`commands` や `app::run` には入らない。

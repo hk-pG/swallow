@@ -1,6 +1,27 @@
 # Desktop styles
 
-CSS は `main.tsx` から feature 別ファイルを import する。色・余白・角丸は `tokens.css` のセマンティック変数（`--color-*`, `--radius-*`, `--font-*`）を参照する。
+`apps/desktop/src/styles/` はデスクトップ UI の見た目用 CSS をまとめるディレクトリである。`main.tsx` から各ファイルを import する。
+
+## デザイントークン（正本）
+
+色・余白・角丸・フォント・影・blur は **`tokens.css` のセマンティック変数だけ**を参照する。feature のコンポーネントに見た目の値を直書きしない。
+
+- **正本**: `tokens.css` の `:root` に定義する `--color-*`・`--space-*`・`--radius-*`・`--font-*` など
+- **消費**: 同ディレクトリの `layout.css`・`controls.css`・`items.css` などでは `var(--...)` または既存のセマンティッククラス経由で参照する
+- **React**: `features/` と `app/` のコンポーネントはセマンティック CSS クラスを使う。色や余白のリテラル、`style={{ fontSize: 12 }}` のような見た目プロパティの直書きは避ける（メニュー座標やサムネイル用 CSS 変数など、動的レイアウトだけは例外）
+- **テーマ切替**: 本ディレクトリではテーマ切替機構は持たない（将来トークン定義を差し替える余地は `tokens.css` に集約）
+
+## ファイル構成
+
+| ファイル         | 役割                                             |
+| ---------------- | ------------------------------------------------ |
+| `tokens.css`     | セマンティック変数の唯一の定義                   |
+| `layout.css`     | シェル（サイドバー・インスペクタ・ツールバー枠） |
+| `controls.css`   | ボタン・ナビ行など共通コントロール               |
+| `sidebar.css`    | サイドバー・フォルダツリー・タグ UI              |
+| `items.css`      | グリッド／リスト・検索ツールバー                 |
+| `inspector.css`  | 右ペインのインスペクタ                           |
+| `quick-look.css` | Quick Look オーバーレイ                          |
 
 ## ボタンとインタラクティブ要素
 
@@ -14,4 +35,11 @@ CSS は `main.tsx` から feature 別ファイルを import する。色・余�
 | `nav-item`                    | サイドバー／ナビの行ボタン                                           |
 | `grid-item` / `item-list-row` | ライブラリグリッド／リストの選択セル                                 |
 
-試作の `--hig-*` トークン（PR #81）は、マージ後に `tokens.css` の正本変数へ置き換える。
+## CI
+
+`scripts/ci/style-token-boundaries.mjs`（`pnpm test` に含む）が次を検証する。
+
+1. `tokens.css` 以外の CSS に生の色リテラル（`#...`・`rgb()` など）が無いこと
+2. `features/`・`app/` の TSX に生の色リテラルや、見た目プロパティを直書きした `style={{ ... }}` が無いこと
+
+詳細はリポジトリルートの `AGENTS.md`「スタイル／デザイントークン」を参照。
