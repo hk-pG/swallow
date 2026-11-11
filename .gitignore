@@ -1,6 +1,7 @@
 node_modules/
 dist/
 dist-ssr/
+apps/extension/*-sideload.zip
 .output/
 .wxt/
 *.local
