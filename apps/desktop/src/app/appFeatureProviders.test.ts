@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { APP_FEATURE_PROVIDERS, assertUniqueAppFeatureProviderIds } from "./appFeatureProviders";
 import { sidebarSections } from "./sidebarRegistry";
+import type { AppSession } from "./useAppSession";
 
 describe("APP_FEATURE_PROVIDERS", () => {
   it("lists unique provider ids", () => {
@@ -24,14 +25,14 @@ describe("APP_FEATURE_PROVIDERS", () => {
     }
   });
 
-  it("pulls values from useAppSession fields with matching names", () => {
-    const sessionKeys = new Set(["folders", "smartFolders", "tags"]);
+  it("pulls catalog values from the browser session slice", () => {
+    const browserFieldByProviderId: Record<string, keyof AppSession["browser"]> = {
+      folders: "folders",
+      "smart-folders": "smartFolders",
+      tags: "tags",
+    };
     for (const spec of APP_FEATURE_PROVIDERS) {
-      if (spec.id === "smart-folders") {
-        expect(sessionKeys.has("smartFolders")).toBe(true);
-        continue;
-      }
-      expect(sessionKeys.has(spec.id)).toBe(true);
+      expect(browserFieldByProviderId[spec.id]).toBeDefined();
     }
   });
 });
