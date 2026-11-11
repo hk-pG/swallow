@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
+    "pack:sideload": "node packSideloadZip.mjs",
     "typecheck": "tsc -b --pretty false && tsc -p tsconfig.test.json --pretty false",
     "test": "vitest run"
   },

@@ -1,8 +1,8 @@
-# Chrome 拡張の設計（保存機能の前）
+# Chrome 拡張の設計
 
 最終更新: 2026-11-11
 
-雛形で決めたことと、デスクトップ HTTP API が受け付ける拡張 ID。画像の保存 UI は、この文書のあとに実装する。
+雛形で決めたことと、デスクトップ HTTP API が受け付ける拡張 ID。保存 UI は `apps/extension` にある。サイドロードと、未公開のストア配布方針は [extension-distribution.md](./extension-distribution.md)。
 
 ## 対象
 
@@ -18,7 +18,7 @@ Chrome のみ（Manifest V3、`minimum_chrome_version` 120）。Firefox 用の `
 | 拡張の定数 | `apps/extension/src/pinnedExtensionId.ts` の `PINNED_EXTENSION_ID`                                          |
 | 計算       | 公開鍵バイト列の SHA-256 の先頭 16 バイトを、16 進の `0-9a-f` ではなく `a-p` に写像する（Chrome の拡張 ID） |
 
-秘密鍵はリポジトリに置かない。`key` があるので、未パックの読み込みではこの ID が安定する。CRX の署名や、同じ ID での Chrome Web Store 公開には、リポジトリ外で保管した秘密鍵が別途必要になる。この雛形の生成では秘密鍵を残していない。
+秘密鍵はリポジトリに置かない。`key` があるので、未パックの読み込みではこの ID が安定する。ストアへ出したときの ID と、署名をどうするかは [extension-distribution.md](./extension-distribution.md) に書く。この雛形の生成では秘密鍵を残していない。
 
 ## サイドロードとストア ID
 
@@ -33,15 +33,15 @@ Chrome のみ（Manifest V3、`minimum_chrome_version` 120）。Firefox 用の `
 
 ### サイドロード
 
-開発時は、ビルドした拡張を Chrome の「パッケージ化されていない拡張機能を読み込む」で読み込む。`manifest.json` の `key`（公開鍵）が ID を決めるので、秘密鍵は要らない。読み込むたびに Origin は `chrome-extension://fpcegcbemljdnihmoaejmmbpijdffgfn` になる。デスクトップはこの Origin を許可する。
+手順（ビルド、zip、`chrome://extensions` への読み込み、更新）は [extension-distribution.md](./extension-distribution.md)。開発時は、ビルドした拡張を Chrome の「パッケージ化されていない拡張機能を読み込む」で読み込む。`manifest.json` の `key`（公開鍵）が ID を決めるので、秘密鍵は要らない。読み込むたびに Origin は `chrome-extension://fpcegcbemljdnihmoaejmmbpijdffgfn` になる。デスクトップはこの Origin を許可する。
 
 `key` を外した拡張や、別の公開鍵の拡張は別 ID になり、`GET /api/app/info` も `POST /api/items` も 403 になる。ライブラリには書き込まない。
 
 ### ストア ID を足すとき
 
-Chrome Web Store の拡張 ID は未定。決まるまで `STORE_EXTENSION_ID` は `None` のままにし、別の定数やリストは足さない。
+Chrome Web Store の拡張 ID は未定。署名の方式と、β として配る時期は決めていない。申請や公開はせず、方針は [extension-distribution.md](./extension-distribution.md) に書く。
 
-いまの公開鍵に対応する秘密鍵は残していない。同じ ID でストア公開するには、その秘密鍵でパッケージに署名する必要がある。秘密鍵が無い状態で公開すると、ストア側の ID は開発用 ID と別になる。公開後に分かった 32 文字（`a-p`）を `STORE_EXTENSION_ID` にだけ入れる。開発用 ID はサイドロード用に残す。両方と完全一致する Origin だけが通る。
+決まるまで `STORE_EXTENSION_ID` は `None` のままにし、別の定数やリストは足さない。公開後に分かった 32 文字（`a-p`）を `STORE_EXTENSION_ID` にだけ入れる。開発用 ID はサイドロード用に残す。通る Origin は、`chrome-extension://` に開発用 ID を繋げた文字列か、ストア ID を設定したあとはそれにストア ID を繋げた文字列か、のどちらかと完全一致するものだけである。
 
 ## API の前提
 
@@ -54,7 +54,7 @@ Chrome Web Store の拡張 ID は未定。決まるまで `STORE_EXTENSION_ID` �
 
 ## host_permissions
 
-保存を実装するときに manifest へ足す。雛形には未使用の host permission を付けない。
+保存 UI の manifest は次の権限を使う。
 
 | 権限                          | 理由                                                                     |
 | ----------------------------- | ------------------------------------------------------------------------ |
@@ -93,7 +93,7 @@ API を呼ぶ `fetch` はサービスワーカーから行う。コンテンツ�
 
 先に `GET /api/app/info` で生死を見てから `POST` してもよい。必須にはしない。接続失敗と 503 は別の文面にする。
 
-## この雛形がやらないこと
+## まだやらないこと
 
-- コンテキストメニューと保存（#12 の残り）
-- Chrome Web Store の拡張 ID（未定。`STORE_EXTENSION_ID` は `None`）
+- Chrome Web Store への申請とストア ID の記入（`STORE_EXTENSION_ID` は `None`）
+- 拡張パッケージの署名と、β として配る時期

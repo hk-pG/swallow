@@ -48,6 +48,10 @@ While the desktop app is running, it serves an API for the extension on `127.0.0
 
 Errors are returned as `{ "code", "message" }` (`ApiError`). When no library is open, the status is `503`. A request is rejected with `403` when the client is outside loopback, `Host` is not localhost, `Origin` is missing, or `Origin` is not a `chrome-extension://` URL. An unknown extension ID is rejected with `403` and does not write to the library.
 
+## Chrome extension (developer sideload)
+
+Chrome only (Manifest V3, Chrome 120+). Build and load the unpacked extension with the steps in [`docs/extension-distribution.md`](docs/extension-distribution.md). This repository does not publish the extension to the Chrome Web Store. `STORE_EXTENSION_ID` is unset. The development ID is `fpcegcbemljdnihmoaejmmbpijdffgfn`.
+
 ## Developing with AI agents
 
 Conventions and the steps from an issue to a pull request are in `AGENTS.md` and `.agents/skills/issue-to-pr/SKILL.md`. Cursor and Codex load these as skills. Claude Code follows `CLAUDE.md`, which points at `AGENTS.md`. Helper scripts are under `scripts/agent/`.
