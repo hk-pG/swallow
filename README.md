@@ -69,3 +69,7 @@ In a worktree created with Orca, implementation is handed to a Cursor Cloud Agen
 | `release.yml`     | On a `v*` tag, attaches Linux, macOS (arm64 and x64), and Windows installers to a draft release     |
 
 Tauri does not support cross-compilation, so macOS and Windows builds run on runners for those operating systems.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE). The Rust workspace uses the same license (`Cargo.toml` `workspace.package.license`).
