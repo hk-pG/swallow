@@ -3,7 +3,10 @@ import type { AppSession } from "./useAppSession";
 const noopAsync = async () => {};
 
 /** Minimal feature APIs for AppProviders / sidebar mount tests. */
-export function minimalProviderSession(): Pick<AppSession, "folders" | "smartFolders" | "tags"> {
+export function minimalProviderSession(): Pick<
+  AppSession["browser"],
+  "folders" | "smartFolders" | "tags"
+> {
   return {
     folders: {
       folders: [],
@@ -36,7 +39,11 @@ export function minimalProviderSession(): Pick<AppSession, "folders" | "smartFol
 }
 
 export function asAppSession(
-  partial: Pick<AppSession, "folders" | "smartFolders" | "tags">,
+  partial: Pick<AppSession["browser"], "folders" | "smartFolders" | "tags">,
 ): AppSession {
-  return partial as AppSession;
+  return {
+    browser: partial as AppSession["browser"],
+    library: {} as AppSession["library"],
+    workspace: {} as AppSession["workspace"],
+  };
 }

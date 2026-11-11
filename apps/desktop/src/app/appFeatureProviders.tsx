@@ -7,9 +7,9 @@ import type { AppSession } from "./useAppSession";
 export const APP_FEATURE_PROVIDER_IDS = ["folders", "smart-folders", "tags"] as const;
 export type AppFeatureProviderId = (typeof APP_FEATURE_PROVIDER_IDS)[number];
 
-type SessionFolders = AppSession["folders"];
-type SessionSmartFolders = AppSession["smartFolders"];
-type SessionTags = AppSession["tags"];
+type SessionFolders = AppSession["browser"]["folders"];
+type SessionSmartFolders = AppSession["browser"]["smartFolders"];
+type SessionTags = AppSession["browser"]["tags"];
 
 export interface AppFeatureProviderSpec {
   id: AppFeatureProviderId;
@@ -24,21 +24,21 @@ export interface AppFeatureProviderSpec {
 export const APP_FEATURE_PROVIDERS: AppFeatureProviderSpec[] = [
   {
     id: "folders",
-    selectValue: (session) => session.folders,
+    selectValue: (session) => session.browser.folders,
     wrap: (value, children) => (
       <FoldersProvider value={value as SessionFolders}>{children}</FoldersProvider>
     ),
   },
   {
     id: "smart-folders",
-    selectValue: (session) => session.smartFolders,
+    selectValue: (session) => session.browser.smartFolders,
     wrap: (value, children) => (
       <SmartFoldersProvider value={value as SessionSmartFolders}>{children}</SmartFoldersProvider>
     ),
   },
   {
     id: "tags",
-    selectValue: (session) => session.tags,
+    selectValue: (session) => session.browser.tags,
     wrap: (value, children) => <TagsProvider value={value as SessionTags}>{children}</TagsProvider>,
   },
 ];
