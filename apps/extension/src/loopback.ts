@@ -14,7 +14,7 @@ export function desktopAppInfoUrl(): string {
   return loopbackRouteUrl("appInfo");
 }
 
-/** Path only. Query parameters are added by `addItemPath` when a save flow exists. */
+/** Path only. The save flow appends query parameters with `addItemPath` in `desktopClient.ts`. */
 export function desktopAddItemPath(): string {
   return API_PATHS.addItem;
 }

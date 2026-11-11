@@ -46,7 +46,7 @@ While the desktop app is running, it serves an API for the extension on `127.0.0
 | `GET /api/app/info`               | Returns `AppInfo`                                                                                                                                           |
 | `POST /api/items?name=&ext=&url=` | Imports the binary request body into the open library and returns `ItemMetadata` with status `201`. When `ext` is omitted, it is chosen from `Content-Type` |
 
-Errors are returned as `{ "code", "message" }` (`ApiError`). When no library is open, the status is `503`. A request is rejected with `403` when the client is outside loopback, `Host` is not localhost, `Origin` is missing, or `Origin` is not a `chrome-extension://` URL.
+Errors are returned as `{ "code", "message" }` (`ApiError`). When no library is open, the status is `503`. A request is rejected with `403` when the client is outside loopback, `Host` is not localhost, `Origin` is missing, or `Origin` is not a `chrome-extension://` URL. An unknown extension ID is rejected with `403` and does not write to the library.
 
 ## Developing with AI agents
 
