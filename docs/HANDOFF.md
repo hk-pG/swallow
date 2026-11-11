@@ -142,7 +142,22 @@ gh issue list --repo hk-pG/swallow --milestone backlog --state open
 
 ## 6. 環境メモ
 
-- Cloud Agent で Issue 書き込み: Secrets に **`GH_TOKEN`**（Runtime Secret）
+ローカル用の雛形はリポ直下の [`.env.example`](../.env.example)（コピーして `.env` を作り、**コミットしない**）。概要表は [README の Environment variables](../README.md#environment-variables) と同じ内容。
+
+### トークン名の正本（外向き vs 実行時）
+
+| 用途                                     | 外向きの名前（人が設定する場所）        | 実行時に読む名前            | 必須              | 備考                                                                            |
+| ---------------------------------------- | --------------------------------------- | --------------------------- | ----------------- | ------------------------------------------------------------------------------- |
+| Cloud Agents API（`cloud-run.sh`）       | `CURSOR_API_KEY`                        | 同じ                        | Orca 起動時は必須 | Cursor Dashboard → API Keys。ホストのシェルまたは `.env`                        |
+| Cloud Agent 内の `gh`（Issue／ラベル等） | **`GH_TOKEN`**（Runtime Secret 推奨名） | `GH_TOKEN`                  | 任意              | fine-grained PAT（このリポ向け）。Dashboard に直接置くときは **この名前を使う** |
+| 上と同じトークンを Orca ホストから渡す   | `SWALLOW_CLOUD_GH_TOKEN`                | → エージェント内 `GH_TOKEN` | 任意              | `scripts/agent/cloud-run.sh` が起動時にマップ。**Dashboard 名ではない**         |
+| 並行 worktree の置き場                   | `SWALLOW_WORKTREE_DIR`                  | 同じ                        | 任意              | 未設定時 `../<リポ名>-worktrees`（`start-issue.sh --worktree`）                 |
+| 分類スクリプトの対象リポ                 | `REPO`                                  | 同じ                        | 任意              | 既定 `hk-pG/swallow`（`github-taxonomy-setup.sh`）                              |
+| Rust／Compose イメージ                   | `CARGO_HOME`, `RUSTUP_HOME`             | 同じ                        | 通常不要          | `docker/build.Dockerfile` で設定。`lib.sh` が PATH 補正                         |
+| Tauri 開発ビルド                         | `TAURI_DEV_HOST`, `TAURI_ENV_*`         | 同じ                        | 通常不要          | `pnpm dev` / Tauri CLI が設定                                                   |
+| GitHub Actions                           | `GITHUB_TOKEN`（Actions 組み込み）      | ジョブにより `GH_TOKEN` 等  | CI のみ           | ローカル `.env` には入れない                                                    |
+
+- **推奨**: Cloud Agent の Runtime Secret は **`GH_TOKEN` ひとつ**に統一する。Orca から起動するときだけ、ホスト側で `SWALLOW_CLOUD_GH_TOKEN` を使い、スクリプトが `GH_TOKEN` に渡す
 - 無ければ `gh` の Issue/Label 操作は 403 になりうる（PR 作成は Cursor 組み込みで可能なことが多い）
 - リポ: https://github.com/hk-pG/swallow
 
