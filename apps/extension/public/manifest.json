@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Swallow",
+  "version": "0.1.0",
+  "description": "Swallow デスクトップアプリと連携する Chrome 拡張です。",
+  "minimum_chrome_version": "120",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyPpCtrjYbguw/e8Rmylpo/PCUS2mHazFw/D+HU+V/5PHxB567gbhPf+fu/IWE+I4C1RtRV4KSBYqLNSoSErtGTiLJ7jF4ZXtpbPP2DU5lbO95cFzV9QxoBUrVo4g2OTJEF/t1Z5kg4HTSA4C+MQE8UGk/YSOs98kBagEYS6VmqosW4DuFs2z0QXjKitqEZy1F/cpBQ4rvCX2EkliGns611OD2+HAsa/IYVXDB6UxVdPRS/LDTWovBpQA7OA5oMInUQ6bZoi0XlAjvXvjSTbzlppjjIL9eEc667jmQZr/Sb17e5STeqsmfy20cXTb3PtK4+qEecRJudU5+xfqCKHqJQIDAQAB",
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Swallow"
+  }
+}
