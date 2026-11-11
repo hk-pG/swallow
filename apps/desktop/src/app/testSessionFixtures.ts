@@ -34,6 +34,8 @@ export function minimalProviderSession(): Pick<
       setTagGroup: noopAsync,
       addItemTags: noopAsync,
       removeItemTags: noopAsync,
+      addTagsToItems: noopAsync,
+      removeTagsFromItems: noopAsync,
     },
   };
 }

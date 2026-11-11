@@ -1,6 +1,6 @@
 import type { ItemId, ItemMetadata, ItemMetadataPatch } from "@swallow/shared";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { listItems, onItemImported, updateItem } from "../api";
+import { listItems, onItemImported, updateItem, updateItems } from "../api";
 import { createItemReload } from "../lib/itemReload";
 
 export interface ItemList {
@@ -8,6 +8,7 @@ export interface ItemList {
   /** Reload the grid. Call after any operation that changes items; do not pass operation details. */
   invalidate: () => Promise<void>;
   saveItem: (id: ItemId, patch: ItemMetadataPatch) => Promise<void>;
+  saveItems: (ids: ItemId[], patch: ItemMetadataPatch) => Promise<void>;
 }
 
 /**
@@ -42,5 +43,15 @@ export function useItemList(libraryPath: string | null): ItemList {
     [libraryPath, invalidate],
   );
 
-  return { items, invalidate, saveItem };
+  const saveItems = useCallback(
+    async (ids: ItemId[], patch: ItemMetadataPatch) => {
+      if (!libraryPath) throw new Error("ライブラリが開かれていません");
+      if (ids.length === 0) return;
+      await updateItems(libraryPath, ids, patch);
+      await invalidate();
+    },
+    [libraryPath, invalidate],
+  );
+
+  return { items, invalidate, saveItem, saveItems };
 }

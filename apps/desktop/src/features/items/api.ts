@@ -18,6 +18,14 @@ export function updateItem(
   return invoke<ItemMetadata>("update_item", { libraryPath, id, patch });
 }
 
+export function updateItems(
+  libraryPath: string,
+  itemIds: ItemId[],
+  patch: ItemMetadataPatch,
+): Promise<void> {
+  return invoke<void>("update_items", { libraryPath, itemIds, patch });
+}
+
 /** Sets `isDeleted`; the stored files are kept until `purgeItems`. */
 export function trashItems(libraryPath: string, itemIds: ItemId[]): Promise<void> {
   return invoke<void>("trash_items", { libraryPath, itemIds });

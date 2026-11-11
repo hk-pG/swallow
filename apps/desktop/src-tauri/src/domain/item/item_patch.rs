@@ -110,6 +110,32 @@ pub fn apply_patch(
     Ok(())
 }
 
+/// Applies the same `patch` to each item. Every item is loaded before any is written.
+/// File renames are not supported; use `update_item` when `patch.name` is set.
+pub fn update_items(
+    library: &Path,
+    ids: &[String],
+    patch: ItemMetadataPatch,
+    now: i64,
+) -> Result<(), ItemError> {
+    if patch.name.is_some() {
+        return Err(ItemError::InvalidName);
+    }
+    let _lock = lock_items();
+    let loaded = ids
+        .iter()
+        .map(|id| Ok((load_item(library, id)?, item_dir(library, id))))
+        .collect::<Result<Vec<_>, ItemError>>()?;
+    for (mut item, dir) in loaded {
+        let before = item.clone();
+        apply_patch(&mut item, patch.clone(), now)?;
+        if item != before {
+            save_item(&dir, &item)?;
+        }
+    }
+    Ok(())
+}
+
 /// Applies `patch` and persists it. Renaming also renames the stored file.
 pub fn update_item(
     library: &Path,
