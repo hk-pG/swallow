@@ -12,7 +12,7 @@
     "lint": "biome check .",
     "format": "biome check --write .",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r test && bash scripts/ci/dependabot-auto-merge.test.sh && bash scripts/ci/tauri-command-contract.test.sh && bash scripts/ci/feature-boundaries.test.sh && bash scripts/ci/rust-module-boundaries.test.sh && bash scripts/agent/install-hooks.test.sh",
+    "test": "pnpm -r test && bash scripts/ci/dependabot-auto-merge.test.sh && bash scripts/ci/tauri-command-contract.test.sh && bash scripts/ci/feature-boundaries.test.sh && bash scripts/ci/rust-module-boundaries.test.sh && bash scripts/ci/http-api-contract.test.sh && bash scripts/agent/install-hooks.test.sh",
     "rust:fmt": "cargo fmt --all --check",
     "rust:clippy": "cargo clippy --workspace --all-targets --locked -- -D warnings",
     "rust:test": "cargo test --workspace --locked",

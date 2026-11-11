@@ -1,14 +1,16 @@
+import { httpApiRoute } from "./httpContract";
+
 export const DEFAULT_API_PORT = 41600;
 
 /** Paths served by the desktop app's local HTTP API on `127.0.0.1:DEFAULT_API_PORT`. */
 export const API_PATHS = {
   /** `GET` → `AppInfo` */
-  appInfo: "/api/app/info",
+  appInfo: httpApiRoute("appInfo").path,
   /**
    * `POST` with the raw file as the body → `201` and the created `ItemMetadata`.
    * See `AddItemQuery` for the query parameters.
    */
-  addItem: "/api/items",
+  addItem: httpApiRoute("addItem").path,
 } as const;
 
 /** Query parameters of `POST API_PATHS.addItem` */

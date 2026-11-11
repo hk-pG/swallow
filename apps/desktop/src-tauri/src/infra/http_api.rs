@@ -17,9 +17,34 @@ pub const DEFAULT_API_PORT: u16 = 41600;
 /// Mirrors `ITEMS_IMPORTED_EVENT` in `apps/desktop/src/features/items/api.ts`.
 pub const ITEMS_IMPORTED_EVENT: &str = "items-imported";
 
-/// Mirrors `API_PATHS` in `packages/shared/src/api.ts`.
-const APP_INFO_PATH: &str = "/api/app/info";
-const ADD_ITEM_PATH: &str = "/api/items";
+/// One row of the route table mirrored in `packages/shared/src/api/httpContract.ts`.
+/// Parsed by `scripts/ci/http-api-contract.mjs`.
+#[derive(Debug, Clone, Copy)]
+struct HttpRouteSpec {
+    id: &'static str,
+    method: &'static str,
+    path: &'static str,
+    request_type: Option<&'static str>,
+    response_type: &'static str,
+}
+
+/// Keep field order stable so CI can parse this table mechanically.
+const HTTP_API_ROUTE_SPECS: &[HttpRouteSpec] = &[
+    HttpRouteSpec {
+        id: "appInfo",
+        method: "GET",
+        path: "/api/app/info",
+        request_type: None,
+        response_type: "AppInfo",
+    },
+    HttpRouteSpec {
+        id: "addItem",
+        method: "POST",
+        path: "/api/items",
+        request_type: Some("AddItemQuery"),
+        response_type: "ItemMetadata",
+    },
+];
 
 const MAX_BODY_BYTES: u64 = 256 * 1024 * 1024;
 const MAX_NAME_CHARS: usize = 200;
@@ -199,18 +224,37 @@ impl From<ImportError> for ApiError {
 pub fn handle(head: &RequestHead<'_>, body: &mut dyn Read, ctx: &impl Context) -> ApiResponse {
     let result = check_access(head).and_then(|()| {
         let (path, query) = head.url.split_once('?').unwrap_or((head.url, ""));
-        match (path, head.method) {
-            (APP_INFO_PATH, "GET") => Ok(ApiResponse::json(200, &ctx.app_info())),
-            (ADD_ITEM_PATH, "POST") => add_item(head, query, body, ctx),
-            (APP_INFO_PATH | ADD_ITEM_PATH, _) => Err(ApiError::new(
-                ApiErrorCode::MethodNotAllowed,
-                format!("{} {path} には対応していません", head.method),
-            )),
-            _ => Err(ApiError::new(
-                ApiErrorCode::NotFound,
-                format!("{path} は存在しません"),
-            )),
+        if let Some(spec) = HTTP_API_ROUTE_SPECS.iter().find(|route| route.path == path) {
+            if spec.method != head.method {
+                return Err(ApiError::new(
+                    ApiErrorCode::MethodNotAllowed,
+                    format!("{} {path} には対応していません", head.method),
+                ));
+            }
+            return match spec.response_type {
+                "AppInfo" => {
+                    debug_assert_eq!(spec.id, "appInfo");
+                    debug_assert_eq!(spec.path, "/api/app/info");
+                    debug_assert_eq!(spec.method, "GET");
+                    Ok(ApiResponse::json(200, &ctx.app_info()))
+                }
+                "ItemMetadata" => {
+                    debug_assert_eq!(spec.id, "addItem");
+                    debug_assert_eq!(spec.path, "/api/items");
+                    debug_assert_eq!(spec.method, "POST");
+                    debug_assert_eq!(spec.request_type, Some("AddItemQuery"));
+                    add_item(head, query, body, ctx)
+                }
+                _ => Err(ApiError::new(
+                    ApiErrorCode::Internal,
+                    "HTTP_API_ROUTE_SPECS と handler の対応が壊れています".to_string(),
+                )),
+            };
         }
+        Err(ApiError::new(
+            ApiErrorCode::NotFound,
+            format!("{path} は存在しません"),
+        ))
     });
     result.unwrap_or_else(ApiResponse::from)
 }
@@ -360,6 +404,19 @@ fn sanitize_name(raw: Option<&str>) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn http_api_route_specs_match_shared_contract() {
+        const EXPECTED: &[(&str, &str, &str)] = &[
+            ("appInfo", "GET", "/api/app/info"),
+            ("addItem", "POST", "/api/items"),
+        ];
+        assert_eq!(HTTP_API_ROUTE_SPECS.len(), EXPECTED.len());
+        for (spec, expect) in HTTP_API_ROUTE_SPECS.iter().zip(EXPECTED) {
+            let (id, method, path) = *expect;
+            assert_eq!((spec.id, spec.method, spec.path), (id, method, path));
+        }
+    }
     use std::cell::RefCell;
     use std::fs;
     use std::io::Write;
