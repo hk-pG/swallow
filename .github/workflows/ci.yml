@@ -85,7 +85,8 @@ jobs:
           key: bundle
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @swallow/desktop tauri build --ci --bundles deb
-      - uses: actions/upload-artifact@v7
+      - if: ${{ !env.ACT }}
+        uses: actions/upload-artifact@v7
         with:
           name: swallow-linux-deb
           path: target/release/bundle/deb/*.deb
