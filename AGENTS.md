@@ -16,6 +16,7 @@ Issue を 1 件担当するときは `.agents/skills/issue-to-pr/SKILL.md` を�
 
 ```sh
 scripts/agent/start-issue.sh <N> [--worktree]   # 重複確認、ブランチ準備、Issue の表示（worktree の置き場所は $SWALLOW_WORKTREE_DIR）
+scripts/agent/new-feature.sh <name>             # 新 feature の境界安全なスキャフォールド（手順は .agents/skills/new-feature/SKILL.md）
 scripts/agent/review-staged.sh                  # commit 前: staged のセルフレビュー補助 + 軽い機械チェック
 scripts/agent/check.sh                          # CI と同じ pnpm ci:all。通ると PR 作成が許可される
 scripts/agent/check-rust.sh                     # Rust のみ（反復用）。PR 直前は check.sh
