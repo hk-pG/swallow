@@ -1,52 +1,58 @@
 import type { Folder, FolderId, ItemId, ItemMetadata, ItemMetadataPatch } from "@swallow/shared";
-import { FolderAssignControl } from "../../folders";
-import type { Selection } from "../../items";
 import { AppInfo } from "../../library";
 import { TrashActions, type TrashActionsApi } from "../../trash";
 import { Inspector } from "./Inspector";
+import { MultiItemInspector } from "./MultiItemInspector";
 
 interface InspectorPaneProps {
   selectedCount: number;
-  selection: Selection;
+  selectedItems: readonly ItemMetadata[];
   selected: ItemMetadata | null;
   folders: readonly Folder[];
   libraryTagNames: string[];
   onSave: (id: ItemId, patch: ItemMetadataPatch) => Promise<void>;
+  onSaveItems: (ids: ItemId[], patch: ItemMetadataPatch) => Promise<void>;
   onAssignFolder: (ids: ItemId[], folderId: FolderId) => Promise<void>;
   onUnassignFolder: (ids: ItemId[], folderId: FolderId) => Promise<void>;
   onAddTags: (itemId: ItemId, tags: string[]) => Promise<void>;
   onRemoveTags: (itemId: ItemId, tags: string[]) => Promise<void>;
+  onAddTagsToItems: (itemIds: ItemId[], tags: string[]) => Promise<void>;
+  onRemoveTagsFromItems: (itemIds: ItemId[], tags: string[]) => Promise<void>;
   trash: Pick<TrashActionsApi, "trashSelected" | "restoreSelected" | "purgeSelected">;
 }
 
 export function InspectorPane({
   selectedCount,
-  selection,
+  selectedItems,
   selected,
   folders,
   libraryTagNames,
   onSave,
+  onSaveItems,
   onAssignFolder,
   onUnassignFolder,
   onAddTags,
   onRemoveTags,
+  onAddTagsToItems,
+  onRemoveTagsFromItems,
   trash,
 }: InspectorPaneProps) {
-  const multiIds = [...selection.ids];
   const folderList = [...folders];
 
   return (
     <aside className="inspector">
       {selectedCount > 1 ? (
-        <div className="inspector-body">
-          <p className="inspector-muted">{selectedCount} 件を選択中</p>
-          <FolderAssignControl
-            key={multiIds.sort().join("\n")}
-            folders={folderList}
-            onAssign={(folderId) => onAssignFolder(multiIds, folderId)}
-            onUnassign={(folderId) => onUnassignFolder(multiIds, folderId)}
-          />
-        </div>
+        <MultiItemInspector
+          selectedCount={selectedCount}
+          selectedItems={selectedItems}
+          folders={folderList}
+          libraryTagNames={libraryTagNames}
+          onSaveItems={onSaveItems}
+          onAssignFolder={onAssignFolder}
+          onUnassignFolder={onUnassignFolder}
+          onAddTags={onAddTagsToItems}
+          onRemoveTags={onRemoveTagsFromItems}
+        />
       ) : (
         <>
           <Inspector

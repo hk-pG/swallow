@@ -24,6 +24,7 @@ macro_rules! swallow_invoke_handler {
             $crate::commands::items::list_items,
             $crate::commands::items::get_item,
             $crate::commands::items::update_item,
+            $crate::commands::items::update_items,
             $crate::commands::items::trash_items,
             $crate::commands::items::restore_items,
             $crate::commands::items::purge_items,

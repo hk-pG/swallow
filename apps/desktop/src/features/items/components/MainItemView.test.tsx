@@ -2,7 +2,7 @@ import { EMPTY_SMART_FOLDER_CRITERIA } from "@swallow/shared";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { InspectorPane } from "../../inspector";
-import { EMPTY_SELECTION, select } from "../lib/selection";
+import { EMPTY_SELECTION } from "../lib/selection";
 import { LibraryToolbar } from "./LibraryToolbar";
 import { MainItemView, resolveMainEmptyState } from "./MainItemView";
 
@@ -45,19 +45,59 @@ describe("LibraryToolbar", () => {
 });
 
 describe("InspectorPane", () => {
-  it("shows multi-select summary", () => {
+  const sampleItems = [
+    {
+      id: "a",
+      name: "A",
+      ext: "png",
+      size: 1,
+      width: null,
+      height: null,
+      tags: ["shared"],
+      folders: [],
+      annotation: "",
+      star: 0,
+      colorLabel: "red" as const,
+      url: null,
+      createdAt: 0,
+      modifiedAt: 0,
+      isDeleted: false,
+    },
+    {
+      id: "b",
+      name: "B",
+      ext: "png",
+      size: 1,
+      width: null,
+      height: null,
+      tags: ["other"],
+      folders: [],
+      annotation: "",
+      star: 0,
+      colorLabel: null,
+      url: null,
+      createdAt: 0,
+      modifiedAt: 0,
+      isDeleted: false,
+    },
+  ];
+
+  it("shows multi-select bulk inspector", () => {
     const html = renderToStaticMarkup(
       <InspectorPane
         selectedCount={2}
-        selection={select(EMPTY_SELECTION, ["a", "b"], "a")}
+        selectedItems={sampleItems}
         selected={null}
         folders={[]}
         libraryTagNames={[]}
         onSave={async () => {}}
+        onSaveItems={async () => {}}
         onAssignFolder={async () => {}}
         onUnassignFolder={async () => {}}
         onAddTags={async () => {}}
         onRemoveTags={async () => {}}
+        onAddTagsToItems={async () => {}}
+        onRemoveTagsFromItems={async () => {}}
         trash={{
           trashSelected: async () => {},
           restoreSelected: async () => {},
@@ -66,6 +106,10 @@ describe("InspectorPane", () => {
       />,
     );
     expect(html).toContain("2 件を選択中");
+    expect(html).toContain('data-multi-inspector="true"');
+    expect(html).toContain("shared");
+    expect(html).toContain("other");
+    expect(html).toContain("選択中すべてにタグを追加");
   });
 });
 

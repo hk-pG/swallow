@@ -7,7 +7,7 @@ export function useAppSessionLibrary() {
   const appearance = useAppearanceSettings();
   const { libraryPath } = session;
   const contentStyle = itemThumbContentStyle(appearance.itemView.thumbnailSizeIndex);
-  const { items, invalidate, saveItem } = useItemList(libraryPath);
+  const { items, invalidate, saveItem, saveItems } = useItemList(libraryPath);
   const disabled = session.library === null;
 
   return {
@@ -18,6 +18,7 @@ export function useAppSessionLibrary() {
     items,
     invalidate,
     saveItem,
+    saveItems,
     disabled,
   };
 }

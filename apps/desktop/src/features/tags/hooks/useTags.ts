@@ -29,6 +29,8 @@ export interface TagsApi {
   setTagGroup: (tag: string, groupId: string | null) => Promise<void>;
   addItemTags: (itemId: ItemId, tags: string[]) => Promise<void>;
   removeItemTags: (itemId: ItemId, tags: string[]) => Promise<void>;
+  addTagsToItems: (itemIds: ItemId[], tags: string[]) => Promise<void>;
+  removeTagsFromItems: (itemIds: ItemId[], tags: string[]) => Promise<void>;
 }
 
 interface Options {
@@ -101,6 +103,16 @@ export function useTags({ libraryPath, invalidateItems, setView }: Options): Tag
     },
     removeItemTags: async (itemId, tags) => {
       await removeItemTags(requireLibrary(), [itemId], tags);
+      await invalidateItems();
+    },
+    addTagsToItems: async (itemIds, tags) => {
+      if (itemIds.length === 0) return;
+      applyLibraryTags(await addItemTags(requireLibrary(), itemIds, tags));
+      await invalidateItems();
+    },
+    removeTagsFromItems: async (itemIds, tags) => {
+      if (itemIds.length === 0) return;
+      await removeItemTags(requireLibrary(), itemIds, tags);
       await invalidateItems();
     },
   };

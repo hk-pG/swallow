@@ -11,7 +11,7 @@ mod item_patch;
 mod item_trash;
 
 pub use item_io::{item_dir, item_file, load_item, read_item, read_items};
-pub use item_patch::{edit_all_items, edit_items, update_item};
+pub use item_patch::{edit_all_items, edit_items, update_item, update_items};
 pub use item_trash::{purge_items, set_items_deleted};
 
 pub const ITEM_DIR_EXT: &str = "info";
@@ -334,6 +334,31 @@ pub(crate) mod tests {
                 Err(ItemError::InvalidId(_))
             ));
         }
+    }
+
+    #[test]
+    fn update_items_applies_patch_to_multiple_items() {
+        let library = tempfile::tempdir().unwrap();
+        let a = sample();
+        let b = ItemMetadata {
+            id: "ITEM2".into(),
+            ..sample()
+        };
+        write_item(library.path(), &a);
+        write_item(library.path(), &b);
+        let patch = ItemMetadataPatch {
+            color_label: Some(Some(ColorLabel::Green)),
+            ..Default::default()
+        };
+        update_items(library.path(), &[a.id.clone(), b.id.clone()], patch, 99).unwrap();
+        assert_eq!(
+            load_item(library.path(), &a.id).unwrap().color_label,
+            Some(ColorLabel::Green)
+        );
+        assert_eq!(
+            load_item(library.path(), &b.id).unwrap().color_label,
+            Some(ColorLabel::Green)
+        );
     }
 
     #[test]

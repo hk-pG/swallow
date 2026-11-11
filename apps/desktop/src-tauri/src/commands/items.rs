@@ -33,6 +33,20 @@ pub fn update_item(
 }
 
 #[tauri::command]
+pub fn update_items(
+    library_path: PathBuf,
+    item_ids: Vec<String>,
+    patch: ItemMetadataPatch,
+) -> Result<(), CommandError> {
+    Ok(item::update_items(
+        &library_path,
+        &item_ids,
+        patch,
+        item::now_millis(),
+    )?)
+}
+
+#[tauri::command]
 pub fn trash_items(library_path: PathBuf, item_ids: Vec<String>) -> Result<(), CommandError> {
     Ok(item::set_items_deleted(
         &library_path,
@@ -71,7 +85,32 @@ pub fn reveal_item_in_explorer(library_path: PathBuf, item_id: String) -> Result
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::color_label::ColorLabel;
     use crate::domain::library;
+
+    #[test]
+    fn update_items_sets_color_label_on_each_id() {
+        let dir = tempfile::tempdir().unwrap();
+        library::create(dir.path()).unwrap();
+        let path = dir.path().to_path_buf();
+        for id in ["ITEM1", "ITEM2"] {
+            let sample = item::tests::sample_item(id, "pic", "png");
+            item::tests::write_item(&path, &sample);
+        }
+        let patch = item::ItemMetadataPatch {
+            color_label: Some(Some(ColorLabel::Red)),
+            ..Default::default()
+        };
+        update_items(path.clone(), vec!["ITEM1".into(), "ITEM2".into()], patch).unwrap();
+        assert_eq!(
+            item::load_item(&path, "ITEM1").unwrap().color_label,
+            Some(ColorLabel::Red)
+        );
+        assert_eq!(
+            item::load_item(&path, "ITEM2").unwrap().color_label,
+            Some(ColorLabel::Red)
+        );
+    }
 
     #[test]
     fn reveal_item_in_explorer_resolves_stored_file_path() {
