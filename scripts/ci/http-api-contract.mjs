@@ -287,6 +287,12 @@ export function findExtensionRawApiPathLiterals(extensionDir) {
   return raw;
 }
 
+/** `null` when the Chrome extension sources exist. Missing directory is a hard failure. */
+export function extensionSourceDirectoryError(extensionDir) {
+  if (existsSync(extensionDir)) return null;
+  return `Chrome extension source directory is missing: ${extensionDir}`;
+}
+
 function main() {
   const contractSource = readFileSync(httpContract, "utf8");
   const rustSource = readFileSync(httpApiRs, "utf8");
@@ -373,24 +379,27 @@ function main() {
   }
 
   const allowedPaths = new Set(sharedRoutes.map((r) => r.path));
-  if (existsSync(extensionSrc)) {
-    const unknownPaths = findExtensionApiLiteralViolations(extensionSrc, allowedPaths);
-    if (unknownPaths.length > 0) {
-      failed = true;
-      console.error("Extension references unknown HTTP API paths:");
-      for (const v of unknownPaths) {
-        console.error(`  ${v.file}: ${v.literal}`);
-      }
+  const missingExtension = extensionSourceDirectoryError(extensionSrc);
+  if (missingExtension) {
+    failed = true;
+    console.error(missingExtension);
+  }
+  const unknownPaths = findExtensionApiLiteralViolations(extensionSrc, allowedPaths);
+  if (unknownPaths.length > 0) {
+    failed = true;
+    console.error("Extension references unknown HTTP API paths:");
+    for (const v of unknownPaths) {
+      console.error(`  ${v.file}: ${v.literal}`);
     }
-    const rawLiterals = findExtensionRawApiPathLiterals(extensionSrc);
-    if (rawLiterals.length > 0) {
-      failed = true;
-      console.error(
-        'Extension must use @swallow/shared HTTP_API_ROUTES / API_PATHS (no raw "/api/..." literals):',
-      );
-      for (const v of rawLiterals) {
-        console.error(`  ${v.file}: ${v.literal}`);
-      }
+  }
+  const rawLiterals = findExtensionRawApiPathLiterals(extensionSrc);
+  if (rawLiterals.length > 0) {
+    failed = true;
+    console.error(
+      'Extension must use @swallow/shared HTTP_API_ROUTES / API_PATHS (no raw "/api/..." literals):',
+    );
+    for (const v of rawLiterals) {
+      console.error(`  ${v.file}: ${v.literal}`);
     }
   }
 

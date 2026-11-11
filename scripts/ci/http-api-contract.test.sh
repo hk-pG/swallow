@@ -24,6 +24,7 @@ node --input-type=module -e "
     findHttpApiContractTypeDrift,
     findExtensionApiLiteralViolations,
     findExtensionRawApiPathLiterals,
+    extensionSourceDirectoryError,
   } from './scripts/ci/http-api-contract.mjs';
 
   const contract = readFileSync('packages/shared/src/api/httpContract.ts', 'utf8');
@@ -107,8 +108,11 @@ node --input-type=module -e "
 
   const allowed = new Set(shared.map((r) => r.path));
   const extDir = 'apps/extension/src';
+  if (extensionSourceDirectoryError(extDir)) throw new Error('apps/extension/src must exist');
+  if (extensionSourceDirectoryError('apps/extension/src-missing') === null) {
+    throw new Error('missing extension source must be reported');
+  }
   const unknown = findExtensionApiLiteralViolations(extDir, allowed);
-  // extension package may be absent — both helpers must accept missing dir.
   if (unknown.length) throw new Error('unexpected extension unknown paths on prod tree');
 
   console.log('unit checks ok');

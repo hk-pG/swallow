@@ -1,0 +1,4 @@
+# Manifest `key` is the public key only. Never commit the RSA private key.
+*.pem
+*.der
+*.key
