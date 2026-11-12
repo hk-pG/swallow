@@ -37,13 +37,17 @@ Orca で作った worktree では手元で実装せず、`scripts/agent/cloud-ru
 
 停止条件: **「Issue にして」だけなら URL を返して止まる。実装依頼の途中で Issue が無いときだけ、作成後に着手。**
 
+## 独立 PR レビュー（docs / ci）
+
+実装担当とは **別コンテキスト** のレビュアー（実装チャットを持たないエージェント）が PR を見るときは `.agents/skills/code-review/SKILL.md` に従う。Standards（`AGENTS.md` 等）と Spec（Issue 受け入れ条件）を分けて報告する。実装者のセルフレビューは従来どおり `review-staged.sh` と `issue-to-pr` の PR 前手順。
+
 ## バグの扱い
 
 不具合対応は口頭やチャットだけで直さない。既存の bug Issue があれば `issue-to-pr` で進める。Issue が無いまま修正を頼まれたときは `create-issue` で記録してから着手する（PR は `Closes #<N>`）。「Issue にして」だけなら作成して止まる。
 
 ## 差分のセキュリティレビュー（攻撃シナリオ）
 
-ループバック HTTP・拡張 Origin・パス処理に触れる差分を **攻撃シナリオ観点** で見るときは `.agents/skills/differential-review/SKILL.md` に従う。Trail of Bits の手順は **GitHub 上の外部参照のみ**（CC-BY-SA-4.0 のため本文をリポに複製しない）。一般的な規約・受け入れ条件の独立レビューは `.agents/skills/code-review/SKILL.md`（#177 マージ後）。
+ループバック HTTP・拡張 Origin・パス処理に触れる差分を **攻撃シナリオ観点** で見るときは `.agents/skills/differential-review/SKILL.md` に従う。Trail of Bits の手順は **GitHub 上の外部参照のみ**（CC-BY-SA-4.0 のため本文をリポに複製しない）。一般的な規約・受け入れ条件の独立レビューは `.agents/skills/code-review/SKILL.md`。
 
 ## 構成
 
