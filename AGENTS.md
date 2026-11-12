@@ -49,6 +49,15 @@ Orca で作った worktree では手元で実装せず、`scripts/agent/cloud-ru
 
 ループバック HTTP・拡張 Origin・パス処理に触れる差分を **攻撃シナリオ観点** で見るときは `.agents/skills/differential-review/SKILL.md` に従う。Trail of Bits の手順は **GitHub 上の外部参照のみ**（CC-BY-SA-4.0 のため本文をリポに複製しない）。一般的な規約・受け入れ条件の独立レビューは `.agents/skills/code-review/SKILL.md`。
 
+## Context7 MCP（Tauri v2 ドキュメント）
+
+Tauri v2 の API・設定・公式プラグインを触る実装では、Context7 MCP で **最新の公式ドキュメント** を引く。設定の正本は [`docs/context7-mcp.md`](docs/context7-mcp.md) と [`.cursor/mcp.json.example`](.cursor/mcp.json.example)（`@upstash/context7-mcp@4.7.0` 固定）。
+
+- **使う:** デスクトップの Tauri / プラグイン / `invoke` 境界で、v2 公式に沿った API を確認するとき。既定ライブラリ ID は **`/tauri-apps/tauri-docs`**（根拠は `docs/context7-mcp.md`）
+- **使わない:** `AGENTS.md` だけで決まるモジュール境界・独自 HTTP 契約・テーマ。ドキュメントに無い設計判断を Context7 に委ねない
+- **秘密:** `CONTEXT7_API_KEY` は Dashboard / `.env` / Runtime Secret のみ（リポに書かない）
+- **クラウド:** Runtime Secret `CONTEXT7_API_KEY` を付けないと MCP は動くがレート制限が厳しい（詳細は `docs/context7-mcp.md`）
+
 ## 構成
 
 | パス                         | 内容                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
