@@ -20,13 +20,13 @@
 .inspector-body {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .inspector-field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .inspector-label,
@@ -39,7 +39,7 @@
 
 .inspector-input {
   width: 100%;
-  padding: 5px 8px;
+  padding: 5px var(--space-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: transparent;
@@ -65,7 +65,7 @@ textarea.inspector-input {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding-top: 12px;
+  padding-top: var(--space-3);
   border-top: 1px solid var(--border);
 }
 
@@ -109,7 +109,7 @@ textarea.inspector-input {
 .color-label-nav-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .color-label-dot {
@@ -146,7 +146,7 @@ textarea.inspector-input {
 .chip-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--space-1);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -155,8 +155,8 @@ textarea.inspector-input {
 .chip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
   border-radius: var(--radius-pill);
   background: var(--color-separator);
 }
@@ -164,7 +164,7 @@ textarea.inspector-input {
 .inspector-props {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 4px 12px;
+  gap: var(--space-1) var(--space-3);
   margin: 0;
 }
 
@@ -179,7 +179,7 @@ textarea.inspector-input {
 }
 
 .trash-actions {
-  margin-top: 12px;
+  margin-top: var(--space-3);
 }
 
 .trash-actions .push-button.danger {

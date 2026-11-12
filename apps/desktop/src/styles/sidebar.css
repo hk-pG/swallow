@@ -91,14 +91,14 @@ nav {
 
 .sidebar-form {
   display: flex;
-  gap: 4px;
+  gap: var(--space-1);
   margin-bottom: 6px;
 }
 
 .sidebar-input {
   min-width: 0;
   flex: 1;
-  padding: 4px 6px;
+  padding: var(--space-1) 6px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: transparent;
@@ -107,7 +107,7 @@ nav {
 }
 
 .sidebar-error {
-  margin: 0 0 8px;
+  margin: 0 0 var(--space-2);
   color: var(--color-danger);
 }
 
@@ -125,10 +125,10 @@ nav {
 }
 
 .smart-folder-editor {
-  margin-top: 8px;
+  margin-top: var(--space-2);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .smart-folder-criteria {
@@ -148,7 +148,7 @@ nav {
 .smart-folder-editor-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .tag-group {
@@ -159,7 +159,7 @@ nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 4px;
+  gap: var(--space-1);
   margin-bottom: 2px;
 }
 
@@ -171,7 +171,7 @@ nav {
 
 .tag-group-empty {
   margin: 0;
-  padding: 4px 8px;
+  padding: var(--space-1) var(--space-2);
   color: var(--muted);
 }
 
@@ -202,7 +202,7 @@ nav {
   max-width: 72px;
   padding: 2px 0;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background-color: var(--color-surface);
   color: var(--color-surface-text);
   font: inherit;
@@ -222,13 +222,13 @@ nav {
 .editable-tags {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .editable-chip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .chip-remove {
@@ -252,7 +252,7 @@ nav {
 
 .tag-add-form {
   display: flex;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .folder-section {
@@ -280,13 +280,13 @@ nav {
 .folder-depth-guides {
   flex-shrink: 0;
   align-self: stretch;
-  width: calc(var(--folder-depth, 0) * 12px);
+  width: calc(var(--folder-depth, 0) * var(--space-3));
   background: repeating-linear-gradient(
     90deg,
     var(--border) 0,
     var(--border) 1px,
     transparent 1px,
-    transparent 12px
+    transparent var(--space-3)
   );
 }
 
@@ -335,7 +335,7 @@ nav {
 }
 
 .folder-empty {
-  margin: 4px 8px;
+  margin: var(--space-1) var(--space-2);
   color: var(--muted);
 }
 
@@ -354,9 +354,9 @@ select.inspector-input option {
 
 .folder-move {
   max-width: 100%;
-  padding: 2px 4px;
+  padding: 2px var(--space-1);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font: inherit;
 }
 
