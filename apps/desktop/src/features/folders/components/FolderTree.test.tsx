@@ -2,6 +2,7 @@ import type { Folder, ItemMetadata } from "@swallow/shared";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { SWALLOW_ITEM_DRAG_MIME } from "../../../shared/itemDrag";
 import { Inspector } from "../../inspector";
 import { FolderTree } from "./FolderTree";
 
@@ -74,6 +75,37 @@ describe("FolderTree", () => {
     fireEvent.contextMenu(screen.getByRole("button", { name: /Icons/ }));
     fireEvent.click(screen.getByRole("menuitem", { name: "削除" }));
     expect(onDelete).toHaveBeenCalledWith("b");
+  });
+
+  it("highlights a folder row on item drag-over and assigns on drop", async () => {
+    const onAssignItems = vi.fn(async () => {});
+    const itemIds = ["item-1", "item-2"];
+    const dataTransfer = {
+      types: [SWALLOW_ITEM_DRAG_MIME],
+      effectAllowed: "move",
+      dropEffect: "move",
+      setData: () => {},
+      getData: (type: string) => (type === SWALLOW_ITEM_DRAG_MIME ? JSON.stringify(itemIds) : ""),
+    };
+    const { container } = render(
+      <FolderTree
+        folders={folders}
+        selectedId={null}
+        onSelect={() => {}}
+        onCreate={noop}
+        onRename={noop}
+        onDelete={noop}
+        onMove={noop}
+        onAssignItems={onAssignItems}
+      />,
+    );
+    const folderBtn = screen.getByRole("button", { name: /Icons/ });
+    fireEvent.dragEnter(folderBtn, { dataTransfer });
+    fireEvent.dragOver(folderBtn, { dataTransfer });
+    expect(folderBtn.className).toContain("drop-target");
+    fireEvent.drop(folderBtn, { dataTransfer });
+    expect(onAssignItems).toHaveBeenCalledWith(itemIds, "b");
+    expect(container.querySelector(".drop-target")).toBeNull();
   });
 });
 

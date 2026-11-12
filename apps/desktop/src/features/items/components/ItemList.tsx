@@ -1,5 +1,14 @@
 import type { ItemId, ItemMetadata } from "@swallow/shared";
-import { type KeyboardEvent, type MouseEvent, memo, useCallback, useRef, useState } from "react";
+import {
+  type DragEvent,
+  type KeyboardEvent,
+  type MouseEvent,
+  memo,
+  useCallback,
+  useRef,
+  useState,
+} from "react";
+import { resolveDragItemIds, setItemDragData } from "../../../shared/itemDrag";
 import {
   type ItemViewContextHandlers,
   itemContextMenuEnabled,
@@ -78,6 +87,25 @@ export function ItemList({
     [closeContextMenu, selectClick],
   );
 
+  const handleDragStart = useCallback(
+    (e: DragEvent, id: ItemId) => {
+      if (isTrashView) {
+        e.preventDefault();
+        return;
+      }
+      let ids: ItemId[];
+      if (selection.ids.has(id)) {
+        ids = resolveDragItemIds(selection.ids, id);
+      } else {
+        onSelect(id, {});
+        ids = [id];
+      }
+      setItemDragData(e.dataTransfer, ids);
+    },
+    [isTrashView, onSelect, selection.ids],
+  );
+
+  const itemDragEnabled = !isTrashView;
   const [first] = items;
   if (!first) return <section className="grid-placeholder">アイテムがありません</section>;
   const tabStop = itemViewTabStop(items, selection.focus);
@@ -99,6 +127,8 @@ export function ItemList({
             onClick={handleClick}
             onKeyDown={handleKeyDown}
             onContextMenu={contextMenuEnabled ? handleContextMenu : undefined}
+            draggable={itemDragEnabled}
+            onDragStart={itemDragEnabled ? handleDragStart : undefined}
           />
         ))}
       </section>
@@ -126,6 +156,8 @@ const Row = memo(function Row({
   onClick,
   onKeyDown,
   onContextMenu,
+  draggable = false,
+  onDragStart,
 }: {
   item: ItemMetadata;
   libraryPath: string;
@@ -134,6 +166,8 @@ const Row = memo(function Row({
   onClick: (e: MouseEvent, id: ItemId) => void;
   onKeyDown: (e: KeyboardEvent, id: ItemId) => void;
   onContextMenu?: (e: MouseEvent, item: ItemMetadata) => void;
+  draggable?: boolean;
+  onDragStart?: (e: DragEvent, id: ItemId) => void;
 }) {
   const [failed, setFailed] = useState(false);
   const src = hasThumbnail(item.ext) ? thumbnailUrl(libraryPath, item.id) : null;
@@ -147,6 +181,8 @@ const Row = memo(function Row({
       onClick={(e) => onClick(e, item.id)}
       onKeyDown={(e) => onKeyDown(e, item.id)}
       onContextMenu={onContextMenu ? (e) => onContextMenu(e, item) : undefined}
+      draggable={draggable}
+      onDragStart={onDragStart ? (e) => onDragStart(e, item.id) : undefined}
     >
       <span className="item-list-col-thumb">
         <span className="item-list-thumb">
