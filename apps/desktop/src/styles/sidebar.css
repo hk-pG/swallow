@@ -45,6 +45,12 @@ nav {
   font-weight: 600;
 }
 
+.nav-item.folder-nav-item.drop-target:not(:disabled) {
+  background: var(--color-tint-subtle);
+  outline: 1px solid var(--color-tint-ring);
+  outline-offset: -1px;
+}
+
 .nav-item:disabled {
   color: var(--muted);
   cursor: default;

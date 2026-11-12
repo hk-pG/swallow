@@ -1,5 +1,14 @@
 import { COLOR_LABEL_SWATCH, type ItemId, type ItemMetadata } from "@swallow/shared";
-import { type KeyboardEvent, type MouseEvent, memo, useCallback, useRef, useState } from "react";
+import {
+  type DragEvent,
+  type KeyboardEvent,
+  type MouseEvent,
+  memo,
+  useCallback,
+  useRef,
+  useState,
+} from "react";
+import { resolveDragItemIds, setItemDragData } from "../../../shared/itemDrag";
 import {
   type ItemViewContextHandlers,
   itemContextMenuEnabled,
@@ -86,6 +95,25 @@ export function ItemGrid({
     [closeContextMenu, selectClick],
   );
 
+  const handleDragStart = useCallback(
+    (e: DragEvent, id: ItemId) => {
+      if (isTrashView) {
+        e.preventDefault();
+        return;
+      }
+      let ids: ItemId[];
+      if (selection.ids.has(id)) {
+        ids = resolveDragItemIds(selection.ids, id);
+      } else {
+        onSelect(id, {});
+        ids = [id];
+      }
+      setItemDragData(e.dataTransfer, ids);
+    },
+    [isTrashView, onSelect, selection.ids],
+  );
+
+  const itemDragEnabled = !isTrashView;
   const [first] = items;
   if (!first) {
     return <section className="grid-placeholder">アイテムがありません</section>;
@@ -104,6 +132,8 @@ export function ItemGrid({
             onClick={handleClick}
             onKeyDown={handleKeyDown}
             onContextMenu={contextMenuEnabled ? handleContextMenu : undefined}
+            draggable={itemDragEnabled}
+            onDragStart={itemDragEnabled ? handleDragStart : undefined}
           />
         ))}
       </section>
@@ -131,6 +161,8 @@ interface ItemCellProps {
   onClick: (e: MouseEvent, id: ItemId) => void;
   onKeyDown: (e: KeyboardEvent, id: ItemId) => void;
   onContextMenu?: (e: MouseEvent, item: ItemMetadata) => void;
+  draggable?: boolean;
+  onDragStart?: (e: DragEvent, id: ItemId) => void;
 }
 
 const ItemCell = memo(function ItemCell({
@@ -141,6 +173,8 @@ const ItemCell = memo(function ItemCell({
   onClick,
   onKeyDown,
   onContextMenu,
+  draggable = false,
+  onDragStart,
 }: ItemCellProps) {
   const [failed, setFailed] = useState(false);
   const fileName = `${item.name}.${item.ext}`;
@@ -156,6 +190,8 @@ const ItemCell = memo(function ItemCell({
       onClick={(e) => onClick(e, item.id)}
       onKeyDown={(e) => onKeyDown(e, item.id)}
       onContextMenu={onContextMenu ? (e) => onContextMenu(e, item) : undefined}
+      draggable={draggable}
+      onDragStart={onDragStart ? (e) => onDragStart(e, item.id) : undefined}
     >
       <div className="grid-thumb">
         {item.colorLabel ? (

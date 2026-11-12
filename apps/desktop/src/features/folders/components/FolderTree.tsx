@@ -1,12 +1,14 @@
-import type { Folder, FolderId } from "@swallow/shared";
+import type { Folder, FolderId, ItemId } from "@swallow/shared";
 import {
   type CSSProperties,
+  type DragEvent,
   type KeyboardEvent,
   type MouseEvent,
   useEffect,
   useRef,
   useState,
 } from "react";
+import { isItemDrag, readItemDragIds } from "../../../shared/itemDrag";
 import { SidebarContextMenu, useSidebarContextMenu } from "../../sidebar";
 import { flattenFolders, moveParentOptions } from "../lib/folders";
 
@@ -20,6 +22,8 @@ interface FolderTreeProps {
   onDelete: (id: FolderId) => Promise<void>;
   /** `index` is the position among the new siblings after this folder is removed. `null` appends. */
   onMove: (id: FolderId, parentId: FolderId | null, index: number | null) => Promise<void>;
+  /** Assign items dragged from the item grid/list onto a folder row. */
+  onAssignItems?: (itemIds: ItemId[], folderId: FolderId) => Promise<void>;
 }
 
 type Editor = { kind: "create"; parentId: FolderId | null } | { kind: "rename"; id: FolderId };
@@ -40,9 +44,11 @@ export function FolderTree({
   onRename,
   onDelete,
   onMove,
+  onAssignItems,
 }: FolderTreeProps) {
   const [editor, setEditor] = useState<Editor | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<FolderId | null>(null);
   const {
     state: menuState,
     close: closeMenu,
@@ -68,6 +74,50 @@ export function FolderTree({
   const remove = (id: FolderId) => {
     setError(null);
     void onDelete(id).catch((e: unknown) => setError(String(e)));
+  };
+
+  const itemDropEnabled = Boolean(onAssignItems) && !disabled;
+
+  const folderDropHandlers = (folderId: FolderId) => {
+    if (!itemDropEnabled) {
+      return {};
+    }
+    return {
+      onDragEnter: (event: DragEvent<HTMLButtonElement>) => {
+        if (!isItemDrag(event.dataTransfer)) {
+          return;
+        }
+        event.preventDefault();
+        setDropTargetId(folderId);
+      },
+      onDragOver: (event: DragEvent<HTMLButtonElement>) => {
+        if (!isItemDrag(event.dataTransfer)) {
+          return;
+        }
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+        setDropTargetId(folderId);
+      },
+      onDragLeave: (event: DragEvent<HTMLButtonElement>) => {
+        const next = event.relatedTarget;
+        if (next instanceof Node && event.currentTarget.contains(next)) {
+          return;
+        }
+        setDropTargetId((current) => (current === folderId ? null : current));
+      },
+      onDrop: (event: DragEvent<HTMLButtonElement>) => {
+        if (!isItemDrag(event.dataTransfer)) {
+          return;
+        }
+        event.preventDefault();
+        setDropTargetId(null);
+        const itemIds = readItemDragIds(event.dataTransfer);
+        if (!itemIds?.length || !onAssignItems) {
+          return;
+        }
+        void onAssignItems(itemIds, folderId).catch((e: unknown) => setError(String(e)));
+      },
+    };
   };
 
   const menuItems = menuState
@@ -118,6 +168,8 @@ export function FolderTree({
           onCreate={(parentId, name) => run(() => onCreate(parentId, name))}
           onRename={(id, name) => run(() => onRename(id, name))}
           onOpenMenu={openMenu}
+          dropTargetId={dropTargetId}
+          folderDropHandlers={folderDropHandlers}
         />
       )}
       {error && (
@@ -215,6 +267,8 @@ interface NodeProps {
   onCreate: (parentId: FolderId | null, name: string) => Promise<void>;
   onRename: (id: FolderId, name: string) => Promise<void>;
   onOpenMenu: (event: MouseEvent, target: FolderMenuTarget) => void;
+  dropTargetId: FolderId | null;
+  folderDropHandlers: (folderId: FolderId) => Record<string, unknown>;
 }
 
 function FolderNodes({
@@ -230,6 +284,8 @@ function FolderNodes({
   onCreate,
   onRename,
   onOpenMenu,
+  dropTargetId,
+  folderDropHandlers,
 }: NodeProps) {
   return folders.map((folder, index) => {
     const selected = folder.id === selectedId;
@@ -248,7 +304,11 @@ function FolderNodes({
           ) : (
             <button
               type="button"
-              className="nav-item folder-nav-item"
+              className={
+                dropTargetId === folder.id
+                  ? "nav-item folder-nav-item drop-target"
+                  : "nav-item folder-nav-item"
+              }
               aria-current={selected ? "page" : undefined}
               disabled={disabled}
               onClick={() => onSelect(folder.id)}
@@ -260,6 +320,7 @@ function FolderNodes({
                   siblingCount: folders.length,
                 })
               }
+              {...folderDropHandlers(folder.id)}
             >
               <FolderIcon />
               <span className="folder-nav-label">{folder.name}</span>
@@ -290,6 +351,8 @@ function FolderNodes({
           onCreate={onCreate}
           onRename={onRename}
           onOpenMenu={onOpenMenu}
+          dropTargetId={dropTargetId}
+          folderDropHandlers={folderDropHandlers}
         />
       </div>
     );

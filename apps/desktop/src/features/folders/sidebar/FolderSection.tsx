@@ -17,6 +17,7 @@ export function FolderSection({ libraryPath, view, onViewChange, disabled }: Sid
       onRename={folders.onRename}
       onDelete={folders.onDelete}
       onMove={folders.onMove}
+      onAssignItems={(itemIds, folderId) => folders.assignToFolder(itemIds, folderId)}
     />
   );
 }
