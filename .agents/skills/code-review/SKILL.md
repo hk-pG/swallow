@@ -9,7 +9,7 @@ Swallow の PR / ブランチを、実装チャットと切り離した **独立
 
 # 独立 code-review（Standards / Spec 二軸）
 
-[mattpocock/skills の code-review](https://github.com/mattpocock/skills/tree/main/skills/engineering/code-review)（MIT）を Swallow 向けに改変。帰属は同ディレクトリの [`ATTRIBUTION.md`](./ATTRIBUTION.md)。
+[mattpocock/skills の code-review](https://github.com/mattpocock/skills/tree/main/skills/engineering/code-review)（MIT）を Swallow 向けに改変。帰属は [`ATTRIBUTION.md`](./ATTRIBUTION.md)、許諾全文は [`LICENSE`](./LICENSE)。
 
 **このスキルが担うこと**
 
