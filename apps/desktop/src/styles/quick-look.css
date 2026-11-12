@@ -12,7 +12,7 @@
   inset: 0;
   padding: 0;
   border: none;
-  background: color-mix(in srgb, var(--color-surface) 20%, black);
+  background: var(--color-overlay);
   cursor: default;
 }
 
@@ -23,11 +23,11 @@
   flex-direction: column;
   width: min(96vw, 1200px);
   max-height: 92vh;
-  border-radius: 12px;
+  border-radius: var(--radius-xl);
   border: 1px solid var(--border);
-  background: var(--color-surface);
-  color: var(--color-surface-text);
-  box-shadow: 0 16px 48px color-mix(in srgb, black 35%, transparent);
+  background: var(--color-elevated);
+  color: var(--color-elevated-text);
+  box-shadow: var(--shadow-overlay);
 }
 
 .quick-look-header {

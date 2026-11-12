@@ -101,4 +101,23 @@ node --input-type=module -e "
 
 node "$checker" || fail "style token check on main tree"
 
+tokens="apps/desktop/src/styles/tokens.css"
+quick_look="apps/desktop/src/styles/quick-look.css"
+items="apps/desktop/src/styles/items.css"
+for name in --color-elevated --color-elevated-text --color-overlay --shadow-float --shadow-overlay --radius-xl; do
+  grep -q -- "$name:" "$tokens" || fail "missing token $name"
+done
+grep -q -- '--muted: var(--color-secondary-label)' "$tokens" || fail "--muted must stay an alias of secondary label"
+if grep -q 'black' "$quick_look"; then
+  fail "quick-look.css still hardcodes black"
+fi
+if grep -E -q 'border-radius:[[:space:]]*12px' "$quick_look"; then
+  fail "quick-look.css still hardcodes a 12px radius"
+fi
+grep -q 'var(--color-overlay)' "$quick_look" || fail "quick look scrim should use --color-overlay"
+grep -q 'var(--shadow-overlay)' "$quick_look" || fail "quick look shadow should use --shadow-overlay"
+grep -q 'var(--radius-xl)' "$quick_look" || fail "quick look panel should use --radius-xl"
+grep -q 'var(--color-elevated)' "$items" || fail "menu should use --color-elevated"
+grep -q 'var(--shadow-float)' "$items" || fail "menu shadow should use --shadow-float"
+
 echo "ok"
