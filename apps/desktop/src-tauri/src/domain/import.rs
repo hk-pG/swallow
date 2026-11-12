@@ -10,7 +10,10 @@ use crate::domain::item::{ITEM_DIR_EXT, ITEM_METADATA_FILE, ItemMetadata, now_mi
 use crate::domain::library::IMAGES_DIR;
 
 /// Mirrors `SUPPORTED_IMPORT_EXTENSIONS` in `packages/shared/src/import.ts`.
-pub const SUPPORTED_EXTENSIONS: &[&str] = &["png", "jpg", "jpeg", "webp", "gif", "svg", "pdf"];
+pub const SUPPORTED_EXTENSIONS: &[&str] = &[
+    "png", "jpg", "jpeg", "webp", "gif", "svg", "pdf", "mp4", "webm", "mov", "ttf", "otf", "woff",
+    "woff2",
+];
 
 /// Mirrors `ImportReport` in `packages/shared/src/import.ts`.
 #[derive(Debug, Default, Serialize)]

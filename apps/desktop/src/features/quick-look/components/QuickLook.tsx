@@ -1,6 +1,7 @@
+import { hasQuickLookPreview, resolveItemPreviewKind } from "@swallow/shared";
 import { type KeyboardEvent, useCallback, useEffect, useId, useState } from "react";
 import { formatResolution } from "../../../shared/format";
-import { hasThumbnail, originalImageUrl } from "../../items";
+import { ItemMediaPreview } from "../../items";
 import type { QuickLookScaleMode, QuickLookTarget } from "../lib/quickLook";
 
 interface QuickLookProps {
@@ -25,10 +26,17 @@ export function QuickLook({
   const titleId = useId();
   const { item, playlist, index, isMultiSelection } = target;
   const fileName = `${item.name}.${item.ext}`;
-  const previewable = hasThumbnail(item.ext);
-  const src = previewable ? originalImageUrl(libraryPath, item.id) : null;
-  const [loading, setLoading] = useState(true);
+  const previewKind = resolveItemPreviewKind(item.ext);
+  const previewable = hasQuickLookPreview(item.ext);
+  const supportsImageScale = previewKind === "image";
+  const [loading, setLoading] = useState(previewable);
   const [failed, setFailed] = useState(false);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset load state when the previewed item changes
+  useEffect(() => {
+    setLoading(previewable);
+    setFailed(false);
+  }, [item.id, previewable]);
 
   useEffect(() => {
     const onKeyDown = (e: globalThis.KeyboardEvent) => {
@@ -49,12 +57,12 @@ export function QuickLook({
 
   const onDialogKeyDown = useCallback(
     (e: KeyboardEvent<HTMLDivElement>) => {
-      if (e.key === " ") {
+      if (e.key === " " && supportsImageScale) {
         e.preventDefault();
         onScaleModeChange(scaleMode === "fit" ? "actual" : "fit");
       }
     },
-    [onScaleModeChange, scaleMode],
+    [onScaleModeChange, scaleMode, supportsImageScale],
   );
 
   const positionLabel = `${index + 1} / ${playlist.length}`;
@@ -88,7 +96,7 @@ export function QuickLook({
             <p className="quick-look-hint">{scopeHint}</p>
           </div>
           <div className="quick-look-actions">
-            {previewable && (
+            {supportsImageScale && previewable && !failed && (
               <button
                 type="button"
                 className="text-button"
@@ -108,34 +116,23 @@ export function QuickLook({
             scaleMode === "actual" ? "quick-look-stage quick-look-stage-actual" : "quick-look-stage"
           }
         >
-          {!previewable ? (
-            <p className="quick-look-unsupported">
-              この形式（{item.ext.toUpperCase() || "不明"}
-              ）はクイックルックのプレビューに対応していません
-            </p>
-          ) : failed ? (
-            <p className="quick-look-unsupported">画像を読み込めませんでした</p>
+          {failed ? (
+            <p className="quick-look-unsupported">プレビューを読み込めませんでした</p>
           ) : (
             <>
-              {loading && (
+              {loading && previewable && (
                 <p className="quick-look-loading" aria-live="polite">
                   読み込み中…
                 </p>
               )}
-              <img
-                key={src ?? item.id}
-                className={
-                  scaleMode === "actual" ? "quick-look-image-actual" : "quick-look-image-fit"
-                }
-                src={src ?? undefined}
-                alt={fileName}
-                decoding="async"
-                draggable={false}
-                onLoad={() => setLoading(false)}
-                onError={() => {
-                  setLoading(false);
-                  setFailed(true);
-                }}
+              <ItemMediaPreview
+                key={item.id}
+                libraryPath={libraryPath}
+                item={item}
+                scaleMode={scaleMode}
+                fileLabel={fileName}
+                onLoadingChange={setLoading}
+                onError={() => setFailed(true)}
               />
             </>
           )}

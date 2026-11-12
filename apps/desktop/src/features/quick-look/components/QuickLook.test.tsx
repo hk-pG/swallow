@@ -73,5 +73,21 @@ describe("QuickLook", () => {
     );
     expect(pdf).toContain("PDF");
     expect(pdf).toContain("対応していません");
+    expect(pdf).not.toContain("原寸表示");
+
+    const video = renderToStaticMarkup(
+      <QuickLook
+        libraryPath="/lib"
+        target={target({ item: { ...item("v"), ext: "mp4", name: "clip" } })}
+        scaleMode="fit"
+        onScaleModeChange={() => {}}
+        onClose={() => {}}
+        onPrev={() => {}}
+        onNext={() => {}}
+      />,
+    );
+    expect(video).toContain("clip.mp4");
+    expect(video).toContain("<video");
+    expect(video).not.toContain("原寸表示");
   });
 });
