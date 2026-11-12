@@ -1,5 +1,7 @@
 import type { ItemViewMode } from "../items/itemView";
 import { DEFAULT_THUMBNAIL_SIZE_INDEX } from "../items/itemView";
+import type { ColorScheme, ThemeId } from "./appearance";
+import { DEFAULT_COLOR_SCHEME, DEFAULT_THEME_ID } from "./appearance";
 
 /** Schema version written to `Settings.version`. */
 export const SETTINGS_VERSION = 1;
@@ -9,6 +11,10 @@ export type ShortcutSettings = Record<string, never>;
 export interface AppearanceSettings {
   itemViewMode?: ItemViewMode;
   thumbnailSizeIndex?: number;
+  /** Catalog id. Omitted on old files; unknown ids resolve to ink when applied. */
+  themeId?: ThemeId;
+  /** Omitted on old files; unknown values resolve to system when applied. */
+  colorScheme?: ColorScheme;
 }
 
 export type BehaviorSettings = Record<string, never>;
@@ -37,6 +43,8 @@ export const DEFAULT_SETTINGS: Settings = {
   appearance: {
     itemViewMode: "grid",
     thumbnailSizeIndex: DEFAULT_THUMBNAIL_SIZE_INDEX,
+    themeId: DEFAULT_THEME_ID,
+    colorScheme: DEFAULT_COLOR_SCHEME,
   },
   behavior: {},
 };

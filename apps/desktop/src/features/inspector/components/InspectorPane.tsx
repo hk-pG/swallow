@@ -1,10 +1,12 @@
 import type { Folder, FolderId, ItemId, ItemMetadata, ItemMetadataPatch } from "@swallow/shared";
 import { AppInfo } from "../../library";
+import { type AppearanceSettingsState, AppearanceSwitcher } from "../../settings";
 import { TrashActions, type TrashActionsApi } from "../../trash";
 import { Inspector } from "./Inspector";
 import { MultiItemInspector } from "./MultiItemInspector";
 
 interface InspectorPaneProps {
+  appearance: AppearanceSettingsState;
   selectedCount: number;
   selectedItems: readonly ItemMetadata[];
   selected: ItemMetadata | null;
@@ -22,6 +24,7 @@ interface InspectorPaneProps {
 }
 
 export function InspectorPane({
+  appearance,
   selectedCount,
   selectedItems,
   selected,
@@ -74,6 +77,15 @@ export function InspectorPane({
           />
         </>
       )}
+      <section className="inspector-section" aria-label="表示設定">
+        <h3>表示</h3>
+        <AppearanceSwitcher
+          themeId={appearance.themeId}
+          colorScheme={appearance.colorScheme}
+          onThemeIdChange={appearance.setThemeId}
+          onColorSchemeChange={appearance.setColorScheme}
+        />
+      </section>
       <AppInfo />
     </aside>
   );

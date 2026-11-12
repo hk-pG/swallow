@@ -7,7 +7,7 @@
 色・余白・角丸・フォント・影・blur は **`tokens.css` のセマンティック変数だけ**を参照する。feature のコンポーネントに見た目の値を直書きしない。
 
 - **正本**: 非色（`--space-*`・`--radius-*`・`--font-*`）と、属性が付く前の色のフォールバックは `tokens.css`。色の上書きは `themes/*.css`
-- **インク**: `themes/ink.css` が `[data-theme="ink"][data-appearance="light|dark"]` で同じセマンティック名へ具体色を入れる。起動時に OS を読んでこの二属性を付ける。設定の保存と切替 UI はまだ無い
+- **インク**: `themes/ink.css` が `[data-theme="ink"][data-appearance="light|dark"]` で同じセマンティック名へ具体色を入れる。起動時は属性が付くまでインク + OS。保存した `themeId` と `colorScheme` はツールバーとインスペクタの表示設定から切り替え、反映は `data-theme` と `data-appearance` だけ。選択肢のテーマはインクのみ
 - **名前**: 既存のトークン名は維持する。`--muted` は `--color-secondary-label` の別名のまま。浮いた面は `--color-elevated` / `--color-elevated-text`。`--color-overlay`・`--shadow-float`・`--shadow-overlay`・`--radius-xl` は Quick Look とメニューが使う
 - **消費**: 同ディレクトリの `layout.css`・`controls.css`・`items.css` などでは `var(--...)` または既存のセマンティッククラス経由で参照する
 - **React**: `features/` と `app/` のコンポーネントはセマンティック CSS クラスを使う。色や余白のリテラル、`style={{ fontSize: 12 }}` のような見た目プロパティの直書きは避ける（メニュー座標やサムネイル用 CSS 変数など、動的レイアウトだけは例外）

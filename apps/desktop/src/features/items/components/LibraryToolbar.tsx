@@ -1,6 +1,6 @@
 import type { Folder, SmartFolderCriteria } from "@swallow/shared";
 import type { Dispatch, SetStateAction } from "react";
-import type { AppearanceSettingsState } from "../../settings";
+import { type AppearanceSettingsState, AppearanceSwitcher } from "../../settings";
 import { AdvancedSearch } from "../../smart-views";
 import { ViewModeToolbar } from "./ViewModeToolbar";
 
@@ -61,6 +61,12 @@ export function LibraryToolbar({
         disabled={disabled}
         onViewModeChange={appearance.setItemViewMode}
         onThumbnailSizeIndexChange={appearance.setThumbnailSizeIndex}
+      />
+      <AppearanceSwitcher
+        themeId={appearance.themeId}
+        colorScheme={appearance.colorScheme}
+        onThemeIdChange={appearance.setThemeId}
+        onColorSchemeChange={appearance.setColorScheme}
       />
       <button
         type="button"
