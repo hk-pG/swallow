@@ -1,5 +1,5 @@
 import { type ItemId, resolveItemPreviewKind } from "@swallow/shared";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { itemFullPreviewUrl } from "../lib/thumbnail";
 
 export type ItemMediaPreviewScale = "fit" | "actual";
@@ -161,40 +161,49 @@ function FontPreview({
   const family = `swallow-preview-font-${itemId}-${reactId.replace(/:/g, "")}`;
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
+  const onLoadingChangeRef = useRef(onLoadingChange);
+  const onErrorRef = useRef(onError);
+  onLoadingChangeRef.current = onLoadingChange;
+  onErrorRef.current = onError;
 
   useEffect(() => {
     setReady(false);
     setFailed(false);
-    onLoadingChange?.(true);
+    onLoadingChangeRef.current?.(true);
 
     if (typeof FontFace === "undefined") {
-      onLoadingChange?.(false);
+      onLoadingChangeRef.current?.(false);
       setFailed(true);
-      onError?.();
+      onErrorRef.current?.();
       return;
     }
 
     const face = new FontFace(family, `url("${src}")`);
     let cancelled = false;
+    let loadedFont: FontFace | null = null;
     void face
       .load()
       .then((loaded) => {
         if (cancelled) return;
+        loadedFont = loaded;
         document.fonts.add(loaded);
         setReady(true);
-        onLoadingChange?.(false);
+        onLoadingChangeRef.current?.(false);
       })
       .catch(() => {
         if (cancelled) return;
         setFailed(true);
-        onLoadingChange?.(false);
-        onError?.();
+        onLoadingChangeRef.current?.(false);
+        onErrorRef.current?.();
       });
 
     return () => {
       cancelled = true;
+      if (loadedFont) {
+        void document.fonts.delete(loadedFont);
+      }
     };
-  }, [family, src, onLoadingChange, onError]);
+  }, [family, src]);
 
   if (failed) {
     return <p className="quick-look-unsupported">フォントを読み込めませんでした</p>;

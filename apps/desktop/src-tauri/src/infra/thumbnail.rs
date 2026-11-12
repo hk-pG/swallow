@@ -101,10 +101,12 @@ fn video_mime(ext: &str) -> Option<&'static str> {
     {
         return None;
     }
-    if ext.eq_ignore_ascii_case("webm") {
+    if ext.eq_ignore_ascii_case("mp4") {
+        Some("video/mp4")
+    } else if ext.eq_ignore_ascii_case("webm") {
         Some("video/webm")
     } else {
-        Some("video/mp4")
+        Some("video/quicktime")
     }
 }
 
@@ -374,6 +376,17 @@ mod tests {
             Some(Preview {
                 path: mp4_dir.join("clip.mp4"),
                 mime: "video/mp4"
+            })
+        );
+
+        let mov = sample_item("M", "take", "mov");
+        let mov_dir = write_item(library.path(), &mov);
+        fs::write(mov_dir.join("take.mov"), b"fake-mov").unwrap();
+        assert_eq!(
+            original_preview(&mov_dir).unwrap(),
+            Some(Preview {
+                path: mov_dir.join("take.mov"),
+                mime: "video/quicktime"
             })
         );
 

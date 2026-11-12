@@ -1,8 +1,60 @@
-import { hasQuickLookPreview, resolveItemPreviewKind } from "@swallow/shared";
+import { hasQuickLookPreview, type ItemMetadata, resolveItemPreviewKind } from "@swallow/shared";
 import { type KeyboardEvent, useCallback, useEffect, useId, useState } from "react";
 import { formatResolution } from "../../../shared/format";
 import { ItemMediaPreview } from "../../items";
 import type { QuickLookScaleMode, QuickLookTarget } from "../lib/quickLook";
+
+interface QuickLookPreviewStageProps {
+  libraryPath: string;
+  item: ItemMetadata;
+  scaleMode: QuickLookScaleMode;
+  fileLabel: string;
+  previewable: boolean;
+  onFailedChange: (failed: boolean) => void;
+}
+
+function QuickLookPreviewStage({
+  libraryPath,
+  item,
+  scaleMode,
+  fileLabel,
+  previewable,
+  onFailedChange,
+}: QuickLookPreviewStageProps) {
+  const [loading, setLoading] = useState(previewable);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    onFailedChange(false);
+  }, [onFailedChange]);
+
+  const handlePreviewError = useCallback(() => {
+    setFailed(true);
+    onFailedChange(true);
+  }, [onFailedChange]);
+
+  if (failed) {
+    return <p className="quick-look-unsupported">プレビューを読み込めませんでした</p>;
+  }
+
+  return (
+    <>
+      {loading && previewable && (
+        <p className="quick-look-loading" aria-live="polite">
+          読み込み中…
+        </p>
+      )}
+      <ItemMediaPreview
+        libraryPath={libraryPath}
+        item={item}
+        scaleMode={scaleMode}
+        fileLabel={fileLabel}
+        onLoadingChange={setLoading}
+        onError={handlePreviewError}
+      />
+    </>
+  );
+}
 
 interface QuickLookProps {
   libraryPath: string;
@@ -29,14 +81,15 @@ export function QuickLook({
   const previewKind = resolveItemPreviewKind(item.ext);
   const previewable = hasQuickLookPreview(item.ext);
   const supportsImageScale = previewKind === "image";
-  const [loading, setLoading] = useState(previewable);
-  const [failed, setFailed] = useState(false);
+  const [failedItemId, setFailedItemId] = useState<string | null>(null);
+  const previewFailed = failedItemId === item.id;
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: reset load state when the previewed item changes
-  useEffect(() => {
-    setLoading(previewable);
-    setFailed(false);
-  }, [item.id, previewable]);
+  const handlePreviewFailedChange = useCallback(
+    (failed: boolean) => {
+      setFailedItemId(failed ? item.id : null);
+    },
+    [item.id],
+  );
 
   useEffect(() => {
     const onKeyDown = (e: globalThis.KeyboardEvent) => {
@@ -96,7 +149,7 @@ export function QuickLook({
             <p className="quick-look-hint">{scopeHint}</p>
           </div>
           <div className="quick-look-actions">
-            {supportsImageScale && previewable && !failed && (
+            {supportsImageScale && previewable && !previewFailed && (
               <button
                 type="button"
                 className="text-button"
@@ -116,26 +169,15 @@ export function QuickLook({
             scaleMode === "actual" ? "quick-look-stage quick-look-stage-actual" : "quick-look-stage"
           }
         >
-          {failed ? (
-            <p className="quick-look-unsupported">プレビューを読み込めませんでした</p>
-          ) : (
-            <>
-              {loading && previewable && (
-                <p className="quick-look-loading" aria-live="polite">
-                  読み込み中…
-                </p>
-              )}
-              <ItemMediaPreview
-                key={item.id}
-                libraryPath={libraryPath}
-                item={item}
-                scaleMode={scaleMode}
-                fileLabel={fileName}
-                onLoadingChange={setLoading}
-                onError={() => setFailed(true)}
-              />
-            </>
-          )}
+          <QuickLookPreviewStage
+            key={item.id}
+            libraryPath={libraryPath}
+            item={item}
+            scaleMode={scaleMode}
+            fileLabel={fileName}
+            previewable={previewable}
+            onFailedChange={handlePreviewFailedChange}
+          />
         </div>
         {playlist.length > 1 && (
           <footer className="quick-look-footer">
