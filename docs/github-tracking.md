@@ -20,6 +20,8 @@ Cursor 非依存。人が GitHub 上で読む。入口は [HANDOFF.md](./HANDOFF
 
 [`.agents/skills/code-review/SKILL.md`](../.agents/skills/code-review/SKILL.md) は、先生が実装文脈を持たない別エージェントに PR レビューを依頼するときの手順（Standards と Issue 受け入れ条件の二軸）。実装担当のセルフレビューは `review-staged.sh` のまま。
 
+[`.agents/skills/differential-review/SKILL.md`](../.agents/skills/differential-review/SKILL.md) は、ループバック HTTP・拡張 Origin・パス処理の差分を攻撃シナリオで見るときの手順（Trail of Bits 手順は GitHub 外部参照のみ）。通常の独立 PR レビューは `code-review`。
+
 Cursor Project の notes / Context は当日の作業メモのみ。引き継ぎや週次確認の正本にはしない。
 
 ## マイルストーン定義
