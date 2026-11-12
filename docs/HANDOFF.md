@@ -125,6 +125,7 @@ gh issue list --repo hk-pG/swallow --milestone backlog --state open
 | Eagle との過不足         | [eagle-vs-swallow.md](./eagle-vs-swallow.md)                                                                                        |
 | 実装の標準ルート         | [`AGENTS.md`](../AGENTS.md)、[`.agents/skills/issue-to-pr/SKILL.md`](../.agents/skills/issue-to-pr/SKILL.md)                        |
 | Issue 作成（例外）       | [`.agents/skills/create-issue/SKILL.md`](../.agents/skills/create-issue/SKILL.md)（「Issue にして」明示時／実装途中で Issue 無し）  |
+| 独立 PR レビュー         | [`.agents/skills/code-review/SKILL.md`](../.agents/skills/code-review/SKILL.md)（実装文脈なし・Standards/Spec 二軸）                |
 | コードベース構成・境界   | [AGENTS.md の構成とモジュール境界](../AGENTS.md#モジュール境界フロント)（機能ベース `app/`・`features/*`・Tauri `commands/mod.rs`） |
 | 分類スクリプト           | [`scripts/agent/github-taxonomy-setup.sh`](../scripts/agent/github-taxonomy-setup.sh)（冪等）                                       |
 | α トラッカー Issue       | [#45](https://github.com/hk-pG/swallow/issues/45)                                                                                   |
