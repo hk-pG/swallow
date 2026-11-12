@@ -19,7 +19,7 @@ Swallow の PR / ブランチを、実装チャットと切り離した **独立
 **担わないこと**
 
 - セルフレビュー（staged）→ `scripts/agent/review-staged.sh` と `issue-to-pr` §6
-- セキュリティ差分の攻撃モデリング → 将来 `.agents/skills/differential-review/`（Trail of Bits、外部参照のみ）
+- セキュリティ差分の攻撃モデリング → [`.agents/skills/differential-review/SKILL.md`](../differential-review/SKILL.md)（Trail of Bits、外部参照のみ）
 
 ## 触れてはいけない領域（レビュー指摘の対象外）
 
