@@ -7,7 +7,7 @@
 
 1. このファイルを読む
 2. GitHub で次の作業を確認する（下記コマンド）
-3. リポの `AGENTS.md` と `.agents/skills/issue-to-pr/SKILL.md` に従い、Issue 1 件を PR まで進める（Issue が無ければ先に `.agents/skills/create-issue/SKILL.md`）
+3. リポの `AGENTS.md` と `.agents/skills/issue-to-pr/SKILL.md` に従い、既存 Issue 1 件を PR まで進める（標準は依頼 → 計画 or 既存 Issue → PR。`create-issue` は「Issue にして」明示時、または実装途中で Issue が無いときに限る）
 
 **正本は GitHub。このファイルの進捗表はスナップショット**（Issue + Milestone + Label が常に優先）。Cursor Project の notes は作業メモにすぎない。
 
@@ -104,7 +104,7 @@ gh issue list --repo hk-pG/swallow --milestone backlog --state open
 3. 並行可なら独立した Issue を複数 Agent に分割してよい（着手前に `gh` で OPEN を再確認）
 4. #12（拡張）は別リポ予定 → このリポでは実装しない
 5. AGENTS.md 禁止事項: main 直 push、PR マージ、Issue クローズ／ラベル無断変更（付与は運用上可だが既存方針を壊さない）
-6. **バグは先に Issue 化**（再現・受け入れ条件・原因仮説を本文に残す）。チャットだけで直さない。詳細は `AGENTS.md` の「バグの扱い」と `.agents/skills/create-issue/SKILL.md`
+6. **バグはチャットだけで直さない**。既存 Issue があれば `issue-to-pr`。無いまま修正を頼まれたときだけ `create-issue` で記録してから着手。「Issue にして」だけなら作成して止まる。詳細は `AGENTS.md` と `.agents/skills/create-issue/SKILL.md`
 
 ### 受け入れの見方
 
@@ -123,8 +123,8 @@ gh issue list --repo hk-pG/swallow --milestone backlog --state open
 | β Issue 一覧・優先度     | [roadmap.md](./roadmap.md) ＋ GitHub Milestone [`beta`](https://github.com/hk-pG/swallow/milestone/2)                               |
 | α で何を入れたか         | [alpha-scope.md](./alpha-scope.md)                                                                                                  |
 | Eagle との過不足         | [eagle-vs-swallow.md](./eagle-vs-swallow.md)                                                                                        |
-| Issue の作成             | [`.agents/skills/create-issue/SKILL.md`](../.agents/skills/create-issue/SKILL.md)                                                   |
-| 実装の進め方             | [`AGENTS.md`](../AGENTS.md)、[`.agents/skills/issue-to-pr/SKILL.md`](../.agents/skills/issue-to-pr/SKILL.md)                        |
+| 実装の標準ルート         | [`AGENTS.md`](../AGENTS.md)、[`.agents/skills/issue-to-pr/SKILL.md`](../.agents/skills/issue-to-pr/SKILL.md)                        |
+| Issue 作成（例外）       | [`.agents/skills/create-issue/SKILL.md`](../.agents/skills/create-issue/SKILL.md)（「Issue にして」明示時／実装途中で Issue 無し）  |
 | コードベース構成・境界   | [AGENTS.md の構成とモジュール境界](../AGENTS.md#モジュール境界フロント)（機能ベース `app/`・`features/*`・Tauri `commands/mod.rs`） |
 | 分類スクリプト           | [`scripts/agent/github-taxonomy-setup.sh`](../scripts/agent/github-taxonomy-setup.sh)（冪等）                                       |
 | α トラッカー Issue       | [#45](https://github.com/hk-pG/swallow/issues/45)                                                                                   |

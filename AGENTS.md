@@ -10,13 +10,11 @@ Eagle 代替の素材管理アプリ。Tauri 2（Rust）+ React + TypeScript の
 gh issue list --milestone beta --label P1 --state open   # 次に着手する作業
 ```
 
-## Issue の作成
+## 実装の標準ルート
 
-チャットや調査を Issue に残すときは `.agents/skills/create-issue/SKILL.md` を読み、重複確認・ラベル／Milestone・受け入れ条件付き本文まで揃えてから `gh issue create` する（スキルとして読み込まれていなくても同じ）。ユーザーが「Issue にして」とだけ言った場合は作成で止め、修正は依頼があるまで着手しない。
+**依頼 → 計画 or 既存 Issue → PR（`issue-to-pr`）**。人が Issue フォームで起票し、エージェントはトリアージと計画→実装→PR を担う。
 
-## Issue から PR まで
-
-Issue を 1 件担当するときは `.agents/skills/issue-to-pr/SKILL.md` を読み、その手順に従って PR 作成まで人に確認せず進める（スキルとして読み込まれていなくても同じ）。Issue がまだ無い不具合は、先に `create-issue` で記録してから着手する。
+Issue を 1 件担当するときは `.agents/skills/issue-to-pr/SKILL.md` を読む（スキルとして読み込まれていなくても同じ）。
 
 ```sh
 scripts/agent/start-issue.sh <N> [--worktree]   # 重複確認、ブランチ準備、Issue の表示（worktree の置き場所は $SWALLOW_WORKTREE_DIR）
@@ -33,14 +31,15 @@ scripts/agent/open-pr.sh --title "<title>" --body-file <path>
 
 Orca で作った worktree では手元で実装せず、`scripts/agent/cloud-run.sh <N>` で Cloud Agent に依頼する。`.cursor/cli.json` で書き込みやビルドが禁止されているのはそのため。
 
+## Issue の作成（例外ルート）
+
+`.agents/skills/create-issue/SKILL.md` は、先生が「Issue にして」「バックログに積んで」と明示したとき、および **実装依頼の途中で Issue が無い**ときにだけ使う。推測で Issue を増やさない。手順・本文形式・ラベルの正本はスキル側（`AGENTS.md` に手順を重複して書かない）。
+
+停止条件: **「Issue にして」だけなら URL を返して止まる。実装依頼の途中で Issue が無いときだけ、作成後に着手。**
+
 ## バグの扱い
 
-不具合対応は **先に GitHub Issue を作り、記録を残してから** 修正 PR に進む（口頭やチャットだけで直さない）。手順の詳細は `.agents/skills/create-issue/SKILL.md`。
-
-1. 既存 Issue を検索し、無ければ `gh issue create` で新規作成する（ラベル `bug`、領域 `area:*`、優先度 `P1`/`P2`/`P3`、Milestone を付ける）
-2. 本文に再現手順・受け入れ条件・原因仮説（分かれば）を書く。チャットでの調査結果もここに要約する
-3. その後 `scripts/agent/start-issue.sh <N>` から通常どおり PR まで進める（PR は `Closes #<N>`）
-4. ユーザーが「Issue にして」とだけ言った場合は Issue 作成で止め、修正は依頼があるまで着手しない
+不具合対応は口頭やチャットだけで直さない。既存の bug Issue があれば `issue-to-pr` で進める。Issue が無いまま修正を頼まれたときは `create-issue` で記録してから着手する（PR は `Closes #<N>`）。「Issue にして」だけなら作成して止まる。
 
 ## 構成
 

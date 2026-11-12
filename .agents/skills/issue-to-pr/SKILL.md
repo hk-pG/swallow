@@ -25,14 +25,12 @@ Swallow リポジトリの GitHub Issue 1 件を、ブランチ作成から実�
 
 ## 0. Issue がまだ無い場合
 
-不具合を直す前、または機能・依頼を記録してから着手する場合は **先に GitHub Issue を作る**（チャットだけで直さない／進めない）。
+標準ルートは既存 Issue（または人の計画）から本スキルへ入ること。Issue が無いときの作成手順の正本は `.agents/skills/create-issue/SKILL.md`。
 
-手順の正本は `.agents/skills/create-issue/SKILL.md`（重複確認・種別・ラベル／Milestone・受け入れ条件・`gh issue create`）。
+停止条件（`create-issue` と同じ）: **「Issue にして」だけなら URL を返して止まる。実装依頼の途中で Issue が無いときだけ、作成後に着手。**
 
-1. `create-issue` に従って Issue を作る（バグなら `bug`、機能なら `enhancement` など）
-2. その Issue 番号で次の「1. 着手」へ進む
-
-ユーザーが「Issue にして」とだけ言った場合は `create-issue` で作成して止め、修正は依頼があるまで着手しない。方針の正本は `AGENTS.md` の「Issue の作成」「バグの扱い」。
+1. 実装依頼で Issue が無い → `create-issue` で作り、その `#N` で次の「1. 着手」へ進む
+2. 「Issue にして」だけ → `create-issue` で作り、**ここで終了**（本スキルの着手以降はやらない）
 
 ## 1. 着手
 
