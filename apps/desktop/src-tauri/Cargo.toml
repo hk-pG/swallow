@@ -5,6 +5,14 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
+[features]
+perf-bin = []
+
+[[bin]]
+name = "swallow_perf"
+path = "src/bin/swallow_perf.rs"
+required-features = ["perf-bin"]
+
 [lib]
 # The `_lib` suffix avoids a name clash with the bin target on Windows.
 # https://github.com/rust-lang/cargo/issues/8519
