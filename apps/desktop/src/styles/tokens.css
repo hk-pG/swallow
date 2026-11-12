@@ -1,5 +1,5 @@
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
   font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
   font-size: var(--font-body);
   --font-caption: 11px;
@@ -10,12 +10,13 @@
   --radius-lg: 8px;
   --radius-xl: 12px;
   --radius-pill: 999px;
-  --color-label: CanvasText;
+  /* Ink light, until data-appearance is set. themes/ink.css wins after that. */
+  --color-label: #1c1c1e;
   --color-secondary-label: color-mix(in srgb, currentColor 55%, transparent);
   --color-fill: color-mix(in srgb, currentColor 8%, transparent);
   --color-fill-subtle: color-mix(in srgb, currentColor 6%, transparent);
   --color-fill-emphasis: color-mix(in srgb, currentColor 15%, transparent);
-  --color-tint: Highlight;
+  --color-tint: #0a84ff;
   --color-tint-subtle: color-mix(in srgb, var(--color-tint) 12%, transparent);
   --color-tint-muted: color-mix(in srgb, var(--color-tint) 15%, transparent);
   --color-tint-focus: color-mix(in srgb, var(--color-tint) 70%, currentColor);
@@ -23,13 +24,12 @@
   --color-tint-star: color-mix(in srgb, var(--color-tint) 80%, currentColor);
   --color-danger: #d33;
   --color-danger-muted: color-mix(in srgb, var(--color-danger) 60%, transparent);
-  --color-danger-text: color-mix(in srgb, #c0392b 85%, currentColor);
+  --color-danger-text: color-mix(in srgb, var(--color-danger) 85%, currentColor);
   --color-star: #f5b400;
-  --color-surface: Canvas;
-  --color-surface-text: CanvasText;
-  /* 見た目は地面と同じ。一段上げる色は、テーマファイルが後で入れる。 */
-  --color-elevated: var(--color-surface);
-  --color-elevated-text: var(--color-surface-text);
+  --color-surface: #f5f5f7;
+  --color-surface-text: #1c1c1e;
+  --color-elevated: #eaeaf0;
+  --color-elevated-text: #1c1c1e;
   --color-overlay: color-mix(in srgb, var(--color-surface) 20%, black);
   --border: color-mix(in srgb, currentColor 15%, transparent);
   --border-strong: color-mix(in srgb, currentColor 26%, transparent);
@@ -44,7 +44,22 @@
   --space-3: 12px;
   --space-4: 16px;
   --space-5: 24px;
-  --sidebar-bg: color-mix(in srgb, currentColor 4%, canvas);
+  --sidebar-bg: #ececef;
+}
+
+/* Dark OS fallback. An explicit data-appearance does not match this rule. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-appearance]) {
+    color-scheme: dark;
+    --color-label: #f2f2f7;
+    --color-tint: #409cff;
+    --color-danger: #ff6961;
+    --color-surface: #1c1c1e;
+    --color-surface-text: #f2f2f7;
+    --color-elevated: #2c2c2e;
+    --color-elevated-text: #f2f2f7;
+    --sidebar-bg: #161618;
+  }
 }
 
 * {

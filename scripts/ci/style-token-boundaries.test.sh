@@ -83,6 +83,8 @@ node --input-type=module -e "
   };
 
   write('styles/tokens.css', ':root { --x: #fff; }');
+  write('styles/themes/ink.css', '[data-theme="ink"] { color: #fff; }');
+  write('styles/themes/nested/nope.css', '.x { color: #abcdef; }');
   write('styles/bad.css', '.x { color: #123456; }');
   write('styles/ok.css', '.y { color: var(--color-label); gap: 8px; }');
   write('features/items/Bad.tsx', 'export const X = () => <i style={{ color: \"#abc\" }} />;');
@@ -91,10 +93,15 @@ node --input-type=module -e "
 
   const violations = findStyleTokenViolations({ desktopSrc });
   const keys = violations.map((v) => v.rule + ':' + v.file);
-  for (const need of ['css-color-literal:styles/bad.css', 'tsx-color-literal:features/items/Bad.tsx', 'tsx-inline-style:app/App.tsx']) {
+  for (const need of [
+    'css-color-literal:styles/bad.css',
+    'css-color-literal:styles/themes/nested/nope.css',
+    'tsx-color-literal:features/items/Bad.tsx',
+    'tsx-inline-style:app/App.tsx',
+  ]) {
     if (!keys.some((k) => k === need)) throw new Error('missing ' + need);
   }
-  if (keys.some((k) => k.endsWith('features/items/Ok.tsx') || k.endsWith('styles/ok.css'))) {
+  if (keys.some((k) => k.endsWith('features/items/Ok.tsx') || k.endsWith('styles/ok.css') || k.endsWith('styles/themes/ink.css'))) {
     throw new Error('false positive: ' + keys.join(', '));
   }
 "
@@ -119,5 +126,24 @@ grep -q 'var(--shadow-overlay)' "$quick_look" || fail "quick look shadow should 
 grep -q 'var(--radius-xl)' "$quick_look" || fail "quick look panel should use --radius-xl"
 grep -q 'var(--color-elevated)' "$items" || fail "menu should use --color-elevated"
 grep -q 'var(--shadow-float)' "$items" || fail "menu shadow should use --shadow-float"
+
+ink="apps/desktop/src/styles/themes/ink.css"
+grep -q '\[data-theme="ink"\]\[data-appearance="light"\]' "$ink" || fail "ink light block missing"
+grep -q '\[data-theme="ink"\]\[data-appearance="dark"\]' "$ink" || fail "ink dark block missing"
+grep -q 'color-scheme: light' "$ink" || fail "ink light color-scheme"
+grep -q 'color-scheme: dark' "$ink" || fail "ink dark color-scheme"
+grep -q '#0a84ff' "$ink" || fail "ink light accent"
+grep -q '#409cff' "$ink" || fail "ink dark accent"
+grep -q '#f5f5f7' "$ink" || fail "ink light surface"
+grep -q '#1c1c1e' "$ink" || fail "ink dark surface"
+if grep -q 'color-scheme: light dark' "$tokens" "$ink"; then
+  fail "combined color-scheme is still a product color"
+fi
+grep -q ':root:not(\[data-appearance\])' "$tokens" || fail "dark fallback must be limited to missing data-appearance"
+grep -q 'prefers-color-scheme: dark' "$tokens" || fail "dark fallback media query missing"
+grep -q -- '--muted: var(--color-secondary-label)' "$tokens" || fail "--muted must stay an alias of secondary label"
+if grep -E -q 'CanvasText|Highlight|(^|[^a-zA-Z-])[Cc]anvas([^a-zA-Z-]|$)' "$tokens" "$ink"; then
+  fail "product colors still use Canvas or Highlight"
+fi
 
 echo "ok"
