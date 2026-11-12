@@ -20,9 +20,11 @@
     "ci:js": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "ci:rust": "pnpm rust:fmt && pnpm rust:clippy && pnpm rust:test",
     "ci:all": "pnpm ci:js && pnpm ci:rust",
+    "perf": "bash scripts/perf/run-all.sh",
     "bundle:linux": "pnpm --filter @swallow/desktop tauri build --bundles deb,rpm,appimage"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.6.6"
+    "@biomejs/biome": "^2.6.6",
+    "tsx": "^4.19.4"
   }
 }
