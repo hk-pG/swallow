@@ -1,4 +1,6 @@
+import type { ItemMetadata } from "@swallow/shared";
 import { EMPTY_SMART_FOLDER_CRITERIA } from "@swallow/shared";
+import { render } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { InspectorPane } from "../../inspector";
@@ -174,5 +176,50 @@ describe("MainItemView", () => {
       />,
     );
     expect(noMatches).toContain("該当するアイテムがありません");
+  });
+
+  const thumbItem: ItemMetadata = {
+    id: "thumb",
+    name: "photo",
+    ext: "png",
+    size: 1,
+    width: null,
+    height: null,
+    tags: [],
+    folders: [],
+    annotation: "",
+    star: 0,
+    colorLabel: null,
+    url: null,
+    createdAt: 0,
+    modifiedAt: 0,
+    isDeleted: false,
+  };
+
+  const itemViewProps = (itemViewMode: "grid" | "list") => ({
+    libraryPath: "/lib",
+    itemCount: 1,
+    visibleItems: [thumbItem],
+    itemViewMode,
+    selection: EMPTY_SELECTION,
+    recentLibraries: [] as string[],
+    onSelect: noop,
+    onSelectAll: noop,
+    onClearSelection: noop,
+    onCreateLibrary: noop,
+    onOpenLibrary: noop,
+    onOpenRecent: noop,
+  });
+
+  it("sets draggable=false on thumbnail images in grid and list", () => {
+    const { container: gridRoot } = render(<MainItemView {...itemViewProps("grid")} />);
+    const gridThumb = gridRoot.querySelector("img");
+    expect(gridThumb).not.toBeNull();
+    expect(gridThumb?.getAttribute("draggable")).toBe("false");
+
+    const { container: listRoot } = render(<MainItemView {...itemViewProps("list")} />);
+    const listThumb = listRoot.querySelector("img");
+    expect(listThumb).not.toBeNull();
+    expect(listThumb?.getAttribute("draggable")).toBe("false");
   });
 });

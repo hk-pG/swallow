@@ -187,7 +187,13 @@ const Row = memo(function Row({
       <span className="item-list-col-thumb">
         <span className="item-list-thumb">
           {src && !failed ? (
-            <img src={src} alt="" loading="lazy" onError={() => setFailed(true)} />
+            <img
+              src={src}
+              alt=""
+              loading="lazy"
+              draggable={false}
+              onError={() => setFailed(true)}
+            />
           ) : (
             <span className="grid-thumb-placeholder">{item.ext.toUpperCase() || "?"}</span>
           )}
