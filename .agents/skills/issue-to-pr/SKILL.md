@@ -23,16 +23,16 @@ Swallow リポジトリの GitHub Issue 1 件を、ブランチ作成から実�
 - [ ] 8. 報告
 ```
 
-## 0. バグのとき（Issue がまだ無い場合）
+## 0. Issue がまだ無い場合
 
-不具合を直す前に **必ず GitHub Issue を作る**（記録用。チャットだけで直さない）。
+不具合を直す前、または機能・依頼を記録してから着手する場合は **先に GitHub Issue を作る**（チャットだけで直さない／進めない）。
 
-1. `gh issue list` / 検索で重複を確認する
-2. 無ければ `gh issue create`（ラベル `bug` + `area:*` + `P1`/`P2`/`P3`、Milestone）
-3. 本文に再現手順・受け入れ条件・原因仮説（分かれば）を書く
-4. その Issue 番号で次の「1. 着手」へ進む
+手順の正本は `.agents/skills/create-issue/SKILL.md`（重複確認・種別・ラベル／Milestone・受け入れ条件・`gh issue create`）。
 
-ユーザーが「Issue にして」とだけ言った場合は作成で止め、修正は依頼があるまで着手しない。方針の正本は `AGENTS.md` の「バグの扱い」。
+1. `create-issue` に従って Issue を作る（バグなら `bug`、機能なら `enhancement` など）
+2. その Issue 番号で次の「1. 着手」へ進む
+
+ユーザーが「Issue にして」とだけ言った場合は `create-issue` で作成して止め、修正は依頼があるまで着手しない。方針の正本は `AGENTS.md` の「Issue の作成」「バグの扱い」。
 
 ## 1. 着手
 

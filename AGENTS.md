@@ -10,9 +10,13 @@ Eagle 代替の素材管理アプリ。Tauri 2（Rust）+ React + TypeScript の
 gh issue list --milestone beta --label P1 --state open   # 次に着手する作業
 ```
 
+## Issue の作成
+
+チャットや調査を Issue に残すときは `.agents/skills/create-issue/SKILL.md` を読み、重複確認・ラベル／Milestone・受け入れ条件付き本文まで揃えてから `gh issue create` する（スキルとして読み込まれていなくても同じ）。ユーザーが「Issue にして」とだけ言った場合は作成で止め、修正は依頼があるまで着手しない。
+
 ## Issue から PR まで
 
-Issue を 1 件担当するときは `.agents/skills/issue-to-pr/SKILL.md` を読み、その手順に従って PR 作成まで人に確認せず進める（スキルとして読み込まれていなくても同じ）。
+Issue を 1 件担当するときは `.agents/skills/issue-to-pr/SKILL.md` を読み、その手順に従って PR 作成まで人に確認せず進める（スキルとして読み込まれていなくても同じ）。Issue がまだ無い不具合は、先に `create-issue` で記録してから着手する。
 
 ```sh
 scripts/agent/start-issue.sh <N> [--worktree]   # 重複確認、ブランチ準備、Issue の表示（worktree の置き場所は $SWALLOW_WORKTREE_DIR）
@@ -31,7 +35,7 @@ Orca で作った worktree では手元で実装せず、`scripts/agent/cloud-ru
 
 ## バグの扱い
 
-不具合対応は **先に GitHub Issue を作り、記録を残してから** 修正 PR に進む（口頭やチャットだけで直さない）。
+不具合対応は **先に GitHub Issue を作り、記録を残してから** 修正 PR に進む（口頭やチャットだけで直さない）。手順の詳細は `.agents/skills/create-issue/SKILL.md`。
 
 1. 既存 Issue を検索し、無ければ `gh issue create` で新規作成する（ラベル `bug`、領域 `area:*`、優先度 `P1`/`P2`/`P3`、Milestone を付ける）
 2. 本文に再現手順・受け入れ条件・原因仮説（分かれば）を書く。チャットでの調査結果もここに要約する

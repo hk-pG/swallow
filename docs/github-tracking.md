@@ -14,7 +14,7 @@ Cursor 非依存。人が GitHub 上で読む。入口は [HANDOFF.md](./HANDOFF
 | 進行状況   | **Projects（ボード）**                                                     | Todo / In progress / Done（任意。Milestone+Label でも可）                  |
 | 入口       | リポ [`docs/roadmap.md`](./roadmap.md) / [`docs/HANDOFF.md`](./HANDOFF.md) | 人が最初に開く。詳細は Milestone/Issue へ                                  |
 
-バグ対応の手順は [`AGENTS.md`](../AGENTS.md) の「バグの扱い」を正とする。チャットや PR だけで直さず、再現・受け入れ条件・原因仮説を Issue 本文に残す。
+バグ対応の手順は [`AGENTS.md`](../AGENTS.md) の「バグの扱い」を正とする。チャットや PR だけで直さず、再現・受け入れ条件・原因仮説を Issue 本文に残す。Agent が Issue を新規作成するときは [`.agents/skills/create-issue/SKILL.md`](../.agents/skills/create-issue/SKILL.md)、作成済み Issue を PR にするときは [`.agents/skills/issue-to-pr/SKILL.md`](../.agents/skills/issue-to-pr/SKILL.md)。
 
 Cursor Project の notes / Context は当日の作業メモのみ。引き継ぎや週次確認の正本にはしない。
 
