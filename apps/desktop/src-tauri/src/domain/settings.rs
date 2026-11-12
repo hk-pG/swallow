@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::io;
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 
 pub const SETTINGS_FILE: &str = "settings.json";
@@ -20,6 +20,22 @@ pub enum ItemViewMode {
     List,
 }
 
+/// Mirrors `ThemeId` in `packages/shared`. Only ink is offered.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum ThemeId {
+    Ink,
+}
+
+/// Mirrors `ColorScheme` in `packages/shared`.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum ColorScheme {
+    System,
+    Light,
+    Dark,
+}
+
 /// Mirrors `AppearanceSettings` in `packages/shared/src/settings.ts`.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 #[serde(rename_all = "camelCase", default)]
@@ -28,6 +44,18 @@ pub struct AppearanceSettings {
     pub item_view_mode: Option<ItemViewMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub thumbnail_size_index: Option<i32>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "deserialize_theme_id"
+    )]
+    pub theme_id: Option<ThemeId>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "deserialize_color_scheme"
+    )]
+    pub color_scheme: Option<ColorScheme>,
     #[serde(flatten)]
     pub extra: BTreeMap<String, Value>,
 }
@@ -38,6 +66,10 @@ pub struct AppearanceSettings {
 pub struct AppearanceSettingsPatch {
     pub item_view_mode: Option<ItemViewMode>,
     pub thumbnail_size_index: Option<i32>,
+    #[serde(default, deserialize_with = "deserialize_theme_id")]
+    pub theme_id: Option<ThemeId>,
+    #[serde(default, deserialize_with = "deserialize_color_scheme")]
+    pub color_scheme: Option<ColorScheme>,
     #[serde(flatten)]
     pub extra: BTreeMap<String, Value>,
 }
@@ -198,9 +230,38 @@ fn merge_appearance_settings(base: &mut AppearanceSettings, patch: AppearanceSet
     if let Some(thumbnail_size_index) = patch.thumbnail_size_index {
         base.thumbnail_size_index = Some(thumbnail_size_index);
     }
+    if let Some(theme_id) = patch.theme_id {
+        base.theme_id = Some(theme_id);
+    }
+    if let Some(color_scheme) = patch.color_scheme {
+        base.color_scheme = Some(color_scheme);
+    }
     for (key, value) in patch.extra {
         base.extra.insert(key, value);
     }
+}
+
+/// Missing stays unset. Any present value is ink, so an unknown id cannot reject the file.
+fn deserialize_theme_id<'de, D>(deserializer: D) -> Result<Option<ThemeId>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let present = Option::<Value>::deserialize(deserializer)?.is_some();
+    Ok(present.then_some(ThemeId::Ink))
+}
+
+/// Missing or non-string stays unset. Any other string, including unknown names, is system.
+fn deserialize_color_scheme<'de, D>(deserializer: D) -> Result<Option<ColorScheme>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = Option::<Value>::deserialize(deserializer)?;
+    Ok(match value.as_ref().and_then(Value::as_str) {
+        None => None,
+        Some("light") => Some(ColorScheme::Light),
+        Some("dark") => Some(ColorScheme::Dark),
+        Some(_) => Some(ColorScheme::System),
+    })
 }
 
 #[cfg(test)]
@@ -417,5 +478,125 @@ mod tests {
         let reloaded = SettingsDocument::load(&path).settings.appearance;
         assert_eq!(reloaded.item_view_mode, Some(ItemViewMode::Grid));
         assert_eq!(reloaded.thumbnail_size_index, Some(1));
+    }
+
+    #[test]
+    fn appearance_without_theme_fields_keeps_existing_view_settings() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join(SETTINGS_FILE);
+        fs::write(
+            &path,
+            r#"{"version":1,"appearance":{"itemViewMode":"list","thumbnailSizeIndex":3}}"#,
+        )
+        .unwrap();
+
+        let appearance = SettingsDocument::load(&path).settings.appearance;
+        assert_eq!(appearance.item_view_mode, Some(ItemViewMode::List));
+        assert_eq!(appearance.thumbnail_size_index, Some(3));
+        assert_eq!(appearance.theme_id, None);
+        assert_eq!(appearance.color_scheme, None);
+        assert_eq!(
+            SettingsDocument::load(&path).settings.version,
+            SETTINGS_VERSION
+        );
+    }
+
+    #[test]
+    fn theme_id_and_color_scheme_round_trip_without_bumping_version() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join(SETTINGS_FILE);
+        let mut doc = SettingsDocument {
+            settings: Settings::default(),
+            raw: empty_object(),
+        };
+        doc.apply_patch(SettingsPatch {
+            appearance: Some(AppearanceSettingsPatch {
+                theme_id: Some(ThemeId::Ink),
+                color_scheme: Some(ColorScheme::Dark),
+                ..Default::default()
+            }),
+            ..Default::default()
+        });
+        assert_eq!(doc.settings.version, SETTINGS_VERSION);
+        doc.save(&path).unwrap();
+
+        let loaded = SettingsDocument::load(&path).settings;
+        assert_eq!(loaded.version, SETTINGS_VERSION);
+        assert_eq!(loaded.appearance.theme_id, Some(ThemeId::Ink));
+        assert_eq!(loaded.appearance.color_scheme, Some(ColorScheme::Dark));
+        assert_eq!(
+            serde_json::to_value(&loaded.appearance).unwrap(),
+            serde_json::json!({
+                "themeId": "ink",
+                "colorScheme": "dark"
+            })
+        );
+    }
+
+    #[test]
+    fn unknown_theme_and_scheme_do_not_reject_the_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join(SETTINGS_FILE);
+        fs::write(
+            &path,
+            r#"{"recentLibraries":["/a"],"appearance":{"itemViewMode":"list","themeId":"paper","colorScheme":"blue","future":1}}"#,
+        )
+        .unwrap();
+
+        let appearance = SettingsDocument::load(&path).settings.appearance;
+        assert_eq!(
+            SettingsDocument::load(&path).settings.recent_libraries,
+            ["/a"]
+        );
+        assert_eq!(appearance.item_view_mode, Some(ItemViewMode::List));
+        assert_eq!(appearance.theme_id, Some(ThemeId::Ink));
+        assert_eq!(appearance.color_scheme, Some(ColorScheme::System));
+        assert_eq!(appearance.extra.get("future"), Some(&serde_json::json!(1)));
+    }
+
+    #[test]
+    fn appearance_patch_keeps_theme_when_only_the_view_changes() {
+        let mut doc = SettingsDocument {
+            settings: Settings {
+                appearance: AppearanceSettings {
+                    theme_id: Some(ThemeId::Ink),
+                    color_scheme: Some(ColorScheme::Light),
+                    item_view_mode: Some(ItemViewMode::List),
+                    ..AppearanceSettings::default()
+                },
+                ..Settings::default()
+            },
+            raw: empty_object(),
+        };
+        doc.apply_patch(SettingsPatch {
+            appearance: Some(AppearanceSettingsPatch {
+                thumbnail_size_index: Some(4),
+                ..Default::default()
+            }),
+            ..Default::default()
+        });
+        assert_eq!(doc.settings.appearance.theme_id, Some(ThemeId::Ink));
+        assert_eq!(
+            doc.settings.appearance.color_scheme,
+            Some(ColorScheme::Light)
+        );
+        assert_eq!(
+            doc.settings.appearance.item_view_mode,
+            Some(ItemViewMode::List)
+        );
+        assert_eq!(doc.settings.appearance.thumbnail_size_index, Some(4));
+
+        doc.apply_patch(SettingsPatch {
+            appearance: Some(AppearanceSettingsPatch {
+                color_scheme: Some(ColorScheme::System),
+                ..Default::default()
+            }),
+            ..Default::default()
+        });
+        assert_eq!(doc.settings.appearance.theme_id, Some(ThemeId::Ink));
+        assert_eq!(
+            doc.settings.appearance.color_scheme,
+            Some(ColorScheme::System)
+        );
     }
 }

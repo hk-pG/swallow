@@ -23,6 +23,7 @@ export function AppLayoutInspector({
 
   return (
     <InspectorPane
+      appearance={library.appearance}
       selectedCount={itemBrowser.selectedCount}
       selectedItems={selectedItems}
       selected={itemBrowser.selected}

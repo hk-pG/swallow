@@ -1,6 +1,8 @@
-export const DOCUMENT_THEME_ID = "ink" as const;
+import { DEFAULT_THEME_ID, type ResolvedAppearance, resolveDocumentTheme } from "@swallow/shared";
 
-export type DocumentAppearance = "light" | "dark";
+export const DOCUMENT_THEME_ID = DEFAULT_THEME_ID;
+
+export type DocumentAppearance = ResolvedAppearance;
 
 const SETTLING_CLASS = "swallow-theme-settling";
 const SETTLING_STYLE_ATTR = "data-swallow-theme-settling";
@@ -11,16 +13,38 @@ export interface ColorSchemeMedia {
   removeEventListener(type: "change", listener: () => void): void;
 }
 
-/** No saved appearance yet. Map only the OS prefers-color-scheme onto light or dark. */
+export interface DocumentThemeChoice {
+  themeId?: unknown;
+  colorScheme?: unknown;
+}
+
+interface Installation {
+  media: ColorSchemeMedia;
+  root: HTMLElement;
+  choice: DocumentThemeChoice;
+  onChange: () => void;
+}
+
+let installation: Installation | null = null;
+
+/** Map the OS scheme onto light or dark. `system` uses this; a forced scheme does not. */
 export function appearanceFromPrefersDark(prefersDark: boolean): DocumentAppearance {
-  return prefersDark ? "dark" : "light";
+  return resolveDocumentTheme({
+    themeId: undefined,
+    colorScheme: "system",
+    prefersDark,
+  }).appearance;
 }
 
 /**
  * Drop transitions while the attributes change so colors do not fade.
  * The class and the style element are gone when this returns.
  */
-export function applyDocumentTheme(root: HTMLElement, appearance: DocumentAppearance): void {
+export function applyDocumentTheme(
+  root: HTMLElement,
+  appearance: DocumentAppearance,
+  themeId: string = DOCUMENT_THEME_ID,
+): void {
   const doc = root.ownerDocument;
   const head = doc?.head ?? null;
   const style = doc && head ? doc.createElement("style") : null;
@@ -30,7 +54,7 @@ export function applyDocumentTheme(root: HTMLElement, appearance: DocumentAppear
     head.append(style);
     root.classList.add(SETTLING_CLASS);
   }
-  root.setAttribute("data-theme", DOCUMENT_THEME_ID);
+  root.setAttribute("data-theme", themeId);
   root.setAttribute("data-appearance", appearance);
   if (style) {
     void root.offsetWidth;
@@ -39,17 +63,47 @@ export function applyDocumentTheme(root: HTMLElement, appearance: DocumentAppear
   }
 }
 
-/** Subscribe to the OS scheme and set ink's two attributes. Returns an unsubscribe. */
+function applyInstallation(current: Installation): void {
+  const resolved = resolveDocumentTheme({
+    themeId: current.choice.themeId,
+    colorScheme: current.choice.colorScheme,
+    prefersDark: current.media.matches,
+  });
+  applyDocumentTheme(current.root, resolved.appearance, resolved.themeId);
+}
+
+/**
+ * Subscribe to the OS scheme and paint `data-theme` / `data-appearance`.
+ * A missing choice is ink + system. Returns an unsubscribe.
+ */
 export function installDocumentTheme(
   media: ColorSchemeMedia,
   root: HTMLElement = document.documentElement,
 ): () => void {
-  const apply = () => {
-    applyDocumentTheme(root, appearanceFromPrefersDark(media.matches));
+  if (installation) {
+    installation.media.removeEventListener("change", installation.onChange);
+  }
+  const next: Installation = {
+    media,
+    root,
+    choice: {},
+    onChange: () => {},
   };
-  apply();
-  media.addEventListener("change", apply);
+  next.onChange = () => {
+    applyInstallation(next);
+  };
+  installation = next;
+  next.onChange();
+  media.addEventListener("change", next.onChange);
   return () => {
-    media.removeEventListener("change", apply);
+    media.removeEventListener("change", next.onChange);
+    if (installation === next) installation = null;
   };
+}
+
+/** Update the saved choice on the active installation. No-op before install. */
+export function setDocumentThemeChoice(choice: DocumentThemeChoice): void {
+  if (!installation) return;
+  installation.choice = choice;
+  installation.onChange();
 }

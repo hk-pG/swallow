@@ -33,6 +33,10 @@ describe("LibraryToolbar", () => {
           itemView: { itemViewMode: "grid", thumbnailSizeIndex: 1 },
           setItemViewMode: () => {},
           setThumbnailSizeIndex: () => {},
+          themeId: "ink",
+          colorScheme: "system",
+          setThemeId: () => {},
+          setColorScheme: () => {},
         }}
         quickLookDisabled={false}
         onQuickLook={() => {}}
@@ -43,6 +47,8 @@ describe("LibraryToolbar", () => {
     );
     expect(html).toContain('placeholder="名前・タグ・注釈で検索"');
     expect(html).toContain("ファイル取り込み");
+    expect(html).toContain("外観");
+    expect(html).toContain("インク");
   });
 });
 
@@ -87,6 +93,15 @@ describe("InspectorPane", () => {
   it("shows multi-select bulk inspector", () => {
     const html = renderToStaticMarkup(
       <InspectorPane
+        appearance={{
+          itemView: { itemViewMode: "grid", thumbnailSizeIndex: 1 },
+          setItemViewMode: () => {},
+          setThumbnailSizeIndex: () => {},
+          themeId: "ink",
+          colorScheme: "dark",
+          setThemeId: () => {},
+          setColorScheme: () => {},
+        }}
         selectedCount={2}
         selectedItems={sampleItems}
         selected={null}
@@ -112,6 +127,8 @@ describe("InspectorPane", () => {
     expect(html).toContain("shared");
     expect(html).toContain("other");
     expect(html).toContain("選択中すべてにタグを追加");
+    expect(html).toContain("表示設定");
+    expect(html).toContain("インク");
   });
 });
 

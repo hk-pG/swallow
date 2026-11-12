@@ -5,6 +5,7 @@ import {
   type ColorSchemeMedia,
   DOCUMENT_THEME_ID,
   installDocumentTheme,
+  setDocumentThemeChoice,
 } from "./documentTheme";
 
 function mediaStub(matches: boolean): ColorSchemeMedia & {
@@ -100,6 +101,36 @@ describe("installDocumentTheme", () => {
     media.emit();
     expect(root.getAttribute("data-appearance")).toBe("dark");
 
+    root.remove();
+  });
+
+  it("keeps a forced scheme and falls unknown theme ids back to ink", () => {
+    const root = document.createElement("div");
+    document.body.append(root);
+    const media = mediaStub(false);
+    const uninstall = installDocumentTheme(media, root);
+
+    setDocumentThemeChoice({ themeId: "paper", colorScheme: "dark" });
+    expect(root.getAttribute("data-theme")).toBe("ink");
+    expect(root.getAttribute("data-appearance")).toBe("dark");
+
+    media.matches = true;
+    media.emit();
+    expect(root.getAttribute("data-appearance")).toBe("dark");
+
+    setDocumentThemeChoice({ themeId: "ink", colorScheme: "light" });
+    media.matches = true;
+    media.emit();
+    expect(root.getAttribute("data-theme")).toBe(DOCUMENT_THEME_ID);
+    expect(root.getAttribute("data-appearance")).toBe("light");
+
+    setDocumentThemeChoice({ themeId: "ink", colorScheme: "system" });
+    media.emit();
+    expect(root.getAttribute("data-appearance")).toBe("dark");
+
+    uninstall();
+    setDocumentThemeChoice({ colorScheme: "light" });
+    expect(root.getAttribute("data-appearance")).toBe("dark");
     root.remove();
   });
 });
