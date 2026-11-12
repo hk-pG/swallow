@@ -59,7 +59,7 @@ describe("useAppearanceSettings", () => {
         themeId: "paper",
         colorScheme: "dark",
       },
-    } as unknown as Settings);
+    });
     const media = mediaStub(false);
     uninstall = installDocumentTheme(media, root);
 
@@ -70,8 +70,8 @@ describe("useAppearanceSettings", () => {
       expect(result.current.itemView.itemViewMode).toBe("list");
       expect(root.getAttribute("data-appearance")).toBe("dark");
     });
-    expect(root.getAttribute("data-theme")).toBe("ink");
-    expect(result.current.themeId).toBe("ink");
+    expect(root.getAttribute("data-theme")).toBe("paper");
+    expect(result.current.themeId).toBe("paper");
 
     media.matches = true;
     media.emit();
@@ -90,10 +90,40 @@ describe("useAppearanceSettings", () => {
     expect(updateSettings).toHaveBeenCalledWith({ appearance: { colorScheme: "system" } });
 
     act(() => {
-      result.current.setThemeId("ink");
+      result.current.setThemeId("slate");
     });
+    expect(root.getAttribute("data-theme")).toBe("slate");
+    expect(result.current.colorScheme).toBe("system");
+    expect(updateSettings).toHaveBeenCalledWith({ appearance: { themeId: "slate" } });
+
+    act(() => {
+      result.current.setThemeId("paper");
+    });
+    expect(root.getAttribute("data-theme")).toBe("paper");
+    expect(root.getAttribute("data-appearance")).toBe("dark");
+    expect(updateSettings).toHaveBeenCalledWith({ appearance: { themeId: "paper" } });
+  });
+
+  it("falls an unknown saved theme back to ink without changing the scheme", async () => {
+    getSettings.mockResolvedValue({
+      ...DEFAULT_SETTINGS,
+      appearance: {
+        ...DEFAULT_SETTINGS.appearance,
+        themeId: "canvas" as Settings["appearance"]["themeId"],
+        colorScheme: "light",
+      },
+    });
+    const media = mediaStub(true);
+    uninstall = installDocumentTheme(media, root);
+
+    const { result } = renderHook(() => useAppearanceSettings());
+
+    await waitFor(() => {
+      expect(result.current.colorScheme).toBe("light");
+    });
+    expect(result.current.themeId).toBe("ink");
     expect(root.getAttribute("data-theme")).toBe("ink");
-    expect(updateSettings).toHaveBeenCalledWith({ appearance: { themeId: "ink" } });
+    expect(root.getAttribute("data-appearance")).toBe("light");
   });
 
   it("treats a settings file without theme fields as ink and system", async () => {

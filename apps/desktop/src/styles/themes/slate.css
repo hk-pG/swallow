@@ -1,0 +1,31 @@
+/*
+ * Slate. Surface and elevated colors stay opaque.
+ * Native select options paint --color-surface directly.
+ * Elevated is a step away from the surface: darker in light, lighter in dark.
+ */
+
+[data-theme="slate"][data-appearance="light"] {
+  color-scheme: light;
+  --color-label: #1a2330;
+  --color-tint: #2f6f8f;
+  --color-danger: #c4453c;
+  --color-star: #d09a10;
+  --color-surface: #f3f5f7;
+  --color-surface-text: #1a2330;
+  --color-elevated: #d7e0e7;
+  --color-elevated-text: #1a2330;
+  --sidebar-bg: #e4eaef;
+}
+
+[data-theme="slate"][data-appearance="dark"] {
+  color-scheme: dark;
+  --color-label: #e6edf3;
+  --color-tint: #7eb6d6;
+  --color-danger: #ff7b72;
+  --color-star: #e3b341;
+  --color-surface: #151b22;
+  --color-surface-text: #e6edf3;
+  --color-elevated: #24313c;
+  --color-elevated-text: #e6edf3;
+  --sidebar-bg: #10161c;
+}

@@ -20,11 +20,13 @@ pub enum ItemViewMode {
     List,
 }
 
-/// Mirrors `ThemeId` in `packages/shared`. Only ink is offered.
+/// Mirrors `ThemeId` in `packages/shared`.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum ThemeId {
     Ink,
+    Paper,
+    Slate,
 }
 
 /// Mirrors `ColorScheme` in `packages/shared`.
@@ -241,13 +243,18 @@ fn merge_appearance_settings(base: &mut AppearanceSettings, patch: AppearanceSet
     }
 }
 
-/// Missing stays unset. Any present value is ink, so an unknown id cannot reject the file.
+/// Missing stays unset. Known ids are kept. Any other present value is ink,
+/// so an unknown id cannot reject the file.
 fn deserialize_theme_id<'de, D>(deserializer: D) -> Result<Option<ThemeId>, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let present = Option::<Value>::deserialize(deserializer)?.is_some();
-    Ok(present.then_some(ThemeId::Ink))
+    let value = Option::<Value>::deserialize(deserializer)?;
+    Ok(value.map(|value| match value.as_str() {
+        Some("paper") => ThemeId::Paper,
+        Some("slate") => ThemeId::Slate,
+        _ => ThemeId::Ink,
+    }))
 }
 
 /// Missing or non-string stays unset. Any other string, including unknown names, is system.
@@ -539,7 +546,7 @@ mod tests {
         let path = dir.path().join(SETTINGS_FILE);
         fs::write(
             &path,
-            r#"{"recentLibraries":["/a"],"appearance":{"itemViewMode":"list","themeId":"paper","colorScheme":"blue","future":1}}"#,
+            r#"{"recentLibraries":["/a"],"appearance":{"itemViewMode":"list","themeId":"canvas","colorScheme":"blue","future":1}}"#,
         )
         .unwrap();
 
@@ -559,7 +566,7 @@ mod tests {
         let mut doc = SettingsDocument {
             settings: Settings {
                 appearance: AppearanceSettings {
-                    theme_id: Some(ThemeId::Ink),
+                    theme_id: Some(ThemeId::Paper),
                     color_scheme: Some(ColorScheme::Light),
                     item_view_mode: Some(ItemViewMode::List),
                     ..AppearanceSettings::default()
@@ -575,7 +582,7 @@ mod tests {
             }),
             ..Default::default()
         });
-        assert_eq!(doc.settings.appearance.theme_id, Some(ThemeId::Ink));
+        assert_eq!(doc.settings.appearance.theme_id, Some(ThemeId::Paper));
         assert_eq!(
             doc.settings.appearance.color_scheme,
             Some(ColorScheme::Light)
@@ -593,10 +600,47 @@ mod tests {
             }),
             ..Default::default()
         });
-        assert_eq!(doc.settings.appearance.theme_id, Some(ThemeId::Ink));
+        assert_eq!(doc.settings.appearance.theme_id, Some(ThemeId::Paper));
         assert_eq!(
             doc.settings.appearance.color_scheme,
             Some(ColorScheme::System)
         );
+    }
+
+    #[test]
+    fn paper_and_slate_round_trip_without_bumping_version() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join(SETTINGS_FILE);
+        for (theme_id, color_scheme, theme_json, scheme_json) in [
+            (ThemeId::Paper, ColorScheme::Light, "paper", "light"),
+            (ThemeId::Slate, ColorScheme::Dark, "slate", "dark"),
+        ] {
+            let mut doc = SettingsDocument {
+                settings: Settings::default(),
+                raw: empty_object(),
+            };
+            doc.apply_patch(SettingsPatch {
+                appearance: Some(AppearanceSettingsPatch {
+                    theme_id: Some(theme_id),
+                    color_scheme: Some(color_scheme),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            });
+            assert_eq!(doc.settings.version, SETTINGS_VERSION);
+            doc.save(&path).unwrap();
+
+            let loaded = SettingsDocument::load(&path).settings;
+            assert_eq!(loaded.version, SETTINGS_VERSION);
+            assert_eq!(loaded.appearance.theme_id, Some(theme_id));
+            assert_eq!(loaded.appearance.color_scheme, Some(color_scheme));
+            assert_eq!(
+                serde_json::to_value(&loaded.appearance).unwrap(),
+                serde_json::json!({
+                    "themeId": theme_json,
+                    "colorScheme": scheme_json
+                })
+            );
+        }
     }
 }

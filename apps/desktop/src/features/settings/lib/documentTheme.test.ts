@@ -111,6 +111,14 @@ describe("installDocumentTheme", () => {
     const uninstall = installDocumentTheme(media, root);
 
     setDocumentThemeChoice({ themeId: "paper", colorScheme: "dark" });
+    expect(root.getAttribute("data-theme")).toBe("paper");
+    expect(root.getAttribute("data-appearance")).toBe("dark");
+
+    setDocumentThemeChoice({ themeId: "slate", colorScheme: "light" });
+    expect(root.getAttribute("data-theme")).toBe("slate");
+    expect(root.getAttribute("data-appearance")).toBe("light");
+
+    setDocumentThemeChoice({ themeId: "canvas", colorScheme: "dark" });
     expect(root.getAttribute("data-theme")).toBe("ink");
     expect(root.getAttribute("data-appearance")).toBe("dark");
 
