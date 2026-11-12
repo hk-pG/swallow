@@ -127,6 +127,7 @@ gh issue list --repo hk-pG/swallow --milestone backlog --state open
 | Issue 作成（例外）       | [`.agents/skills/create-issue/SKILL.md`](../.agents/skills/create-issue/SKILL.md)（「Issue にして」明示時／実装途中で Issue 無し）    |
 | 独立 PR レビュー         | [`.agents/skills/code-review/SKILL.md`](../.agents/skills/code-review/SKILL.md)（実装文脈なし・Standards/Spec 二軸）                  |
 | 差分セキュリティレビュー | [`.agents/skills/differential-review/SKILL.md`](../.agents/skills/differential-review/SKILL.md)（HTTP/Origin/パス差分・ToB 外部参照） |
+| Context7（Tauri v2）     | [`docs/context7-mcp.md`](./context7-mcp.md)、[`.cursor/mcp.json.example`](../.cursor/mcp.json.example)                                |
 | コードベース構成・境界   | [AGENTS.md の構成とモジュール境界](../AGENTS.md#モジュール境界フロント)（機能ベース `app/`・`features/*`・Tauri `commands/mod.rs`）   |
 | 分類スクリプト           | [`scripts/agent/github-taxonomy-setup.sh`](../scripts/agent/github-taxonomy-setup.sh)（冪等）                                         |
 | α トラッカー Issue       | [#45](https://github.com/hk-pG/swallow/issues/45)                                                                                     |
