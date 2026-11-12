@@ -1,6 +1,8 @@
 /** Themes the switcher may offer. Colors stay in CSS. */
 export const THEME_CATALOG = [
   { id: "ink", label: "インク", description: "無彩色に近い既定" },
+  { id: "paper", label: "紙", description: "暖かい紙の資料庫" },
+  { id: "slate", label: "スレート", description: "寒い作業机" },
 ] as const;
 
 export type ThemeId = (typeof THEME_CATALOG)[number]["id"];

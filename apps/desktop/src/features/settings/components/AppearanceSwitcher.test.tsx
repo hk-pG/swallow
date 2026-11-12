@@ -7,7 +7,7 @@ afterEach(() => {
 });
 
 describe("AppearanceSwitcher", () => {
-  it("offers system, light, dark, and only ink", () => {
+  it("offers system, light, and dark, plus ink, paper, and slate", () => {
     const html = render(
       <AppearanceSwitcher
         themeId="ink"
@@ -22,14 +22,15 @@ describe("AppearanceSwitcher", () => {
     expect(html).toContain("ライト");
     expect(html).toContain("ダーク");
     expect(html).toContain("インク");
-    expect(html).not.toContain("紙");
-    expect(html).not.toContain("スレート");
+    expect(html).toContain("紙");
+    expect(html).toContain("スレート");
     expect(screen.getByRole("button", { name: "システム" }).getAttribute("aria-pressed")).toBe(
       "true",
     );
     expect(screen.getByRole("button", { name: "インク" }).getAttribute("aria-pressed")).toBe(
       "true",
     );
+    expect(screen.getByRole("button", { name: "紙" }).getAttribute("aria-pressed")).toBe("false");
     expect(screen.getByRole("button", { name: "ダーク" }).getAttribute("aria-pressed")).toBe(
       "false",
     );
@@ -47,8 +48,10 @@ describe("AppearanceSwitcher", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: "ダーク" }));
-    fireEvent.click(screen.getByRole("button", { name: "インク" }));
+    fireEvent.click(screen.getByRole("button", { name: "紙" }));
+    fireEvent.click(screen.getByRole("button", { name: "スレート" }));
     expect(onColorSchemeChange).toHaveBeenCalledWith("dark");
-    expect(onThemeIdChange).toHaveBeenCalledWith("ink");
+    expect(onThemeIdChange).toHaveBeenNthCalledWith(1, "paper");
+    expect(onThemeIdChange).toHaveBeenNthCalledWith(2, "slate");
   });
 });

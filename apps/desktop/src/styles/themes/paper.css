@@ -1,0 +1,31 @@
+/*
+ * Paper. Surface and elevated colors stay opaque.
+ * Native select options paint --color-surface directly.
+ * Elevated is a step away from the surface: darker in light, lighter in dark.
+ */
+
+[data-theme="paper"][data-appearance="light"] {
+  color-scheme: light;
+  --color-label: #2c2416;
+  --color-tint: #a34b2c;
+  --color-danger: #a33b32;
+  --color-star: #c4920a;
+  --color-surface: #f7f3ea;
+  --color-surface-text: #2c2416;
+  --color-elevated: #e6dcc8;
+  --color-elevated-text: #2c2416;
+  --sidebar-bg: #efe8d8;
+}
+
+[data-theme="paper"][data-appearance="dark"] {
+  color-scheme: dark;
+  --color-label: #f3ead7;
+  --color-tint: #e09a6a;
+  --color-danger: #ff8a7a;
+  --color-star: #e3b341;
+  --color-surface: #231e18;
+  --color-surface-text: #f3ead7;
+  --color-elevated: #342c24;
+  --color-elevated-text: #f3ead7;
+  --sidebar-bg: #1c1814;
+}
