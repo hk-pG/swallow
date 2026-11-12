@@ -4,6 +4,7 @@ export * from "./folders";
 export * from "./import";
 export * from "./items";
 export * from "./library";
+export * from "./preview";
 export * from "./settings";
 export * from "./smart-folders";
 export * from "./tags";

@@ -93,6 +93,17 @@ Agent onboarding details: [`docs/HANDOFF.md`](docs/HANDOFF.md) §6.
 
 Tauri does not support cross-compilation, so macOS and Windows builds run on runners for those operating systems.
 
+## Desktop preview (Quick Look)
+
+| Kind               | Import extensions                                 | Grid thumbnail                     | Quick Look                         |
+| ------------------ | ------------------------------------------------- | ---------------------------------- | ---------------------------------- |
+| Raster + SVG       | `png`, `jpg`, `jpeg`, `webp`, `gif`, `bmp`, `svg` | Generated (`thumbnail.png`) or SVG | Image (`<img>`, fit / actual size) |
+| Video              | `mp4`, `webm`, `mov`                              | Placeholder (no frame extract yet) | HTML5 `<video controls>`           |
+| Font               | `ttf`, `otf`, `woff`, `woff2`                     | Placeholder                        | Sample text via `FontFace`         |
+| Other (e.g. `pdf`) | `pdf` import only                                 | Placeholder                        | Unsupported message                |
+
+Constants live in `packages/shared` (`THUMBNAIL_EXTS`, `VIDEO_PREVIEW_EXTS`, `FONT_PREVIEW_EXTS`, `SUPPORTED_IMPORT_EXTENSIONS`).
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE). The Rust workspace uses the same license (`Cargo.toml` `workspace.package.license`).

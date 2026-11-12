@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { hasThumbnail, itemDirPath, originalImageUrl, thumbnailUrl } from "./thumbnail";
+import {
+  hasThumbnail,
+  itemDirPath,
+  itemFullPreviewUrl,
+  originalImageUrl,
+  thumbnailUrl,
+} from "./thumbnail";
 
 describe("hasThumbnail", () => {
   it("accepts supported image extensions case-insensitively", () => {
@@ -24,8 +30,9 @@ describe("itemDirPath", () => {
   });
 });
 
-describe("originalImageUrl", () => {
+describe("itemFullPreviewUrl", () => {
   it("appends full=1 to the thumbnail URL", () => {
-    expect(originalImageUrl("/lib", "01J")).toBe(`${thumbnailUrl("/lib", "01J")}?full=1`);
+    expect(itemFullPreviewUrl("/lib", "01J")).toBe(`${thumbnailUrl("/lib", "01J")}?full=1`);
+    expect(originalImageUrl("/lib", "01J")).toBe(itemFullPreviewUrl("/lib", "01J"));
   });
 });

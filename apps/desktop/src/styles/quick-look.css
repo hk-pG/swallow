@@ -109,3 +109,27 @@
   padding: 10px 16px;
   border-top: 1px solid var(--border);
 }
+
+.quick-look-video-fit {
+  max-width: 100%;
+  max-height: min(70vh, 800px);
+}
+
+.quick-look-video-actual {
+  max-width: none;
+  max-height: none;
+}
+
+.quick-look-font-sample {
+  margin: 0;
+  max-width: min(100%, 56rem);
+  padding: 16px 20px;
+  white-space: pre-wrap;
+  text-align: center;
+  font-size: var(--font-title);
+  line-height: 1.5;
+  color: var(--color-surface-text);
+  border-radius: 8px;
+  border: 1px dashed var(--border);
+  background: color-mix(in srgb, currentColor 3%, transparent);
+}

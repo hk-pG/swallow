@@ -1,7 +1,60 @@
+import { hasQuickLookPreview, type ItemMetadata, resolveItemPreviewKind } from "@swallow/shared";
 import { type KeyboardEvent, useCallback, useEffect, useId, useState } from "react";
 import { formatResolution } from "../../../shared/format";
-import { hasThumbnail, originalImageUrl } from "../../items";
+import { ItemMediaPreview } from "../../items";
 import type { QuickLookScaleMode, QuickLookTarget } from "../lib/quickLook";
+
+interface QuickLookPreviewStageProps {
+  libraryPath: string;
+  item: ItemMetadata;
+  scaleMode: QuickLookScaleMode;
+  fileLabel: string;
+  previewable: boolean;
+  onFailedChange: (failed: boolean) => void;
+}
+
+function QuickLookPreviewStage({
+  libraryPath,
+  item,
+  scaleMode,
+  fileLabel,
+  previewable,
+  onFailedChange,
+}: QuickLookPreviewStageProps) {
+  const [loading, setLoading] = useState(previewable);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    onFailedChange(false);
+  }, [onFailedChange]);
+
+  const handlePreviewError = useCallback(() => {
+    setFailed(true);
+    onFailedChange(true);
+  }, [onFailedChange]);
+
+  if (failed) {
+    return <p className="quick-look-unsupported">プレビューを読み込めませんでした</p>;
+  }
+
+  return (
+    <>
+      {loading && previewable && (
+        <p className="quick-look-loading" aria-live="polite">
+          読み込み中…
+        </p>
+      )}
+      <ItemMediaPreview
+        libraryPath={libraryPath}
+        item={item}
+        scaleMode={scaleMode}
+        fileLabel={fileLabel}
+        onLoadingChange={setLoading}
+        onError={handlePreviewError}
+      />
+    </>
+  );
+}
 
 interface QuickLookProps {
   libraryPath: string;
@@ -25,10 +78,18 @@ export function QuickLook({
   const titleId = useId();
   const { item, playlist, index, isMultiSelection } = target;
   const fileName = `${item.name}.${item.ext}`;
-  const previewable = hasThumbnail(item.ext);
-  const src = previewable ? originalImageUrl(libraryPath, item.id) : null;
-  const [loading, setLoading] = useState(true);
-  const [failed, setFailed] = useState(false);
+  const previewKind = resolveItemPreviewKind(item.ext);
+  const previewable = hasQuickLookPreview(item.ext);
+  const supportsImageScale = previewKind === "image";
+  const [failedItemId, setFailedItemId] = useState<string | null>(null);
+  const previewFailed = failedItemId === item.id;
+
+  const handlePreviewFailedChange = useCallback(
+    (failed: boolean) => {
+      setFailedItemId(failed ? item.id : null);
+    },
+    [item.id],
+  );
 
   useEffect(() => {
     const onKeyDown = (e: globalThis.KeyboardEvent) => {
@@ -49,12 +110,12 @@ export function QuickLook({
 
   const onDialogKeyDown = useCallback(
     (e: KeyboardEvent<HTMLDivElement>) => {
-      if (e.key === " ") {
+      if (e.key === " " && supportsImageScale) {
         e.preventDefault();
         onScaleModeChange(scaleMode === "fit" ? "actual" : "fit");
       }
     },
-    [onScaleModeChange, scaleMode],
+    [onScaleModeChange, scaleMode, supportsImageScale],
   );
 
   const positionLabel = `${index + 1} / ${playlist.length}`;
@@ -88,7 +149,7 @@ export function QuickLook({
             <p className="quick-look-hint">{scopeHint}</p>
           </div>
           <div className="quick-look-actions">
-            {previewable && (
+            {supportsImageScale && previewable && !previewFailed && (
               <button
                 type="button"
                 className="text-button"
@@ -108,37 +169,15 @@ export function QuickLook({
             scaleMode === "actual" ? "quick-look-stage quick-look-stage-actual" : "quick-look-stage"
           }
         >
-          {!previewable ? (
-            <p className="quick-look-unsupported">
-              この形式（{item.ext.toUpperCase() || "不明"}
-              ）はクイックルックのプレビューに対応していません
-            </p>
-          ) : failed ? (
-            <p className="quick-look-unsupported">画像を読み込めませんでした</p>
-          ) : (
-            <>
-              {loading && (
-                <p className="quick-look-loading" aria-live="polite">
-                  読み込み中…
-                </p>
-              )}
-              <img
-                key={src ?? item.id}
-                className={
-                  scaleMode === "actual" ? "quick-look-image-actual" : "quick-look-image-fit"
-                }
-                src={src ?? undefined}
-                alt={fileName}
-                decoding="async"
-                draggable={false}
-                onLoad={() => setLoading(false)}
-                onError={() => {
-                  setLoading(false);
-                  setFailed(true);
-                }}
-              />
-            </>
-          )}
+          <QuickLookPreviewStage
+            key={item.id}
+            libraryPath={libraryPath}
+            item={item}
+            scaleMode={scaleMode}
+            fileLabel={fileName}
+            previewable={previewable}
+            onFailedChange={handlePreviewFailedChange}
+          />
         </div>
         {playlist.length > 1 && (
           <footer className="quick-look-footer">

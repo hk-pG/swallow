@@ -9,6 +9,10 @@ use std::sync::atomic::{AtomicU64, Ordering};
 /// Mirrors `THUMBNAIL_EXTS` in `packages/shared/src/library.ts`.
 const RASTER_EXTS: &[&str] = &["png", "jpg", "jpeg", "webp", "gif", "bmp"];
 const SVG_EXT: &str = "svg";
+/// Mirrors `VIDEO_PREVIEW_EXTS` in `packages/shared/src/preview/previewKind.ts`.
+const VIDEO_EXTS: &[&str] = &["mp4", "webm", "mov"];
+/// Mirrors `FONT_PREVIEW_EXTS` in `packages/shared/src/preview/previewKind.ts`.
+const FONT_EXTS: &[&str] = &["ttf", "otf", "woff", "woff2"];
 
 pub const THUMBNAIL_FILE: &str = "thumbnail.png";
 /// Longest side in pixels. Large enough for grid cells on HiDPI displays.
@@ -75,13 +79,53 @@ pub fn preview(item_dir: &Path) -> io::Result<Option<Preview>> {
 /// Resolves the original stored image for Quick Look, without downscaling.
 pub fn original_preview(item_dir: &Path) -> io::Result<Option<Preview>> {
     let item = item::read_item(item_dir)?;
-    let Some(mime) = image_mime(&item.ext) else {
+    let Some(mime) = full_preview_mime(&item.ext) else {
         return Ok(None);
     };
     Ok(Some(Preview {
         path: item::item_file(item_dir, &item)?,
         mime,
     }))
+}
+
+fn full_preview_mime(ext: &str) -> Option<&'static str> {
+    image_mime(ext)
+        .or_else(|| video_mime(ext))
+        .or_else(|| font_mime(ext))
+}
+
+fn video_mime(ext: &str) -> Option<&'static str> {
+    if !VIDEO_EXTS
+        .iter()
+        .any(|candidate| candidate.eq_ignore_ascii_case(ext))
+    {
+        return None;
+    }
+    if ext.eq_ignore_ascii_case("mp4") {
+        Some("video/mp4")
+    } else if ext.eq_ignore_ascii_case("webm") {
+        Some("video/webm")
+    } else {
+        Some("video/quicktime")
+    }
+}
+
+fn font_mime(ext: &str) -> Option<&'static str> {
+    if !FONT_EXTS
+        .iter()
+        .any(|candidate| candidate.eq_ignore_ascii_case(ext))
+    {
+        return None;
+    }
+    if ext.eq_ignore_ascii_case("ttf") {
+        Some("font/ttf")
+    } else if ext.eq_ignore_ascii_case("otf") {
+        Some("font/otf")
+    } else if ext.eq_ignore_ascii_case("woff") {
+        Some("font/woff")
+    } else {
+        Some("font/woff2")
+    }
 }
 
 fn image_mime(ext: &str) -> Option<&'static str> {
@@ -323,6 +367,39 @@ mod tests {
 
         let pdf_dir = write_item(library.path(), &sample_item("P", "doc", "pdf"));
         assert_eq!(original_preview(&pdf_dir).unwrap(), None);
+
+        let mp4 = sample_item("V", "clip", "mp4");
+        let mp4_dir = write_item(library.path(), &mp4);
+        fs::write(mp4_dir.join("clip.mp4"), b"fake-mp4").unwrap();
+        assert_eq!(
+            original_preview(&mp4_dir).unwrap(),
+            Some(Preview {
+                path: mp4_dir.join("clip.mp4"),
+                mime: "video/mp4"
+            })
+        );
+
+        let mov = sample_item("M", "take", "mov");
+        let mov_dir = write_item(library.path(), &mov);
+        fs::write(mov_dir.join("take.mov"), b"fake-mov").unwrap();
+        assert_eq!(
+            original_preview(&mov_dir).unwrap(),
+            Some(Preview {
+                path: mov_dir.join("take.mov"),
+                mime: "video/quicktime"
+            })
+        );
+
+        let woff2 = sample_item("F", "type", "woff2");
+        let font_dir = write_item(library.path(), &woff2);
+        fs::write(font_dir.join("type.woff2"), b"fake-font").unwrap();
+        assert_eq!(
+            original_preview(&font_dir).unwrap(),
+            Some(Preview {
+                path: font_dir.join("type.woff2"),
+                mime: "font/woff2"
+            })
+        );
     }
 
     #[test]

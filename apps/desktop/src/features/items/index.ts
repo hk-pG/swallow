@@ -1,3 +1,4 @@
+export { ItemMediaPreview, type ItemMediaPreviewScale } from "./components/ItemMediaPreview";
 export { LibraryToolbar } from "./components/LibraryToolbar";
 export { MainItemView } from "./components/MainItemView";
 export {
@@ -23,6 +24,7 @@ export {
 export {
   hasThumbnail,
   itemDirPath,
+  itemFullPreviewUrl,
   originalImageUrl,
   thumbnailUrl,
 } from "./lib/thumbnail";

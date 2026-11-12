@@ -1,14 +1,14 @@
 import type { ItemMetadata } from "../library/library";
 
 /** Lowercase, without the leading dot. Mirrors `SUPPORTED_EXTENSIONS` in `src-tauri/src/import.rs`. */
+import { FONT_PREVIEW_EXTS, VIDEO_PREVIEW_EXTS } from "../preview/previewKind";
+
+const BASE_IMPORT_EXTENSIONS = ["png", "jpg", "jpeg", "webp", "gif", "svg", "pdf"] as const;
+
 export const SUPPORTED_IMPORT_EXTENSIONS = [
-  "png",
-  "jpg",
-  "jpeg",
-  "webp",
-  "gif",
-  "svg",
-  "pdf",
+  ...BASE_IMPORT_EXTENSIONS,
+  ...VIDEO_PREVIEW_EXTS,
+  ...FONT_PREVIEW_EXTS,
 ] as const;
 
 export type ImportFailureReason = "unsupportedExtension" | "notFound" | "notAFile" | "io";
