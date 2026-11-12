@@ -8,6 +8,7 @@
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
+  --radius-xl: 12px;
   --radius-pill: 999px;
   --color-label: CanvasText;
   --color-secondary-label: color-mix(in srgb, currentColor 55%, transparent);
@@ -26,12 +27,18 @@
   --color-star: #f5b400;
   --color-surface: Canvas;
   --color-surface-text: CanvasText;
+  /* 見た目は地面と同じ。一段上げる色は、テーマファイルが後で入れる。 */
+  --color-elevated: var(--color-surface);
+  --color-elevated-text: var(--color-surface-text);
+  --color-overlay: color-mix(in srgb, var(--color-surface) 20%, black);
   --border: color-mix(in srgb, currentColor 15%, transparent);
   --border-strong: color-mix(in srgb, currentColor 26%, transparent);
   --color-separator: var(--border);
   --color-separator-strong: var(--border-strong);
   --shell-border: var(--color-separator-strong);
   --muted: var(--color-secondary-label);
+  --shadow-float: 0 8px 24px color-mix(in srgb, currentColor 20%, transparent);
+  --shadow-overlay: 0 16px 48px color-mix(in srgb, black 35%, transparent);
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;

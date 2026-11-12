@@ -200,9 +200,9 @@
   padding: 4px 0;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  color: inherit;
-  box-shadow: 0 8px 24px color-mix(in srgb, currentColor 20%, transparent);
+  background: var(--color-elevated);
+  color: var(--color-elevated-text);
+  box-shadow: var(--shadow-float);
 }
 
 .item-context-menu-item {

@@ -6,7 +6,8 @@
 
 色・余白・角丸・フォント・影・blur は **`tokens.css` のセマンティック変数だけ**を参照する。feature のコンポーネントに見た目の値を直書きしない。
 
-- **正本**: `tokens.css` の `:root` に定義する `--color-*`・`--space-*`・`--radius-*`・`--font-*` など
+- **正本**: `tokens.css` の `:root` に定義する `--color-*`・`--space-*`・`--radius-*`・`--font-*`・`--shadow-*` など
+- **浮いた面**: `--color-elevated` と `--color-elevated-text` は、いまは地面（`--color-surface`）と同じ値。`--color-overlay`・`--shadow-float`・`--shadow-overlay`・`--radius-xl` は Quick Look とメニューが使う。`data-theme` と `data-appearance` はまだ付けない
 - **消費**: 同ディレクトリの `layout.css`・`controls.css`・`items.css` などでは `var(--...)` または既存のセマンティッククラス経由で参照する
 - **React**: `features/` と `app/` のコンポーネントはセマンティック CSS クラスを使う。色や余白のリテラル、`style={{ fontSize: 12 }}` のような見た目プロパティの直書きは避ける（メニュー座標やサムネイル用 CSS 変数など、動的レイアウトだけは例外）
 - **テーマ切替**: 本ディレクトリではテーマ切替機構は持たない（将来トークン定義を差し替える余地は `tokens.css` に集約）
