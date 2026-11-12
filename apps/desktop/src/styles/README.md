@@ -6,17 +6,18 @@
 
 色・余白・角丸・フォント・影・blur は **`tokens.css` のセマンティック変数だけ**を参照する。feature のコンポーネントに見た目の値を直書きしない。
 
-- **正本**: `tokens.css` の `:root` に定義する `--color-*`・`--space-*`・`--radius-*`・`--font-*`・`--shadow-*` など
-- **浮いた面**: `--color-elevated` と `--color-elevated-text` は、いまは地面（`--color-surface`）と同じ値。`--color-overlay`・`--shadow-float`・`--shadow-overlay`・`--radius-xl` は Quick Look とメニューが使う。`data-theme` と `data-appearance` はまだ付けない
+- **正本**: 非色（`--space-*`・`--radius-*`・`--font-*`）と、属性が付く前の色のフォールバックは `tokens.css`。色の上書きは `themes/*.css`
+- **インク**: `themes/ink.css` が `[data-theme="ink"][data-appearance="light|dark"]` で同じセマンティック名へ具体色を入れる。起動時に OS を読んでこの二属性を付ける。設定の保存と切替 UI はまだ無い
+- **名前**: 既存のトークン名は維持する。`--muted` は `--color-secondary-label` の別名のまま。浮いた面は `--color-elevated` / `--color-elevated-text`。`--color-overlay`・`--shadow-float`・`--shadow-overlay`・`--radius-xl` は Quick Look とメニューが使う
 - **消費**: 同ディレクトリの `layout.css`・`controls.css`・`items.css` などでは `var(--...)` または既存のセマンティッククラス経由で参照する
 - **React**: `features/` と `app/` のコンポーネントはセマンティック CSS クラスを使う。色や余白のリテラル、`style={{ fontSize: 12 }}` のような見た目プロパティの直書きは避ける（メニュー座標やサムネイル用 CSS 変数など、動的レイアウトだけは例外）
-- **テーマ切替**: 本ディレクトリではテーマ切替機構は持たない（将来トークン定義を差し替える余地は `tokens.css` に集約）
 
 ## ファイル構成
 
 | ファイル         | 役割                                             |
 | ---------------- | ------------------------------------------------ |
-| `tokens.css`     | セマンティック変数の唯一の定義                   |
+| `tokens.css`     | 非色と、属性が付く前のインク色                   |
+| `themes/ink.css` | インクの light / dark。`themes/index.css` が読む |
 | `layout.css`     | シェル（サイドバー・インスペクタ・ツールバー枠） |
 | `controls.css`   | ボタン・ナビ行など共通コントロール               |
 | `sidebar.css`    | サイドバー・フォルダツリー・タグ UI              |
@@ -40,7 +41,7 @@
 
 `scripts/ci/style-token-boundaries.mjs`（`pnpm test` に含む）が次を検証する。
 
-1. `tokens.css` 以外の CSS に生の色リテラル（`#...`・`rgb()` など）が無いこと
+1. `tokens.css` と `styles/themes/*.css` 以外の CSS に生の色リテラル（`#...`・`rgb()` など）が無いこと
 2. `features/`・`app/` の TSX に生の色リテラルや、見た目プロパティを直書きした `style={{ ... }}` が無いこと
 
 詳細はリポジトリルートの `AGENTS.md`「スタイル／デザイントークン」を参照。

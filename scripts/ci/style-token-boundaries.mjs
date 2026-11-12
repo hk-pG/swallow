@@ -9,6 +9,11 @@ import { fileURLToPath } from "node:url";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const desktopSrc = path.join(repoRoot, "apps/desktop/src");
 const tokensCssRel = "styles/tokens.css";
+const themeCssRel = /^styles\/themes\/[^/]+\.css$/;
+
+function allowsColorLiterals(rel) {
+  return rel === tokensCssRel || themeCssRel.test(rel);
+}
 
 /** Matches raw color literals (#rgb, #rrggbb, functional colors). */
 export const COLOR_LITERAL_RE =
@@ -200,14 +205,14 @@ export function findCssViolations(options = {}) {
   const violations = [];
   for (const file of listFiles(root, (f) => f.endsWith(".css"))) {
     const rel = path.relative(root, file).replaceAll("\\", "/");
-    if (rel === tokensCssRel) continue;
+    if (allowsColorLiterals(rel)) continue;
     const source = readFileSync(file, "utf8");
     const stripped = stripComments(source);
     if (containsRawColorLiteral(stripped)) {
       violations.push({
         file: rel,
         rule: "css-color-literal",
-        message: "raw color literal in CSS (use tokens.css semantic variables)",
+        message: "raw color literal in CSS (use tokens.css or styles/themes/*.css)",
       });
     }
   }
