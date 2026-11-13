@@ -1,7 +1,7 @@
 # デスクトップの外観テーマ
 
-最終更新: 2026-11-12  
-対象: `apps/desktop` の見た目を、あとから差し替えられるようにする設計。この文書は設計だけであり、実装は別 PR に分ける。
+最終更新: 2026-11-13  
+対象: `apps/desktop` の外観テーマ。節 1〜3 は設計時点の記述（現行の事実は節 6 で上書き）。節 4〜5 は実装前の決定メモ（**すべて §5 で確定済み**）。節 6 は **main @ `531a804` の実装事実**（PR #169–#172）。節 7 は残作業。
 
 関連: [#78](https://github.com/hk-pG/swallow/issues/78)（Apple HIG の試験適用。オープンのまま、この設計では採用しない）、[#87](https://github.com/hk-pG/swallow/issues/87)（セマンティックトークン。クローズ済み）、[#89](https://github.com/hk-pG/swallow/issues/89)（HIG 試作の撤去。クローズ済み）。この文書は Issue をクローズしない。
 
@@ -20,12 +20,15 @@ Swallow のデスクトップで、外観を簡単に切り替えられるよう
 
 Tailwind、CSS Modules、CSS-in-JS は無い。Vite が読む素の CSS で、入口は `apps/desktop/src/app/main.tsx` が次を順に import する。
 
-| ファイル                                                                                         | 役割             |
-| ------------------------------------------------------------------------------------------------ | ---------------- |
-| `apps/desktop/src/styles/tokens.css`                                                             | 変数の定義       |
-| `controls.css` / `layout.css` / `sidebar.css` / `items.css` / `inspector.css` / `quick-look.css` | 領域ごとのクラス |
+| ファイル（`main.tsx` の import 順）                                                                               | 役割                                  |
+| ----------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `apps/desktop/src/styles/tokens.css`                                                                              | 非色・フォールバック色                |
+| `apps/desktop/src/styles/themes/index.css`                                                                        | 三テーマ（`ink` / `paper` / `slate`） |
+| `controls.css` / `layout.css` / `sidebar.css` / `items.css` / `inspector.css` / `settings.css` / `quick-look.css` | 領域ごとのクラス                      |
 
-ルールの正本は `apps/desktop/src/styles/README.md` とリポジトリの `AGENTS.md`「スタイル／デザイントークン」。色・余白・角丸・フォント・影・blur は `tokens.css` のセマンティック変数を参照する。`features/` と `app/` に見た目の直書きをしない。テーマ切替の仕組みは、いまのディレクトリには無い。
+ルールの正本は `apps/desktop/src/styles/README.md` とリポジトリの `AGENTS.md`「スタイル／デザイントークン」。色・余白・角丸・フォント・影・blur はセマンティック変数を参照する。`features/` と `app/` に見た目の直書きをしない。
+
+テーマ CSS は `apps/desktop/src/styles/themes/`（`ink.css` / `paper.css` / `slate.css` + `index.css`）。`document.documentElement` の `data-theme` と `data-appearance` で適用する（詳細は節 6）。
 
 境界は `scripts/ci/style-token-boundaries.mjs`（`pnpm test` に含まれる）が検査する。
 
@@ -58,18 +61,9 @@ Tailwind、CSS Modules、CSS-in-JS は無い。Vite が読む素の CSS で、�
 
 `:root` は `color-scheme: light dark`。フォントは `system-ui` 系。影と blur の変数は無い。
 
-### ダークモードは「OS 任せ」だけある
+### 外観の切替（実装済み・節 6 参照）
 
-切り替える UI は無い。`prefers-color-scheme` のルールも無い。設定の `appearance` にテーマ項目は無い。
-
-`color-scheme: light dark` だと、WebView は OS のライト/ダークに合わせて `Canvas` / `CanvasText` / `Highlight` を解決する。`currentColor` 由来の塗りと区切りは、その文字色に追従する。だから OS をダークにすると、シェルは暗い地面と明るい文字になる。
-
-これは設計されたダークテーマではない。
-
-- 危険色 `#d33` と星 `#f5b400` は両モードで同じ。暗い地面では星が強く、危険色のコントラストもモードごとに変わらない。
-- アクセントは OS の `Highlight` なので、macOS と Linux の WebKit で色が揃わない。
-- Quick Look のスクリムと影は `black` を混ぜている（`quick-look.css`）。ダークでも黒のまま。
-- コンポーネント側の `color-mix(in srgb, currentColor …)`（ホバー、ドラッグ中の枠、サムネの地）は比率が CSS に固定で、テーマごとに変えられない。
+設計前は OS 任せのみだった。main では **インク / 紙 / スレート** × **system / light / dark** を `settings.json` とツールバー／設定パネルから切り替える（PR #170）。OS の `Canvas` / `Highlight` 依存はテーマファイルの固定色に置き換え済み（PR #169 以降）。
 
 ### 直書きが残っている場所
 
@@ -100,7 +94,7 @@ Tailwind、CSS Modules、CSS-in-JS は無い。Vite が読む素の CSS で、�
 
 外観の保存は既にある。Tauri の `app_config_dir()/settings.json`（`apps/desktop/src-tauri/src/commands/settings.rs`）。型は `packages/shared/src/settings/settings.ts` の `AppearanceSettings` と、Rust の `domain/settings.rs` が対になる。
 
-いまの項目は `itemViewMode` と `thumbnailSizeIndex` だけ。フロントの `useAppearanceSettings` もこの二つだけを読む。Rust の `appearance` は未知キーを `extra` に残す。テストが `"theme": "dark"` をマージできることを見ているが、製品のテーマ項目ではない。専用の設定画面は無い。ビュー切替はツールバー（`LibraryToolbar`）にある。
+`AppearanceSettings` には `itemViewMode`・`thumbnailSizeIndex` に加え **`themeId`**（`ink` | `paper` | `slate`）と **`colorScheme`**（`system` | `light` | `dark`）がある（`packages/shared/src/settings/settings.ts`、Rust `domain/settings.rs`）。フロントは `useAppearanceSettings` が読み書きし、設定パネル「表示」とツールバーから変更できる。`SETTINGS_VERSION` は 1 のまま optional フィールドで追加（PR #170）。
 
 #89 の試作は `localStorage` の `swallow.uiTrial` を使っていた。外観の正本には戻さない。
 
@@ -378,9 +372,9 @@ v1 では共有しない。デスクトップの切替を、拡張のポップ�
 - **HIG をテーマの一つとして再導入する。** #78 は後回し。HIG を試すときは、コンポーネントを書き換えず、第四のテーマファイルかインクの値の差し替えで見る。試作トグルと `localStorage` は使わない。
 - **ハイコントラスト。** VS Code には別テーマがある。Swallow の v1 には入れない。`forced-colors` は対象外。
 
-## 4. 先生が決めること
+## 4. 先生が決めること（2026-11-12 時点のメモ・**§5 で確定済み**）
 
-実装の B 以降に進む前に、次を決める。
+PR #169–#172 マージ前に挙げた未決定事項の一覧。**読むときは §5 の決定表を正とする。** 以下は当時の問いの記録。
 
 - 三つの方向（インク / 紙 / スレート）と、上の基調色を採用するか。差し替えるなら、名前と基調色（地面、文字、サイドバー、アクセント、危険、星）をライトとダークの両方で指定する。
 - 既定を「インク + システム追従」にするか。
@@ -396,7 +390,7 @@ v1 では共有しない。デスクトップの切替を、拡張のポップ�
 
 ## 5. 決定（2026-11-12）
 
-先生はテーマ実装を承認した。この節は決定の記録であり、B 以降の実装は別 PR とする。
+先生はテーマ実装を承認した。この節は決定の記録。実装は PR #169–#172 で main に入っている（節 6）。
 
 ### スタイルの手段
 
@@ -430,3 +424,36 @@ v1 では共有しない。デスクトップの切替を、拡張のポップ�
 - 3 種類目のオーバーレイやフォーカス管理が必要になったら、その新しい部品だけ Radix を使う。
 - Tailwind は、クラス CSS が 4,000〜5,000 行になり、かつ検査の書き換えに合意してから入れる。
 - UI キットは、独自グリッドをやめるときに検討する。
+
+## 6. main の実装状況（`531a804`）
+
+マージ済み PR と届いた範囲（`gh pr view` とソース grep で確認）。
+
+| PR                                                | 内容                                                                                                                                                             |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [#169](https://github.com/hk-pG/swallow/pull/169) | `themes/ink.css`。属性未設定時のフォールバック。OS の light/dark に合わせたインクの塗り                                                                          |
+| [#170](https://github.com/hk-pG/swallow/pull/170) | `themeId` / `colorScheme` を settings とツールバー／設定 UI で永続化・反映                                                                                       |
+| [#171](https://github.com/hk-pG/swallow/pull/171) | `paper.css` / `slate.css`。三テーマ切替                                                                                                                          |
+| [#172](https://github.com/hk-pG/swallow/pull/172) | `controls` / `inspector` / `items` / `layout` / `sidebar` の尺度一致 `px` を `--space-*` / `--radius-sm` へ置換（**`quick-look.css` は対象外**と PR 本文に明記） |
+
+入口 CSS（`apps/desktop/src/app/main.tsx`）: **`tokens.css` → `themes/index.css` → 領域 CSS**（`controls.css` / `layout.css` / `sidebar.css` / `items.css` / `inspector.css` / **`settings.css`** / `quick-look.css`）。テーマ色リテラルは `tokens.css` と `styles/themes/*.css` のみ許可（`style-token-boundaries.mjs` の `allowsColorLiterals`）。
+
+## 7. 残作業・スコープ外
+
+### スコープ外リテラル（境界検査の例外どおり残るもの）
+
+`style-token-boundaries.mjs` は **色**を `tokens.css` と `themes/*.css` 以外で禁止し、**余白・角丸の生 `px`** は CSS 全体で禁止していない（`VISUAL_STYLE_PROPS` の TSX 直書きのみ検査）。そのため次が残っている（`rg` で確認した代表例）。
+
+| 種別                        | 例（パス）                                                                              |
+| --------------------------- | --------------------------------------------------------------------------------------- |
+| 尺度に無い余白              | `2px` / `5px` / `6px` / `10px` / `14px` — `items.css`・`sidebar.css`・`layout.css` など |
+| 固定枠・装飾                | `border: 2px`、`outline-offset: 2px`、`50%` の丸（カラーラベル）                        |
+| ペイン幅                    | サイドバー `220px`、インスペクタ `280px`（レイアウト例外）                              |
+| `color-mix(currentColor …)` | ホバー・DnD 枠などクラス CSS に固定比率で残る                                           |
+
+PR #172 で置換しなかった **`quick-look.css`** には、ヘッダー `padding: 12px 16px`、フッター `10px 16px` などトークン未使用の `px` が残る（色は `--color-overlay` 等の変数を使用）。
+
+### Issue 追跡
+
+- [#78](https://github.com/hk-pG/swallow/issues/78)（Apple HIG 試験適用）: **OPEN**、milestone `backlog`、P3。本設計どおり三既定テーマの**後回し**のまま。
+- ハイコントラスト・Theme Studio・拡張ポップアップへのテーマ同期: 節 5 の決定どおり v1 外。

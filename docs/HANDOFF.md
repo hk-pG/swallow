@@ -1,6 +1,6 @@
 # Swallow α→β — Agent 引き継ぎ（最初に読む）
 
-最終更新: 2026-11-10  
+最終更新: 2026-11-13  
 対象: 次の Cursor Project coordinator / Cloud Agent（まっさらな状態で可）
 
 ## 30 秒でやること
@@ -24,16 +24,17 @@
 ### α で入れる／外す（確定済み）
 
 - 入れた: フォルダ UI、右クリック抑止、App シェル main 取り込み、タグ UI
-- α 外にした: Chrome 拡張（別リポ・#12）。階層取り込み #34 と設定 #35 は β へ送り、**いずれもクローズ済み**
+- α 当初スコープ外としていた Chrome 拡張は、**同一モノレポ**に `apps/extension` として MVP が入っている（#12 OPEN で追跡）。階層取り込み #34 と設定 #35 は β へ送り、**いずれもクローズ済み**
 
 詳細: [alpha-scope.md](./alpha-scope.md) / [eagle-vs-swallow.md](./eagle-vs-swallow.md) / [roadmap.md](./roadmap.md)
 
-### β の優先度（2026-10-29 スナップショット）
+### β の優先度（スナップショット。件数は `gh` で再確認）
 
-- **P1（機能）**: 当初キュー #34 階層取り込み、#35 設定、#49 スマートフォルダ、#50 クイックルックは **すべてクローズ済み**。`milestone:beta` + `P1` のオープンは **0 件**
-- **P1（セキュリティ・バグ・優先）**: #91 HTTP API Origin、#93 `thumb://` symlink（いずれも `bug` + `P1`。Milestone は現状 `alpha` のまま）
+- **P1（機能）**: 当初キュー #34 階層取り込み、#35 設定、#49 スマートフォルダ、#50 クイックルックは **すべてクローズ済み**。
+- **`milestone:beta` + `P1`（現状）**: 2026-11-13 時点のオープンは **[#12](https://github.com/hk-pG/swallow/issues/12) の 1 件**（拡張 MVP。`gh issue list --milestone beta --label P1 --state open` と `gh issue list --label P1 --state open` のいずれも同じ）。
+- **P1（セキュリティ・バグ）**: [#91](https://github.com/hk-pG/swallow/issues/91)・[#93](https://github.com/hk-pG/swallow/issues/93) は**クローズ済み**（`gh issue view`）。オープンな `bug` + `P1` は 2026-11-13 時点 **0 件**。
 - **P2（beta・次の機能キュー）**: 例 #53 カラーラベル、#77 サイドバー、#78 HIG 探索、#87 トークン、#88 ボタン明示クラス、#89 HIG 試作撤去、#100 Biome Dependabot、#102 Rust 導入ドキュメント、#104 軽い CI パス など（一覧は GitHub）
-- **P3 / backlog**: #57 Eagle 移行、#58 高度プレビュー、#12 拡張、#95 署名、ほか
+- **P3 / backlog**: #57 Eagle 移行、#58 高度プレビュー、#95 署名、ほか（#12 は上記 beta+P1 で追跡）
 
 マイルストーン: `alpha` | `beta` | `backlog`  
 ラベル: `P1`/`P2`/`P3`、`area:desktop`/`area:extension`/`area:ci`
@@ -81,7 +82,7 @@
 # 全オープン P1（セキュリティバグ含む。beta に限定しない）
 gh issue list --repo hk-pG/swallow --label P1 --state open
 
-# β の最優先ラベル（現状は空になりうる）
+# β の最優先ラベル（2026-11-13 時点は #12 のみ。件数は変動するので毎回確認）
 gh issue list --repo hk-pG/swallow --milestone beta --label P1 --state open
 
 # β 全体（P2 中心）
@@ -93,8 +94,8 @@ gh issue list --repo hk-pG/swallow --milestone backlog --state open
 
 ### 2026-10-29 スナップショット（着手キュー）
 
-1. **先にオープン P1 バグ**: [#91](https://github.com/hk-pG/swallow/issues/91)、[#93](https://github.com/hk-pG/swallow/issues/93)（`bug` + `P1`。機能 P2 より先）
-2. **beta + P1 オープンは 0 件** → 上記 P1 が空いたら **beta + P2** へ（例: #53 / #77 / #87 など。最新は GitHub）
+1. **オープン P1**: 2026-11-13 時点は [#12](https://github.com/hk-pG/swallow/issues/12) のみ（`gh issue list --label P1 --state open`）。#91・#93 はクローズ済み
+2. **`milestone:beta` + `P1`**: 上記 #12 と同一（`gh issue list --milestone beta --label P1 --state open`）。それ以外は **beta + P2** へ（最新は GitHub）
 3. クローズ済みの #34 / #35 / #49 / #50 を「次」として選ばない
 
 ### 着手ルール
@@ -102,7 +103,7 @@ gh issue list --repo hk-pG/swallow --milestone backlog --state open
 1. **オープンな `P1`（とくに `bug`）が残っているうちは機能 P2 に手を出さない**（依存・方針変更がない限り）。`milestone:beta` + `P1` が空でも、他マイルストーンの P1 バグは先
 2. Issue を 1 件選び、`scripts/agent/start-issue.sh <N>` → 実装 → `scripts/agent/check.sh` → PR（Ready まで。**マージは人**）
 3. 並行可なら独立した Issue を複数 Agent に分割してよい（着手前に `gh` で OPEN を再確認）
-4. #12（拡張）は別リポ予定 → このリポでは実装しない
+4. #12（拡張）は `apps/extension` とループバック API で連携。HTTP 境界の追跡に #92（OPEN）あり。設計は [extension-design.md](./extension-design.md)
 5. AGENTS.md 禁止事項: main 直 push、PR マージ、Issue クローズ／ラベル無断変更（付与は運用上可だが既存方針を壊さない）
 6. **バグはチャットだけで直さない**。既存 Issue があれば `issue-to-pr`。無いまま修正を頼まれたときだけ `create-issue` で記録してから着手。「Issue にして」だけなら作成して止まる。詳細は `AGENTS.md` と `.agents/skills/create-issue/SKILL.md`
 
@@ -129,6 +130,8 @@ gh issue list --repo hk-pG/swallow --milestone backlog --state open
 | 差分セキュリティレビュー | [`.agents/skills/differential-review/SKILL.md`](../.agents/skills/differential-review/SKILL.md)（HTTP/Origin/パス差分・ToB 外部参照） |
 | Context7（Tauri v2）     | [`docs/context7-mcp.md`](./context7-mcp.md)、[`.cursor/mcp.json.example`](../.cursor/mcp.json.example)                                |
 | コードベース構成・境界   | [AGENTS.md の構成とモジュール境界](../AGENTS.md#モジュール境界フロント)（機能ベース `app/`・`features/*`・Tauri `commands/mod.rs`）   |
+| 診断ログ（セッション）   | 下記「7. 診断ログ」、[importers.md](./importers.md) とは別系統の横断インフラ                                                          |
+| Chrome 拡張（MVP）       | [extension-design.md](./extension-design.md)、`apps/extension/`、`HTTP_API_ROUTES`（`packages/shared/src/api/httpContract.ts`）       |
 | 分類スクリプト           | [`scripts/agent/github-taxonomy-setup.sh`](../scripts/agent/github-taxonomy-setup.sh)（冪等）                                         |
 | α トラッカー Issue       | [#45](https://github.com/hk-pG/swallow/issues/45)                                                                                     |
 | ライブの Issue（P1）     | https://github.com/hk-pG/swallow/issues?q=is%3Aopen+label%3AP1                                                                        |
@@ -167,4 +170,42 @@ gh issue list --repo hk-pG/swallow --milestone backlog --state open
 
 ---
 
-次の一手の既定値: **オープンな `P1`（現状 #91 / #93）を先に片付ける。それが空なら Milestone `beta` のオープン Issue（主に P2）を `gh` で確認して着手。**
+次の一手の既定値: **`gh issue list --label P1 --state open` を実行する。** 2026-11-13 時点では **#12（拡張 MVP）** のみ。P1 が他に無ければ Milestone `beta` のオープン Issue（主に P2）を `gh` で確認して着手。
+
+---
+
+## 7. 診断ログ（デスクトップ）
+
+`origin/main` @ `531a804` 時点（#183 / PR #187–#189 マージ済み）。プレビュー調査やサポート用の**セッション単位ログ**。
+
+### 構成
+
+| 層              | パス                                               | 役割                                                                                                                |
+| --------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Rust ファサード | `apps/desktop/src-tauri/src/infra/diagnostic_log/` | `log_event`、パスマスク、`tauri-plugin-log` 初期化（`app/run.rs` のみ配線）、サムネ／`thumb://` 用 `thumb_protocol` |
+| フロント共有    | `apps/desktop/src/shared/diagnostic-log/`          | `DiagnosticLogger` 型、`reportDiagnosticError`、`logPreviewFailure` など。Tauri 送信は `tauriLogger.ts` に集約      |
+| CI ガード       | `scripts/ci/no-bare-log-sinks.mjs`                 | `console.error` / `console.warn` / `eprintln!` の直書きを禁止（allowlist とテストファイルを除く）                   |
+| UI              | `features/settings` の「開発者」タブ               | `SessionDiagnosticLogPanel`（読み取り専用）                                                                         |
+
+ドメイン層はロガーを import しない。Rust の業務コードが構造化ログを出すときは `infra::diagnostic_log::log_event`（必要なら `mask_path`）。
+
+### ログの置き場
+
+- Tauri の **LogDir**（bundle id `dev.swallow.app`、`tauri.conf.json`）。起動ごとに `swallow-session-<ulid>.log`（`SESSION_LOG_FILE_PREFIX`）。
+- 世代は `MAX_RETAINED_SESSION_LOGS = 10`（古いファイルは起動時に削除）。
+- macOS の実パスはドキュメント上 `~/Library/Logs/dev.swallow.app/` 想定。**実機でファイル作成を確認した記録は本リポに無い**（BX11 `not_checked` と同様）。
+
+### プライバシーと表示
+
+- パスは `mask_path` で HOME を `~` に、長いパスは末尾成分に短縮。
+- エラー文言は Rust / フロントとも **512 文字**で切り詰め（`DIAGNOSTIC_ERROR_MESSAGE_MAX_LEN`）。
+- 設定の開発者タブは `get_session_diagnostic_log` で**末尾 256 KiB**（`SESSION_LOG_READ_MAX_BYTES`）のみ表示。
+
+### ログを足すとき
+
+- **フロント**: 予期しない失敗は `reportDiagnosticError("context", err)`。プレビュー失敗は `logPreviewFailure`。新規カテゴリは `shared/diagnostic-log` に追加し、`console.*` は使わない（CI が検出）。
+- **Rust**: `crate::infra::diagnostic_log::log_event` と `mask_path`。`println!` / 素の `log::` 直書きは `no-bare-log-sinks` の対象外だが、診断はファサード経由に揃える。
+
+### 未検証
+
+- macOS 実機での LogDir 書き込み（Linux CI のみで担保）。
