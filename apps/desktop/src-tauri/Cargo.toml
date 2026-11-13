@@ -4,6 +4,7 @@ description = "Asset library manager"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+default-run = "swallow"
 
 [features]
 perf-bin = []
