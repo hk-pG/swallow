@@ -1,7 +1,7 @@
 import type { ItemMetadata } from "@swallow/shared";
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { EMPTY_SELECTION, select } from "../../items";
+import { EMPTY_SELECTION, select, selectAll } from "../../items";
 
 const { restoreItems, purgeItems, revealItemInExplorer, trashItems, ask } = vi.hoisted(() => ({
   restoreItems: vi.fn(),
@@ -116,6 +116,110 @@ describe("useTrashActions context helpers", () => {
       result.current.editTags("b");
     });
     expect(onSelectItem).toHaveBeenCalledWith("b", {});
+  });
+
+  it("restoreItem restores every selected item from the context menu", async () => {
+    const setError = vi.fn();
+    const clearSelection = vi.fn();
+    const invalidate = vi.fn().mockResolvedValue(undefined);
+    const items = [sample("a", true), sample("b", true), sample("c")];
+    const selection = selectAll(EMPTY_SELECTION, ["a", "b"]);
+    const { result } = renderHook(() =>
+      useTrashActions({
+        libraryPath: "/lib",
+        view: { kind: "trash" },
+        visibleIds: items.map((item) => item.id),
+        visibleItems: items,
+        selection,
+        selected: items[0] ?? null,
+        setSelection: vi.fn(),
+        clearSelection,
+        onSelectItem: vi.fn(),
+        invalidate,
+        setError,
+      }),
+    );
+    await act(async () => {
+      await result.current.restoreItem("b");
+    });
+    expect(restoreItems).toHaveBeenCalledWith("/lib", expect.arrayContaining(["a", "b"]));
+    expect(restoreItems.mock.calls[0]?.[1]).toHaveLength(2);
+  });
+
+  it("purgeItem purges every selected item after one confirmation", async () => {
+    const items = [sample("a", true), sample("b", true)];
+    const selection = selectAll(EMPTY_SELECTION, ["a", "b"]);
+    const { result } = renderHook(() =>
+      useTrashActions({
+        libraryPath: "/lib",
+        view: { kind: "trash" },
+        visibleIds: items.map((item) => item.id),
+        visibleItems: items,
+        selection,
+        selected: items[0] ?? null,
+        setSelection: vi.fn(),
+        clearSelection: vi.fn(),
+        onSelectItem: vi.fn(),
+        invalidate: vi.fn().mockResolvedValue(undefined),
+        setError: vi.fn(),
+      }),
+    );
+    await act(async () => {
+      await result.current.purgeItem("a");
+    });
+    expect(ask).toHaveBeenCalledTimes(1);
+    expect(purgeItems).toHaveBeenCalledWith("/lib", expect.arrayContaining(["a", "b"]));
+  });
+
+  it("revealInExplorer reveals every selected item", async () => {
+    const items = [sample("a"), sample("b")];
+    const selection = selectAll(EMPTY_SELECTION, ["a", "b"]);
+    const { result } = renderHook(() =>
+      useTrashActions({
+        libraryPath: "/lib",
+        view: { kind: "all" },
+        visibleIds: items.map((item) => item.id),
+        visibleItems: items,
+        selection,
+        selected: items[0] ?? null,
+        setSelection: vi.fn(),
+        clearSelection: vi.fn(),
+        onSelectItem: vi.fn(),
+        invalidate: vi.fn().mockResolvedValue(undefined),
+        setError: vi.fn(),
+      }),
+    );
+    await act(async () => {
+      await result.current.revealInExplorer("b");
+    });
+    expect(revealItemInExplorer).toHaveBeenCalledTimes(2);
+    expect(revealItemInExplorer).toHaveBeenCalledWith("/lib", "a");
+    expect(revealItemInExplorer).toHaveBeenCalledWith("/lib", "b");
+  });
+
+  it("editTags keeps multi-selection and focuses the inspector", () => {
+    const onSelectItem = vi.fn();
+    const items = [sample("a"), sample("b")];
+    const selection = selectAll(EMPTY_SELECTION, ["a", "b"]);
+    const { result } = renderHook(() =>
+      useTrashActions({
+        libraryPath: "/lib",
+        view: { kind: "all" },
+        visibleIds: items.map((item) => item.id),
+        visibleItems: items,
+        selection,
+        selected: items[0] ?? null,
+        setSelection: vi.fn(),
+        clearSelection: vi.fn(),
+        onSelectItem,
+        invalidate: vi.fn().mockResolvedValue(undefined),
+        setError: vi.fn(),
+      }),
+    );
+    act(() => {
+      result.current.editTags("b");
+    });
+    expect(onSelectItem).not.toHaveBeenCalled();
   });
 
   it("contextHandlers omit trash on trash view", () => {

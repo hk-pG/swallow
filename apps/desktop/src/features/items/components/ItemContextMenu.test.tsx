@@ -29,6 +29,7 @@ describe("ItemContextMenu", () => {
     const html = renderToStaticMarkup(
       <ItemContextMenu
         state={{ item: item(), x: 10, y: 20 }}
+        selectedCount={1}
         isTrashView={false}
         onClose={() => {}}
         onTrash={() => {}}
@@ -47,6 +48,7 @@ describe("ItemContextMenu", () => {
     const html = renderToStaticMarkup(
       <ItemContextMenu
         state={{ item: item({ isDeleted: true }), x: 10, y: 20 }}
+        selectedCount={1}
         isTrashView
         onClose={() => {}}
         onTrash={() => {}}
@@ -59,5 +61,23 @@ describe("ItemContextMenu", () => {
     expect(html).toContain("復元");
     expect(html).toContain("完全に削除");
     expect(html).not.toContain("ゴミ箱へ移動");
+  });
+
+  it("shows the multi-select summary when several items are selected", () => {
+    const html = renderToStaticMarkup(
+      <ItemContextMenu
+        state={{ item: item(), x: 10, y: 20 }}
+        selectedCount={3}
+        isTrashView={false}
+        onClose={() => {}}
+        onTrash={() => {}}
+        onRestore={() => {}}
+        onPurge={() => {}}
+        onEditTags={() => {}}
+        onRevealInExplorer={() => {}}
+      />,
+    );
+    expect(html).toContain("3 件を選択中");
+    expect(html).toContain('aria-label="3 件のアイテムの操作"');
   });
 });

@@ -6,6 +6,8 @@ export type { ItemContextMenuState };
 
 interface ItemContextMenuProps {
   state: ItemContextMenuState | null;
+  /** Number of selected items when the menu opened (1 when only the context target is selected). */
+  selectedCount: number;
   isTrashView: boolean;
   onClose: () => void;
   onTrash: () => void;
@@ -17,6 +19,7 @@ interface ItemContextMenuProps {
 
 export function ItemContextMenu({
   state,
+  selectedCount,
   isTrashView,
   onClose,
   onTrash,
@@ -67,15 +70,21 @@ export function ItemContextMenu({
     onClose();
   };
 
+  const menuAriaLabel =
+    selectedCount > 1 ? `${selectedCount} 件のアイテムの操作` : `${state.item.name} の操作`;
+
   return (
     <div
       ref={menuRef}
       className="item-context-menu"
       role="menu"
       style={style}
-      aria-label={`${state.item.name} の操作`}
+      aria-label={menuAriaLabel}
       onContextMenu={(e) => e.preventDefault()}
     >
+      {selectedCount > 1 ? (
+        <p className="item-context-menu-summary">{selectedCount} 件を選択中</p>
+      ) : null}
       {isTrashView || state.item.isDeleted ? (
         <>
           <MenuButton label="復元" onClick={() => run(() => onRestore(state.item.id))} />

@@ -8,6 +8,7 @@ export {
   useItemContextMenu,
 } from "./hooks/useItemContextMenu";
 export { useItemList } from "./hooks/useItemList";
+export { contextMenuActionIds } from "./lib/contextMenuActionIds";
 export { itemThumbContentStyle } from "./lib/itemThumbContentStyle";
 export {
   EMPTY_SELECTION,
