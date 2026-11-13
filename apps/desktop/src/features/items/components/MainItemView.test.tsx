@@ -127,7 +127,7 @@ describe("InspectorPane", () => {
     expect(html).toContain("shared");
     expect(html).toContain("other");
     expect(html).toContain("選択中すべてにタグを追加");
-    expect(html).toContain("表示設定");
+    expect(html).toContain("設定");
     expect(html).toContain("インク");
   });
 });

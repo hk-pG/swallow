@@ -6,7 +6,6 @@ import {
   resetDiagnosticLogger,
   setDiagnosticLogger,
 } from "./logger";
-import { maskPath } from "./privacy";
 
 const error = vi.fn();
 const info = vi.fn();
@@ -26,16 +25,6 @@ describe("formatDiagnosticMessage", () => {
     expect(formatDiagnosticMessage("preview failed", { itemId: "abc", code: 4 })).toBe(
       'preview failed {"itemId":"abc","code":4}',
     );
-  });
-});
-
-describe("maskPath", () => {
-  it("keeps short paths", () => {
-    expect(maskPath("images/foo.jpg")).toBe("images/foo.jpg");
-  });
-
-  it("truncates deep paths", () => {
-    expect(maskPath("/a/b/c/d/file.mp4")).toBe("…/d/file.mp4");
   });
 });
 

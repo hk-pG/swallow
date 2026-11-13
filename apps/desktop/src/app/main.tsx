@@ -9,6 +9,7 @@ import "../styles/layout.css";
 import "../styles/sidebar.css";
 import "../styles/items.css";
 import "../styles/inspector.css";
+import "../styles/settings.css";
 import "../styles/quick-look.css";
 
 bootstrapApp();

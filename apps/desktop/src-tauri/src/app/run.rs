@@ -11,7 +11,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(diagnostic_log::build_log_plugin::<tauri::Wry>(&session_id))
         .register_asynchronous_uri_scheme_protocol(protocol::THUMBNAIL_SCHEME, protocol::thumbnail)
-        .manage(AppState::default())
+        .manage(AppState::new(session_id.clone()))
         .setup(move |app| {
             if let Ok(log_dir) = app.path().app_log_dir() {
                 let _ = diagnostic_log::prune_previous_session_logs(&log_dir);
