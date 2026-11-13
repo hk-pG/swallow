@@ -85,6 +85,26 @@ describe("ItemGrid context menu", () => {
     expect(screen.getByRole("menu", { name: /a の操作/i })).toBeTruthy();
     expect(screen.getByRole("menuitem", { name: "ゴミ箱へ移動" })).toBeTruthy();
   });
+
+  it("keeps multi-selection when opening the context menu on an already selected item", () => {
+    const onSelect = vi.fn();
+    const items = [sample("a"), sample("b")];
+    const selection = selectAll(EMPTY_SELECTION, ["a", "b"]);
+    render(
+      <ItemGrid
+        libraryPath="/lib"
+        items={items}
+        selection={selection}
+        onSelect={onSelect}
+        onSelectAll={() => {}}
+        onClearSelection={() => {}}
+        onContextTrash={() => {}}
+      />,
+    );
+    fireEvent.contextMenu(screen.getByRole("button", { name: "b" }));
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(screen.getByText("2 件を選択中")).toBeTruthy();
+  });
 });
 
 describe("ItemGrid keyboard parity", () => {

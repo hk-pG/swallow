@@ -3,6 +3,7 @@ import { ask } from "@tauri-apps/plugin-dialog";
 import { type Dispatch, type SetStateAction, useCallback, useMemo, useRef } from "react";
 import { focusInspectorTagInput } from "../../../shared/focusInspector";
 import {
+  contextMenuActionIds,
   EMPTY_SELECTION,
   type ItemViewContextHandlers,
   nextAfterRemoval,
@@ -90,7 +91,8 @@ export function useTrashActions({
   const restoreItemCore = useCallback(
     async (itemId: ItemId) => {
       if (!libraryPath) throw new Error("ライブラリが開かれていません");
-      await restoreItems(libraryPath, [itemId]);
+      const ids = contextMenuActionIds(selectionRef.current, itemId);
+      await restoreItems(libraryPath, ids);
       clearSelection();
       await invalidate();
     },
@@ -100,16 +102,19 @@ export function useTrashActions({
   const purgeItemCore = useCallback(
     async (itemId: ItemId) => {
       if (!libraryPath) throw new Error("ライブラリが開かれていません");
-      const item = visibleItems.find((entry) => entry.id === itemId);
-      if (!item) return;
-      const confirmed = await ask(purgeConfirmMessage([item]), {
+      const ids = contextMenuActionIds(selectionRef.current, itemId);
+      const targets = ids
+        .map((id) => visibleItems.find((entry) => entry.id === id))
+        .filter((entry): entry is ItemMetadata => entry !== undefined);
+      if (targets.length === 0) return;
+      const confirmed = await ask(purgeConfirmMessage(targets), {
         title: "完全に削除",
         kind: "warning",
         okLabel: "完全に削除",
         cancelLabel: "キャンセル",
       });
       if (!confirmed) return;
-      await purgeItems(libraryPath, [itemId]);
+      await purgeItems(libraryPath, ids);
       clearSelection();
       await invalidate();
     },
@@ -151,8 +156,11 @@ export function useTrashActions({
   const revealInExplorer = useCallback(
     async (itemId: ItemId) => {
       if (!libraryPath) return;
+      const ids = contextMenuActionIds(selectionRef.current, itemId);
       try {
-        await revealItemInExplorer(libraryPath, itemId);
+        for (const id of ids) {
+          await revealItemInExplorer(libraryPath, id);
+        }
         setError(null);
       } catch (e) {
         setError(`エクスプローラーで表示できませんでした: ${e}`);
@@ -163,7 +171,10 @@ export function useTrashActions({
 
   const editTags = useCallback(
     (itemId: ItemId) => {
-      onSelectItem(itemId, {});
+      const ids = contextMenuActionIds(selectionRef.current, itemId);
+      if (ids.length === 1) {
+        onSelectItem(itemId, {});
+      }
       requestAnimationFrame(() => focusInspectorTagInput());
     },
     [onSelectItem],

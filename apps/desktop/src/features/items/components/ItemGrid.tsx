@@ -141,6 +141,7 @@ export function ItemGrid({
       {contextMenuEnabled && (
         <ItemContextMenu
           state={contextMenu}
+          selectedCount={selection.ids.size}
           isTrashView={isTrashView}
           onClose={closeContextMenu}
           onTrash={() => onContextTrash?.()}
