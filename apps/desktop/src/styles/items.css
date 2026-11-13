@@ -333,6 +333,7 @@
 }
 
 .item-list-thumb {
+  position: relative;
   display: grid;
   place-items: center;
   width: calc(var(--item-thumb-size, 140px) * 0.45);

@@ -22,6 +22,7 @@ import {
 import type { Selection, SelectModifiers } from "../lib/selection";
 import { hasThumbnail, thumbnailUrl } from "../lib/thumbnail";
 import { ItemContextMenu } from "./ItemContextMenu";
+import { ItemThumbColorLabel } from "./ItemThumbColorLabel";
 
 interface ItemListProps extends ItemViewContextHandlers {
   libraryPath: string;
@@ -186,6 +187,7 @@ const Row = memo(function Row({
     >
       <span className="item-list-col-thumb">
         <span className="item-list-thumb">
+          {item.colorLabel ? <ItemThumbColorLabel colorLabel={item.colorLabel} /> : null}
           {src && !failed ? (
             <img
               src={src}

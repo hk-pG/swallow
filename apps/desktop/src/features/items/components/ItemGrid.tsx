@@ -1,4 +1,4 @@
-import { COLOR_LABEL_SWATCH, type ItemId, type ItemMetadata } from "@swallow/shared";
+import type { ItemId, ItemMetadata } from "@swallow/shared";
 import {
   type DragEvent,
   type KeyboardEvent,
@@ -22,6 +22,7 @@ import {
 import type { Selection, SelectModifiers } from "../lib/selection";
 import { hasThumbnail, thumbnailUrl } from "../lib/thumbnail";
 import { ItemContextMenu } from "./ItemContextMenu";
+import { ItemThumbColorLabel } from "./ItemThumbColorLabel";
 
 interface ItemGridProps extends ItemViewContextHandlers {
   libraryPath: string;
@@ -194,14 +195,7 @@ const ItemCell = memo(function ItemCell({
       onDragStart={onDragStart ? (e) => onDragStart(e, item.id) : undefined}
     >
       <div className="grid-thumb">
-        {item.colorLabel ? (
-          <span
-            className="grid-color-label"
-            style={{ background: COLOR_LABEL_SWATCH[item.colorLabel] }}
-            aria-hidden="true"
-            title="カラーラベル"
-          />
-        ) : null}
+        {item.colorLabel ? <ItemThumbColorLabel colorLabel={item.colorLabel} /> : null}
         {src && !failed ? (
           <img
             src={src}

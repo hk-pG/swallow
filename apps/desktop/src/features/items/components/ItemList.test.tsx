@@ -1,10 +1,12 @@
-import type { ItemMetadata } from "@swallow/shared";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { COLOR_LABEL_SWATCH, type ItemMetadata } from "@swallow/shared";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { SWALLOW_ITEM_DRAG_MIME } from "../../../shared/itemDrag";
 import { EMPTY_SELECTION, selectAll } from "../lib/selection";
 import { ItemList } from "./ItemList";
+
+afterEach(cleanup);
 
 function sample(overrides: Partial<ItemMetadata> = {}): ItemMetadata {
   return {
@@ -40,6 +42,37 @@ describe("ItemList", () => {
       />,
     );
     expect(html).toContain("photo");
+  });
+
+  it("shows the color label swatch on the list thumbnail when set", () => {
+    const { container } = render(
+      <ItemList
+        libraryPath="/lib"
+        items={[sample({ colorLabel: "red" })]}
+        selection={EMPTY_SELECTION}
+        onSelect={() => {}}
+        onSelectAll={() => {}}
+        onClearSelection={() => {}}
+      />,
+    );
+    const swatch = container.querySelector(".grid-color-label");
+    expect(swatch).toBeTruthy();
+    expect(swatch?.getAttribute("title")).toBe("カラーラベル");
+    expect((swatch as HTMLElement).style.background).toBe(COLOR_LABEL_SWATCH.red);
+  });
+
+  it("omits the color label swatch when colorLabel is null", () => {
+    const { container } = render(
+      <ItemList
+        libraryPath="/lib"
+        items={[sample({ colorLabel: null })]}
+        selection={EMPTY_SELECTION}
+        onSelect={() => {}}
+        onSelectAll={() => {}}
+        onClearSelection={() => {}}
+      />,
+    );
+    expect(container.querySelector(".grid-color-label")).toBeNull();
   });
 
   it("opens ItemContextMenu like the grid", () => {
