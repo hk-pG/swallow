@@ -1,4 +1,5 @@
 pub mod app;
+pub mod diagnostic_log;
 mod error;
 pub mod folders;
 pub mod import;
@@ -14,6 +15,7 @@ macro_rules! swallow_invoke_handler {
     () => {
         tauri::generate_handler![
             $crate::commands::app::app_info,
+            $crate::commands::diagnostic_log::get_session_diagnostic_log,
             $crate::commands::library::create_library,
             $crate::commands::library::open_library,
             $crate::commands::library::restore_library,

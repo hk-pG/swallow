@@ -53,4 +53,13 @@ mod tests {
         let masked = mask_path("/var/lib/swallow/library/images/abc123/original.mp4");
         assert_eq!(masked, "…/abc123/original.mp4");
     }
+
+    #[test]
+    fn masks_home_prefix_when_home_set() {
+        let Ok(home) = std::env::var("HOME") else {
+            return;
+        };
+        let full = format!("{home}/Library/Logs/session.log");
+        assert_eq!(mask_path(&full), "~/Library/Logs/session.log");
+    }
 }
