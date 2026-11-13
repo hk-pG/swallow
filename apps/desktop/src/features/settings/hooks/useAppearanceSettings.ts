@@ -10,6 +10,7 @@ import {
   type ThemeId,
 } from "@swallow/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { reportDiagnosticError } from "../../../shared/diagnostic-log";
 import { getSettings, updateSettings } from "../api";
 import { setDocumentThemeChoice } from "../lib/documentTheme";
 
@@ -47,11 +48,13 @@ export function useAppearanceSettings(): AppearanceSettingsState {
           colorScheme: resolveColorScheme(settings.appearance.colorScheme),
         });
       })
-      .catch(console.error);
+      .catch((e) => reportDiagnosticError("useAppearanceSettings.load", e));
   }, [publishChoice]);
 
   const persist = useCallback((patch: AppearanceSettings) => {
-    updateSettings({ appearance: patch }).catch(console.error);
+    updateSettings({ appearance: patch }).catch((e) =>
+      reportDiagnosticError("useAppearanceSettings.persist", e),
+    );
   }, []);
 
   const setItemViewMode = useCallback(

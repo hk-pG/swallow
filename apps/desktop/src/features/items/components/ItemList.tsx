@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { logPreviewFailure } from "../../../shared/diagnostic-log";
 import { resolveDragItemIds, setItemDragData } from "../../../shared/itemDrag";
 import {
   type ItemViewContextHandlers,
@@ -195,7 +196,17 @@ const Row = memo(function Row({
               alt=""
               loading="lazy"
               draggable={false}
-              onError={() => setFailed(true)}
+              onError={() => {
+                logPreviewFailure({
+                  source: "list-thumb",
+                  component: "ItemList",
+                  itemId: item.id,
+                  ext: item.ext,
+                  src,
+                  fileSize: item.size,
+                });
+                setFailed(true);
+              }}
             />
           ) : (
             <span className="grid-thumb-placeholder">{item.ext.toUpperCase() || "?"}</span>

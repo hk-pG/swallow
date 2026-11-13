@@ -1,7 +1,20 @@
+import { useEffect, useRef, useState } from "react";
 import { useSessionDiagnosticLog } from "../hooks/useSessionDiagnosticLog";
+
+const COPY_FEEDBACK_MS = 2000;
 
 export function SessionDiagnosticLogPanel() {
   const { log, loading, error, refresh } = useSessionDiagnosticLog();
+  const [copied, setCopied] = useState(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) {
+        clearTimeout(copyTimerRef.current);
+      }
+    };
+  }, []);
 
   const onCopy = async () => {
     if (!log?.text) {
@@ -9,6 +22,11 @@ export function SessionDiagnosticLogPanel() {
     }
     try {
       await navigator.clipboard.writeText(log.text);
+      setCopied(true);
+      if (copyTimerRef.current) {
+        clearTimeout(copyTimerRef.current);
+      }
+      copyTimerRef.current = setTimeout(() => setCopied(false), COPY_FEEDBACK_MS);
     } catch {
       // Clipboard may be unavailable in some WebView builds; selection still works.
     }
@@ -51,10 +69,14 @@ export function SessionDiagnosticLogPanel() {
           disabled={loading || !log?.text}
           onClick={() => void onCopy()}
         >
-          コピー
+          {copied ? "コピーしました" : "コピー"}
         </button>
       </div>
-      {helperText ? <p className="inspector-muted settings-dev-log-hint">{helperText}</p> : null}
+      {copied || helperText ? (
+        <p className="inspector-muted settings-dev-log-hint" aria-live="polite">
+          {copied ? "コピーしました" : helperText}
+        </p>
+      ) : null}
       <textarea
         className="inspector-input settings-dev-log-text"
         readOnly

@@ -2,6 +2,7 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
+use crate::domain::diagnostic_text::{mask_home_in_diagnostic_text, truncate_diagnostic_message};
 use crate::domain::library::{IMAGES_DIR, write_json_atomic};
 
 use super::{ITEM_DIR_EXT, ITEM_METADATA_FILE, ItemError, ItemMetadata};
@@ -53,7 +54,21 @@ pub fn read_items(library: &Path) -> io::Result<Vec<ItemMetadata>> {
     for path in item_dirs(library)? {
         match read_item(&path) {
             Ok(item) => items.push(item),
-            Err(e) => eprintln!("skipping item {}: {e}", path.display()),
+            Err(e) => {
+                let id = path.file_stem().and_then(|s| s.to_str()).unwrap_or("?");
+                let payload = serde_json::json!({
+                    "source": "domain",
+                    "component": "item_io",
+                    "itemId": id,
+                    "errorMessage": truncate_diagnostic_message(
+                        &mask_home_in_diagnostic_text(&e.to_string()),
+                    ),
+                });
+                log::warn!(
+                    target: "swallow::diagnostic",
+                    "skipping unreadable item dir {payload}"
+                );
+            }
         }
     }
     items.sort_by_key(|item| std::cmp::Reverse(item.created_at));

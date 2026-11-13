@@ -1,6 +1,7 @@
 import type { ImportReport } from "@swallow/shared";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
+import { reportDiagnosticError } from "../../../shared/diagnostic-log";
 import { importAssets, pickImportFiles, pickImportFolders } from "../api";
 
 export interface AssetImport {
@@ -97,7 +98,7 @@ export function useAssetImport(
           unlisten = fn;
         }
       })
-      .catch(console.error);
+      .catch((e) => reportDiagnosticError("useAssetImport.listen", e));
 
     return () => {
       cancelled = true;

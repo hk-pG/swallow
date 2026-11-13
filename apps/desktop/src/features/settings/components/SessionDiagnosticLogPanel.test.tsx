@@ -1,5 +1,5 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const refresh = vi.fn();
 
@@ -31,5 +31,30 @@ describe("SessionDiagnosticLogPanel", () => {
     render(<SessionDiagnosticLogPanel />);
     fireEvent.click(screen.getByRole("button", { name: "再読み込み" }));
     expect(refresh).toHaveBeenCalled();
+  });
+
+  describe("copy feedback", () => {
+    beforeEach(() => {
+      vi.stubGlobal("navigator", {
+        clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
+      });
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it("shows transient copy confirmation with aria-live", async () => {
+      render(<SessionDiagnosticLogPanel />);
+      fireEvent.click(screen.getByRole("button", { name: "コピー" }));
+      expect(await screen.findByRole("button", { name: "コピーしました" })).toBeTruthy();
+      expect(document.querySelector("[aria-live='polite']")?.textContent).toBe("コピーしました");
+      await waitFor(
+        () => {
+          expect(screen.getByRole("button", { name: "コピー" })).toBeTruthy();
+        },
+        { timeout: 2500 },
+      );
+    });
   });
 });

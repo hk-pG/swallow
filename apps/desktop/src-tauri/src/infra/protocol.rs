@@ -1,3 +1,7 @@
+use crate::infra::diagnostic_log::{
+    log_thumb_bad_request, log_thumb_forbidden, log_thumb_not_found, log_thumb_preview_error,
+    log_thumb_range_request_once, log_thumb_read_error,
+};
 use crate::infra::thumbnail;
 use percent_encoding::percent_decode_str;
 use std::path::PathBuf;
@@ -22,15 +26,19 @@ pub fn thumbnail(
 ) {
     let encoded = request.uri().path().trim_start_matches('/').to_owned();
     let full = is_full_query(request.uri().query());
+    let range_requested = request.headers().get(header::RANGE).is_some();
+    if range_requested {
+        log_thumb_range_request_once(&encoded, full);
+    }
     tauri::async_runtime::spawn(async move {
         if full {
-            let response = tauri::async_runtime::spawn_blocking(move || respond(&encoded, true))
+            let response = tauri::async_runtime::spawn_blocking(move || respond(&encoded, full))
                 .await
                 .unwrap_or_else(|_| status(StatusCode::INTERNAL_SERVER_ERROR));
             responder.respond(response);
         } else {
             let _slot = DECODE_SLOTS.acquire().await;
-            let response = tauri::async_runtime::spawn_blocking(move || respond(&encoded, false))
+            let response = tauri::async_runtime::spawn_blocking(move || respond(&encoded, full))
                 .await
                 .unwrap_or_else(|_| status(StatusCode::INTERNAL_SERVER_ERROR));
             responder.respond(response);
@@ -47,10 +55,12 @@ fn is_full_query(query: Option<&str>) -> bool {
 
 fn respond(encoded: &str, full: bool) -> Response<Vec<u8>> {
     let Ok(decoded) = percent_decode_str(encoded).decode_utf8() else {
+        log_thumb_bad_request("invalid percent-encoding or utf-8", encoded, full);
         return status(StatusCode::BAD_REQUEST);
     };
     let item_dir = PathBuf::from(decoded.as_ref());
     if !thumbnail::is_item_dir(&item_dir) {
+        log_thumb_forbidden(encoded, full, "path is not an item directory");
         return status(StatusCode::FORBIDDEN);
     }
     let preview = if full {
@@ -60,9 +70,12 @@ fn respond(encoded: &str, full: bool) -> Response<Vec<u8>> {
     };
     let preview = match preview {
         Ok(Some(preview)) => preview,
-        Ok(None) => return status(StatusCode::NOT_FOUND),
+        Ok(None) => {
+            log_thumb_not_found(encoded, full);
+            return status(StatusCode::NOT_FOUND);
+        }
         Err(e) => {
-            eprintln!("thumbnail failed for {}: {e}", item_dir.display());
+            log_thumb_preview_error(encoded, full, e.to_string());
             return status(StatusCode::INTERNAL_SERVER_ERROR);
         }
     };
@@ -71,8 +84,14 @@ fn respond(encoded: &str, full: bool) -> Response<Vec<u8>> {
             .header(header::CONTENT_TYPE, preview.mime)
             .body(body)
             .unwrap_or_else(|_| status(StatusCode::INTERNAL_SERVER_ERROR)),
-        Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => status(StatusCode::FORBIDDEN),
-        Err(_) => status(StatusCode::NOT_FOUND),
+        Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
+            log_thumb_forbidden(encoded, full, "permission denied reading preview asset");
+            status(StatusCode::FORBIDDEN)
+        }
+        Err(e) => {
+            log_thumb_read_error(encoded, full, e.to_string());
+            status(StatusCode::NOT_FOUND)
+        }
     }
 }
 

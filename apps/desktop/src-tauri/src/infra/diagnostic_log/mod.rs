@@ -6,8 +6,13 @@ mod privacy;
 mod read;
 mod record;
 mod rotation;
+mod thumb_protocol;
 
 pub use init::{build_log_plugin, prune_previous_session_logs};
 pub use privacy::mask_path;
 pub use read::{SESSION_LOG_READ_MAX_BYTES, read_session_log_tail};
 pub use record::log_event;
+pub use thumb_protocol::{
+    log_thumb_bad_request, log_thumb_forbidden, log_thumb_not_found, log_thumb_preview_error,
+    log_thumb_range_request_once, log_thumb_read_error,
+};

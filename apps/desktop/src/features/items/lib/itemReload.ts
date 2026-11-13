@@ -1,4 +1,5 @@
 import type { ItemMetadata } from "@swallow/shared";
+import { reportDiagnosticError } from "../../../shared/diagnostic-log";
 
 /**
  * Sequential reload gate: only the latest in-flight load may publish results,
@@ -26,7 +27,7 @@ export function createItemReload(listItems: (path: string) => Promise<ItemMetada
       const all = await listItems(libraryPath);
       if (current === seq) setItems(all);
     } catch (e) {
-      console.error(e);
+      reportDiagnosticError("itemReload", e);
     }
   };
 }

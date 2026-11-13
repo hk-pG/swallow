@@ -1,7 +1,8 @@
 import { hasQuickLookPreview, type ItemMetadata, resolveItemPreviewKind } from "@swallow/shared";
 import { type KeyboardEvent, useCallback, useEffect, useId, useState } from "react";
+import { logPreviewFailure } from "../../../shared/diagnostic-log";
 import { formatResolution } from "../../../shared/format";
-import { ItemMediaPreview } from "../../items";
+import { ItemMediaPreview, itemFullPreviewUrl } from "../../items";
 import type { QuickLookScaleMode, QuickLookTarget } from "../lib/quickLook";
 
 interface QuickLookPreviewStageProps {
@@ -29,9 +30,17 @@ function QuickLookPreviewStage({
   }, [onFailedChange]);
 
   const handlePreviewError = useCallback(() => {
+    logPreviewFailure({
+      source: "quick-look",
+      component: "QuickLook",
+      itemId: item.id,
+      ext: item.ext,
+      src: itemFullPreviewUrl(libraryPath, item.id),
+      fileSize: item.size,
+    });
     setFailed(true);
     onFailedChange(true);
-  }, [onFailedChange]);
+  }, [item.ext, item.id, item.size, libraryPath, onFailedChange]);
 
   if (failed) {
     return <p className="quick-look-unsupported">プレビューを読み込めませんでした</p>;
