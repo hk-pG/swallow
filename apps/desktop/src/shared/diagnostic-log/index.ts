@@ -8,6 +8,7 @@ export {
   resetDiagnosticLogger,
   setDiagnosticLogger,
 } from "./logger";
+export { DIAGNOSTIC_ERROR_MESSAGE_MAX_LEN, truncateDiagnosticMessage } from "./message";
 export {
   type LogPreviewFailureInput,
   logPreviewFailure,

@@ -1,5 +1,6 @@
 import { resolveItemPreviewKind } from "@swallow/shared";
 import { getDiagnosticLogger } from "./logger";
+import { truncateDiagnosticMessage } from "./message";
 import type { DiagnosticLogFields } from "./types";
 
 export type PreviewFailureSource =
@@ -52,10 +53,10 @@ export function logPreviewFailure(input: LogPreviewFailureInput): void {
     fields.mediaErrorCode = input.mediaErrorCode;
   }
   if (input.mediaErrorMessage) {
-    fields.mediaErrorMessage = input.mediaErrorMessage;
+    fields.mediaErrorMessage = truncateDiagnosticMessage(input.mediaErrorMessage);
   }
   if (input.errorMessage) {
-    fields.errorMessage = input.errorMessage;
+    fields.errorMessage = truncateDiagnosticMessage(input.errorMessage);
   }
 
   getDiagnosticLogger().error("preview failed", fields);

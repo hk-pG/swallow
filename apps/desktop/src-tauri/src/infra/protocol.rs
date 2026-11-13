@@ -1,6 +1,6 @@
 use crate::infra::diagnostic_log::{
     log_thumb_bad_request, log_thumb_forbidden, log_thumb_not_found, log_thumb_preview_error,
-    log_thumb_range_request, log_thumb_read_error,
+    log_thumb_range_request_once, log_thumb_read_error,
 };
 use crate::infra::thumbnail;
 use percent_encoding::percent_decode_str;
@@ -28,7 +28,7 @@ pub fn thumbnail(
     let full = is_full_query(request.uri().query());
     let range_requested = request.headers().get(header::RANGE).is_some();
     if range_requested {
-        log_thumb_range_request(&encoded, full);
+        log_thumb_range_request_once(&encoded, full);
     }
     tauri::async_runtime::spawn(async move {
         if full {

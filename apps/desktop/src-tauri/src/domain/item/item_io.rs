@@ -2,6 +2,7 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
+use crate::domain::diagnostic_text::{mask_home_in_diagnostic_text, truncate_diagnostic_message};
 use crate::domain::library::{IMAGES_DIR, write_json_atomic};
 
 use super::{ITEM_DIR_EXT, ITEM_METADATA_FILE, ItemError, ItemMetadata};
@@ -59,7 +60,9 @@ pub fn read_items(library: &Path) -> io::Result<Vec<ItemMetadata>> {
                     "source": "domain",
                     "component": "item_io",
                     "itemId": id,
-                    "errorMessage": e.to_string(),
+                    "errorMessage": truncate_diagnostic_message(
+                        &mask_home_in_diagnostic_text(&e.to_string()),
+                    ),
                 });
                 log::warn!(
                     target: "swallow::diagnostic",

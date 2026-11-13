@@ -14,5 +14,5 @@ pub use read::{SESSION_LOG_READ_MAX_BYTES, read_session_log_tail};
 pub use record::log_event;
 pub use thumb_protocol::{
     log_thumb_bad_request, log_thumb_forbidden, log_thumb_not_found, log_thumb_preview_error,
-    log_thumb_range_request, log_thumb_read_error,
+    log_thumb_range_request_once, log_thumb_read_error,
 };

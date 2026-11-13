@@ -18,6 +18,8 @@ vi.mock("@tauri-apps/plugin-log", () => ({
   error,
 }));
 
+import { DIAGNOSTIC_ERROR_MESSAGE_MAX_LEN, truncateDiagnosticMessage } from "./message";
+import { reportDiagnosticError } from "./reportError";
 import { createTauriDiagnosticLogger } from "./tauriLogger";
 
 describe("formatDiagnosticMessage", () => {
@@ -38,6 +40,21 @@ describe("mock diagnostic logger", () => {
     setDiagnosticLogger(createCollectingDiagnosticLogger(sink));
     getDiagnosticLogger().error("oops", { itemId: "x" });
     expect(sink).toEqual([{ level: "error", message: "oops", fields: { itemId: "x" } }]);
+  });
+});
+
+describe("reportDiagnosticError", () => {
+  beforeEach(() => {
+    resetDiagnosticLogger();
+  });
+
+  it("truncates long error messages", () => {
+    const sink: Parameters<typeof createCollectingDiagnosticLogger>[0] = [];
+    setDiagnosticLogger(createCollectingDiagnosticLogger(sink));
+    const long = "e".repeat(DIAGNOSTIC_ERROR_MESSAGE_MAX_LEN + 50);
+    reportDiagnosticError("test", new Error(long));
+    expect(sink[0]?.message).toBe(truncateDiagnosticMessage(long));
+    expect(sink[0]?.fields?.errorMessage).toBe(truncateDiagnosticMessage(long));
   });
 });
 
