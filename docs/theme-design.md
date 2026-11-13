@@ -1,7 +1,7 @@
 # デスクトップの外観テーマ
 
 最終更新: 2026-11-13  
-対象: `apps/desktop` の外観テーマ。節 1〜5 は設計の記録。節 6 は **main @ `531a804` の実装事実**（PR #169–#172）。節 7 は残作業。
+対象: `apps/desktop` の外観テーマ。節 1〜3 は設計時点の記述（現行の事実は節 6 で上書き）。節 4〜5 は実装前の決定メモ（**すべて §5 で確定済み**）。節 6 は **main @ `531a804` の実装事実**（PR #169–#172）。節 7 は残作業。
 
 関連: [#78](https://github.com/hk-pG/swallow/issues/78)（Apple HIG の試験適用。オープンのまま、この設計では採用しない）、[#87](https://github.com/hk-pG/swallow/issues/87)（セマンティックトークン。クローズ済み）、[#89](https://github.com/hk-pG/swallow/issues/89)（HIG 試作の撤去。クローズ済み）。この文書は Issue をクローズしない。
 
@@ -20,10 +20,11 @@ Swallow のデスクトップで、外観を簡単に切り替えられるよう
 
 Tailwind、CSS Modules、CSS-in-JS は無い。Vite が読む素の CSS で、入口は `apps/desktop/src/app/main.tsx` が次を順に import する。
 
-| ファイル                                                                                         | 役割             |
-| ------------------------------------------------------------------------------------------------ | ---------------- |
-| `apps/desktop/src/styles/tokens.css`                                                             | 変数の定義       |
-| `controls.css` / `layout.css` / `sidebar.css` / `items.css` / `inspector.css` / `quick-look.css` | 領域ごとのクラス |
+| ファイル（`main.tsx` の import 順）                                                                               | 役割                                  |
+| ----------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `apps/desktop/src/styles/tokens.css`                                                                              | 非色・フォールバック色                |
+| `apps/desktop/src/styles/themes/index.css`                                                                        | 三テーマ（`ink` / `paper` / `slate`） |
+| `controls.css` / `layout.css` / `sidebar.css` / `items.css` / `inspector.css` / `settings.css` / `quick-look.css` | 領域ごとのクラス                      |
 
 ルールの正本は `apps/desktop/src/styles/README.md` とリポジトリの `AGENTS.md`「スタイル／デザイントークン」。色・余白・角丸・フォント・影・blur はセマンティック変数を参照する。`features/` と `app/` に見た目の直書きをしない。
 
@@ -371,42 +372,9 @@ v1 では共有しない。デスクトップの切替を、拡張のポップ�
 - **HIG をテーマの一つとして再導入する。** #78 は後回し。HIG を試すときは、コンポーネントを書き換えず、第四のテーマファイルかインクの値の差し替えで見る。試作トグルと `localStorage` は使わない。
 - **ハイコントラスト。** VS Code には別テーマがある。Swallow の v1 には入れない。`forced-colors` は対象外。
 
-## 6. main の実装状況（`531a804`）
+## 4. 先生が決めること（2026-11-12 時点のメモ・**§5 で確定済み**）
 
-マージ済み PR と届いた範囲（`gh pr view` とソース grep で確認）。
-
-| PR                                                | 内容                                                                                                                                                             |
-| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [#169](https://github.com/hk-pG/swallow/pull/169) | `themes/ink.css`。属性未設定時のフォールバック。OS の light/dark に合わせたインクの塗り                                                                          |
-| [#170](https://github.com/hk-pG/swallow/pull/170) | `themeId` / `colorScheme` を settings とツールバー／設定 UI で永続化・反映                                                                                       |
-| [#171](https://github.com/hk-pG/swallow/pull/171) | `paper.css` / `slate.css`。三テーマ切替                                                                                                                          |
-| [#172](https://github.com/hk-pG/swallow/pull/172) | `controls` / `inspector` / `items` / `layout` / `sidebar` の尺度一致 `px` を `--space-*` / `--radius-sm` へ置換（**`quick-look.css` は対象外**と PR 本文に明記） |
-
-入口 CSS: `main.tsx` が `tokens.css` → 領域 CSS → `styles/themes/index.css` を読む。テーマ色リテラルは `tokens.css` と `styles/themes/*.css` のみ許可（`style-token-boundaries.mjs` の `allowsColorLiterals`）。
-
-## 7. 残作業・スコープ外
-
-### スコープ外リテラル（境界検査の例外どおり残るもの）
-
-`style-token-boundaries.mjs` は **色**を `tokens.css` と `themes/*.css` 以外で禁止し、**余白・角丸の生 `px`** は CSS 全体で禁止していない（`VISUAL_STYLE_PROPS` の TSX 直書きのみ検査）。そのため次が残っている（`rg` で確認した代表例）。
-
-| 種別                        | 例（パス）                                                                              |
-| --------------------------- | --------------------------------------------------------------------------------------- |
-| 尺度に無い余白              | `2px` / `5px` / `6px` / `10px` / `14px` — `items.css`・`sidebar.css`・`layout.css` など |
-| 固定枠・装飾                | `border: 2px`、`outline-offset: 2px`、`50%` の丸（カラーラベル）                        |
-| ペイン幅                    | サイドバー `220px`、インスペクタ `280px`（レイアウト例外）                              |
-| `color-mix(currentColor …)` | ホバー・DnD 枠などクラス CSS に固定比率で残る                                           |
-
-PR #172 で置換しなかった **`quick-look.css`** には、ヘッダー `padding: 12px 16px`、フッター `10px 16px` などトークン未使用の `px` が残る（色は `--color-overlay` 等の変数を使用）。
-
-### Issue 追跡
-
-- [#78](https://github.com/hk-pG/swallow/issues/78)（Apple HIG 試験適用）: **OPEN**、milestone `backlog`、P3。本設計どおり三既定テーマの**後回し**のまま。
-- ハイコントラスト・Theme Studio・拡張ポップアップへのテーマ同期: 節 5 の決定どおり v1 外。
-
-## 4. 先生が決めること
-
-実装の B 以降に進む前に、次を決める。
+PR #169–#172 マージ前に挙げた未決定事項の一覧。**読むときは §5 の決定表を正とする。** 以下は当時の問いの記録。
 
 - 三つの方向（インク / 紙 / スレート）と、上の基調色を採用するか。差し替えるなら、名前と基調色（地面、文字、サイドバー、アクセント、危険、星）をライトとダークの両方で指定する。
 - 既定を「インク + システム追従」にするか。
@@ -456,3 +424,36 @@ PR #172 で置換しなかった **`quick-look.css`** には、ヘッダー `pad
 - 3 種類目のオーバーレイやフォーカス管理が必要になったら、その新しい部品だけ Radix を使う。
 - Tailwind は、クラス CSS が 4,000〜5,000 行になり、かつ検査の書き換えに合意してから入れる。
 - UI キットは、独自グリッドをやめるときに検討する。
+
+## 6. main の実装状況（`531a804`）
+
+マージ済み PR と届いた範囲（`gh pr view` とソース grep で確認）。
+
+| PR                                                | 内容                                                                                                                                                             |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [#169](https://github.com/hk-pG/swallow/pull/169) | `themes/ink.css`。属性未設定時のフォールバック。OS の light/dark に合わせたインクの塗り                                                                          |
+| [#170](https://github.com/hk-pG/swallow/pull/170) | `themeId` / `colorScheme` を settings とツールバー／設定 UI で永続化・反映                                                                                       |
+| [#171](https://github.com/hk-pG/swallow/pull/171) | `paper.css` / `slate.css`。三テーマ切替                                                                                                                          |
+| [#172](https://github.com/hk-pG/swallow/pull/172) | `controls` / `inspector` / `items` / `layout` / `sidebar` の尺度一致 `px` を `--space-*` / `--radius-sm` へ置換（**`quick-look.css` は対象外**と PR 本文に明記） |
+
+入口 CSS（`apps/desktop/src/app/main.tsx`）: **`tokens.css` → `themes/index.css` → 領域 CSS**（`controls.css` / `layout.css` / `sidebar.css` / `items.css` / `inspector.css` / **`settings.css`** / `quick-look.css`）。テーマ色リテラルは `tokens.css` と `styles/themes/*.css` のみ許可（`style-token-boundaries.mjs` の `allowsColorLiterals`）。
+
+## 7. 残作業・スコープ外
+
+### スコープ外リテラル（境界検査の例外どおり残るもの）
+
+`style-token-boundaries.mjs` は **色**を `tokens.css` と `themes/*.css` 以外で禁止し、**余白・角丸の生 `px`** は CSS 全体で禁止していない（`VISUAL_STYLE_PROPS` の TSX 直書きのみ検査）。そのため次が残っている（`rg` で確認した代表例）。
+
+| 種別                        | 例（パス）                                                                              |
+| --------------------------- | --------------------------------------------------------------------------------------- |
+| 尺度に無い余白              | `2px` / `5px` / `6px` / `10px` / `14px` — `items.css`・`sidebar.css`・`layout.css` など |
+| 固定枠・装飾                | `border: 2px`、`outline-offset: 2px`、`50%` の丸（カラーラベル）                        |
+| ペイン幅                    | サイドバー `220px`、インスペクタ `280px`（レイアウト例外）                              |
+| `color-mix(currentColor …)` | ホバー・DnD 枠などクラス CSS に固定比率で残る                                           |
+
+PR #172 で置換しなかった **`quick-look.css`** には、ヘッダー `padding: 12px 16px`、フッター `10px 16px` などトークン未使用の `px` が残る（色は `--color-overlay` 等の変数を使用）。
+
+### Issue 追跡
+
+- [#78](https://github.com/hk-pG/swallow/issues/78)（Apple HIG 試験適用）: **OPEN**、milestone `backlog`、P3。本設計どおり三既定テーマの**後回し**のまま。
+- ハイコントラスト・Theme Studio・拡張ポップアップへのテーマ同期: 節 5 の決定どおり v1 外。

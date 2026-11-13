@@ -31,7 +31,7 @@
 ### β の優先度（2026-10-29 スナップショット）
 
 - **P1（機能）**: 当初キュー #34 階層取り込み、#35 設定、#49 スマートフォルダ、#50 クイックルックは **すべてクローズ済み**。`milestone:beta` + `P1` のオープンは **0 件**
-- **P1（セキュリティ・バグ・優先）**: #91 HTTP API Origin、#93 `thumb://` symlink（いずれも `bug` + `P1`。Milestone は現状 `alpha` のまま）
+- **P1（セキュリティ・バグ・優先）**: 2026-11-13 時点のオープンは [#12](https://github.com/hk-pG/swallow/issues/12)（拡張 MVP、`milestone:beta`）のみ。#91・#93 は**クローズ済み**（`gh issue view` で確認）
 - **P2（beta・次の機能キュー）**: 例 #53 カラーラベル、#77 サイドバー、#78 HIG 探索、#87 トークン、#88 ボタン明示クラス、#89 HIG 試作撤去、#100 Biome Dependabot、#102 Rust 導入ドキュメント、#104 軽い CI パス など（一覧は GitHub）
 - **P3 / backlog**: #57 Eagle 移行、#58 高度プレビュー、#12 拡張、#95 署名、ほか
 
@@ -93,8 +93,8 @@ gh issue list --repo hk-pG/swallow --milestone backlog --state open
 
 ### 2026-10-29 スナップショット（着手キュー）
 
-1. **先にオープン P1 バグ**: [#91](https://github.com/hk-pG/swallow/issues/91)、[#93](https://github.com/hk-pG/swallow/issues/93)（`bug` + `P1`。機能 P2 より先）
-2. **beta + P1 オープンは 0 件** → 上記 P1 が空いたら **beta + P2** へ（例: #53 / #77 / #87 など。最新は GitHub）
+1. **オープン P1**: 2026-11-13 時点は [#12](https://github.com/hk-pG/swallow/issues/12) のみ（`gh issue list --label P1 --state open`）。#91・#93 はクローズ済み
+2. **`milestone:beta` + `P1`**: 上記 #12 と同一（`gh issue list --milestone beta --label P1 --state open`）。それ以外は **beta + P2** へ（最新は GitHub）
 3. クローズ済みの #34 / #35 / #49 / #50 を「次」として選ばない
 
 ### 着手ルール
@@ -169,7 +169,7 @@ gh issue list --repo hk-pG/swallow --milestone backlog --state open
 
 ---
 
-次の一手の既定値: **オープンな `P1`（現状 #91 / #93）を先に片付ける。それが空なら Milestone `beta` のオープン Issue（主に P2）を `gh` で確認して着手。**
+次の一手の既定値: **`gh issue list --label P1 --state open` を実行する。** 2026-11-13 時点では **#12（拡張 MVP）** のみ。P1 が他に無ければ Milestone `beta` のオープン Issue（主に P2）を `gh` で確認して着手。
 
 ---
 
