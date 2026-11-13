@@ -7,6 +7,7 @@
 - Rust toolchain（`rust-toolchain.toml`）
 - `pnpm install` 済み
 - 計測用バイナリ: `swallow_perf`（feature `perf-bin`）
+- `apps/desktop/src-tauri/Cargo.toml` の `default-run = "swallow"` により、feature なしの `cargo run` / `pnpm dev` はアプリ本体を起動する（`swallow_perf` 追加後のバイナリ選択エラー回避）
 
 ## クイック実行
 
