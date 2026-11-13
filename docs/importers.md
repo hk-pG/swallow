@@ -1,6 +1,6 @@
 # インポータ構造と拡張ポイント
 
-最終更新: 2026-11-11  
+最終更新: 2026-11-13  
 対象: Swallow の取り込みパイプラインと、Eagle 等の外部フォーマットインポータを追加するときのレイヤー分担。
 
 関連: [eagle-vs-swallow.md](./eagle-vs-swallow.md)（#57 Eagle 移行）、[HANDOFF.md](./HANDOFF.md)
@@ -17,21 +17,21 @@
 
 ### 1.1 レイヤー一覧
 
-| 層               | 主なパス                                        | 役割                                           |
-| ---------------- | ----------------------------------------------- | ---------------------------------------------- |
-| フロント         | `apps/desktop/src/features/import/`             | ダイアログ・DnD・`ImportReport` の表示         |
-| Tauri コマンド   | `apps/desktop/src-tauri/src/commands/import.rs` | `import_assets`（ファイルパス取り込み）        |
-| ドメイン         | `apps/desktop/src-tauri/src/domain/import.rs`   | `import_files` / `import_bytes` / `store_item` |
-| HTTP（拡張連携） | `apps/desktop/src-tauri/src/infra/http_api.rs`  | POST で本文バイトを `import_bytes` に渡す      |
-| 共有型           | `packages/shared/src/import/import.ts`          | `ImportReport`・対応拡張子                     |
-| 共有型           | `packages/shared/src/library/library.ts`        | `ItemMetadata`                                 |
+| 層               | 主なパス                                                 | 役割                                           |
+| ---------------- | -------------------------------------------------------- | ---------------------------------------------- |
+| フロント         | `apps/desktop/src/features/import/`                      | ダイアログ・DnD・`ImportReport` の表示         |
+| Tauri コマンド   | `apps/desktop/src-tauri/src/commands/import.rs`          | `import_assets`（ファイルパス取り込み）        |
+| ドメイン         | `apps/desktop/src-tauri/src/domain/import.rs`            | `import_files` / `import_bytes` / `store_item` |
+| HTTP（拡張連携） | `apps/desktop/src-tauri/src/infra/http_api.rs`           | POST で本文バイトを `import_bytes` に渡す      |
+| 共有型           | `packages/shared/src/import/`（`import.ts`・`index.ts`） | `ImportReport`・`SUPPORTED_IMPORT_EXTENSIONS`  |
+| 共有型           | `packages/shared/src/library/library.ts`                 | `ItemMetadata`                                 |
 
 ### 1.2 `import_files`（ローカルファイルパス）
 
 **公開 API**
 
 - Tauri: `import_assets(library_path, paths)` → 内部で `domain::import::import_files`
-- フロント: `features/import/api.ts` の `importAssets` → `useAssetImport`（ピッカー・フォルダ選択・グリッドへの DnD）
+- フロント: `features/import/api.ts` の `importAssets` → `hooks/useAssetImport.ts`（ピッカー・ディレクトリ選択・グリッドへの DnD）
 
 **処理の流れ**
 
@@ -92,7 +92,7 @@ flowchart LR
 
 既存アイテムのメタデータだけを変える経路（インスペクター編集など）は `domain::item::update_item` → `save_item`（`write_json_atomic` のみ）であり、バイナリ本体は触らない。
 
-**設計上の含意**: 外部インポータが Eagle のメタデータを Swallow の `ItemMetadata` にマッピングできれば、**同じ `write_item` / `store_item` 相当の経路**でリッチな初回書き込みが可能。現状 `new_item` は import 専用の簡易ビルダーなので、Eagle 向けには別ビルダーか `ItemMetadata { ... }` の直接構築が想定される。
+**設計上の含意**: 外部インポータが Eagle のメタデータを Swallow の `ItemMetadata` にマッピングできれば、**同じ `write_item` / `store_item` 相当の経路**でリッチな初回書き込みが可能。現状 `new_item` は import 専用の簡易ビルダーなので、Eagle 向けには別ビルダーか `ItemMetadata { ... }` の直接構築が想定される。アイテム型の正本は `domain/item/mod.rs`（I/O は `domain/item/item_io.rs` の `save_item`）。
 
 ### 1.5 `ItemMetadata`（共有契約）
 
