@@ -28,12 +28,13 @@
 
 詳細: [alpha-scope.md](./alpha-scope.md) / [eagle-vs-swallow.md](./eagle-vs-swallow.md) / [roadmap.md](./roadmap.md)
 
-### β の優先度（2026-10-29 スナップショット）
+### β の優先度（スナップショット。件数は `gh` で再確認）
 
-- **P1（機能）**: 当初キュー #34 階層取り込み、#35 設定、#49 スマートフォルダ、#50 クイックルックは **すべてクローズ済み**。`milestone:beta` + `P1` のオープンは **0 件**
-- **P1（セキュリティ・バグ・優先）**: 2026-11-13 時点のオープンは [#12](https://github.com/hk-pG/swallow/issues/12)（拡張 MVP、`milestone:beta`）のみ。#91・#93 は**クローズ済み**（`gh issue view` で確認）
+- **P1（機能）**: 当初キュー #34 階層取り込み、#35 設定、#49 スマートフォルダ、#50 クイックルックは **すべてクローズ済み**。
+- **`milestone:beta` + `P1`（現状）**: 2026-11-13 時点のオープンは **[#12](https://github.com/hk-pG/swallow/issues/12) の 1 件**（拡張 MVP。`gh issue list --milestone beta --label P1 --state open` と `gh issue list --label P1 --state open` のいずれも同じ）。
+- **P1（セキュリティ・バグ）**: [#91](https://github.com/hk-pG/swallow/issues/91)・[#93](https://github.com/hk-pG/swallow/issues/93) は**クローズ済み**（`gh issue view`）。オープンな `bug` + `P1` は 2026-11-13 時点 **0 件**。
 - **P2（beta・次の機能キュー）**: 例 #53 カラーラベル、#77 サイドバー、#78 HIG 探索、#87 トークン、#88 ボタン明示クラス、#89 HIG 試作撤去、#100 Biome Dependabot、#102 Rust 導入ドキュメント、#104 軽い CI パス など（一覧は GitHub）
-- **P3 / backlog**: #57 Eagle 移行、#58 高度プレビュー、#12 拡張、#95 署名、ほか
+- **P3 / backlog**: #57 Eagle 移行、#58 高度プレビュー、#95 署名、ほか（#12 は上記 beta+P1 で追跡）
 
 マイルストーン: `alpha` | `beta` | `backlog`  
 ラベル: `P1`/`P2`/`P3`、`area:desktop`/`area:extension`/`area:ci`
@@ -81,7 +82,7 @@
 # 全オープン P1（セキュリティバグ含む。beta に限定しない）
 gh issue list --repo hk-pG/swallow --label P1 --state open
 
-# β の最優先ラベル（現状は空になりうる）
+# β の最優先ラベル（2026-11-13 時点は #12 のみ。件数は変動するので毎回確認）
 gh issue list --repo hk-pG/swallow --milestone beta --label P1 --state open
 
 # β 全体（P2 中心）
