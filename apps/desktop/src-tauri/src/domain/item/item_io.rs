@@ -53,7 +53,19 @@ pub fn read_items(library: &Path) -> io::Result<Vec<ItemMetadata>> {
     for path in item_dirs(library)? {
         match read_item(&path) {
             Ok(item) => items.push(item),
-            Err(e) => eprintln!("skipping item {}: {e}", path.display()),
+            Err(e) => {
+                let id = path.file_stem().and_then(|s| s.to_str()).unwrap_or("?");
+                let payload = serde_json::json!({
+                    "source": "domain",
+                    "component": "item_io",
+                    "itemId": id,
+                    "errorMessage": e.to_string(),
+                });
+                log::warn!(
+                    target: "swallow::diagnostic",
+                    "skipping unreadable item dir {payload}"
+                );
+            }
         }
     }
     items.sort_by_key(|item| std::cmp::Reverse(item.created_at));

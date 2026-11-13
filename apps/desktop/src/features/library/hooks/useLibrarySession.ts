@@ -1,6 +1,7 @@
 import type { LibraryInfo } from "@swallow/shared";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useCallback, useEffect, useState } from "react";
+import { reportDiagnosticError } from "../../../shared/diagnostic-log";
 import { createLibrary, getRecentLibraries, openLibrary, restoreLibrary } from "../api";
 
 export interface LibrarySession {
@@ -22,7 +23,9 @@ export function useLibrarySession(): LibrarySession {
   const [error, setError] = useState<string | null>(null);
 
   const refreshRecent = useCallback(() => {
-    getRecentLibraries().then(setRecent).catch(console.error);
+    getRecentLibraries()
+      .then(setRecent)
+      .catch((e) => reportDiagnosticError("useLibrarySession.refreshRecent", e));
   }, []);
 
   useEffect(() => {

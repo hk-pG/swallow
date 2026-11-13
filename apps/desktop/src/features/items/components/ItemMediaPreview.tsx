@@ -1,5 +1,6 @@
 import { type ItemId, resolveItemPreviewKind } from "@swallow/shared";
-import { useEffect, useId, useRef, useState } from "react";
+import { type SyntheticEvent, useEffect, useId, useRef, useState } from "react";
+import { logPreviewFailure } from "../../../shared/diagnostic-log";
 import { itemFullPreviewUrl } from "../lib/thumbnail";
 
 export type ItemMediaPreviewScale = "fit" | "actual";
@@ -47,6 +48,8 @@ export function ItemMediaPreview({
   if (kind === "video") {
     return (
       <VideoPreview
+        itemId={item.id}
+        ext={item.ext}
         src={src}
         fileLabel={fileLabel}
         scaleMode={scaleMode}
@@ -60,6 +63,7 @@ export function ItemMediaPreview({
     return (
       <FontPreview
         itemId={item.id}
+        ext={item.ext}
         src={src}
         fileLabel={fileLabel}
         onLoadingChange={onLoadingChange}
@@ -70,6 +74,8 @@ export function ItemMediaPreview({
 
   return (
     <ImagePreview
+      itemId={item.id}
+      ext={item.ext}
       src={src}
       fileLabel={fileLabel}
       scaleMode={scaleMode}
@@ -80,12 +86,16 @@ export function ItemMediaPreview({
 }
 
 function ImagePreview({
+  itemId,
+  ext,
   src,
   fileLabel,
   scaleMode,
   onLoadingChange,
   onError,
 }: {
+  itemId: ItemId;
+  ext: string;
   src: string;
   fileLabel: string;
   scaleMode: ItemMediaPreviewScale;
@@ -101,6 +111,13 @@ function ImagePreview({
       draggable={false}
       onLoad={() => onLoadingChange?.(false)}
       onError={() => {
+        logPreviewFailure({
+          source: "image-preview",
+          component: "ItemMediaPreview",
+          itemId,
+          ext,
+          src,
+        });
         onLoadingChange?.(false);
         onError?.();
       }}
@@ -109,12 +126,16 @@ function ImagePreview({
 }
 
 function VideoPreview({
+  itemId,
+  ext,
   src,
   fileLabel,
   scaleMode,
   onLoadingChange,
   onError,
 }: {
+  itemId: ItemId;
+  ext: string;
   src: string;
   fileLabel: string;
   scaleMode: ItemMediaPreviewScale;
@@ -126,6 +147,21 @@ function VideoPreview({
       ? "quick-look-video quick-look-video-actual"
       : "quick-look-video quick-look-video-fit";
 
+  const handleError = (event: SyntheticEvent<HTMLVideoElement>) => {
+    const mediaError = event.currentTarget.error;
+    logPreviewFailure({
+      source: "video-preview",
+      component: "ItemMediaPreview",
+      itemId,
+      ext,
+      src,
+      mediaErrorCode: mediaError?.code ?? null,
+      mediaErrorMessage: mediaError?.message ?? null,
+    });
+    onLoadingChange?.(false);
+    onError?.();
+  };
+
   return (
     <video
       className={className}
@@ -134,10 +170,7 @@ function VideoPreview({
       preload="metadata"
       aria-label={fileLabel}
       onLoadedData={() => onLoadingChange?.(false)}
-      onError={() => {
-        onLoadingChange?.(false);
-        onError?.();
-      }}
+      onError={handleError}
     >
       <track kind="captions" />
     </video>
@@ -146,12 +179,14 @@ function VideoPreview({
 
 function FontPreview({
   itemId,
+  ext,
   src,
   fileLabel,
   onLoadingChange,
   onError,
 }: {
   itemId: ItemId;
+  ext: string;
   src: string;
   fileLabel: string;
   onLoadingChange?: (loading: boolean) => void;
@@ -172,6 +207,14 @@ function FontPreview({
     onLoadingChangeRef.current?.(true);
 
     if (typeof FontFace === "undefined") {
+      logPreviewFailure({
+        source: "font-preview",
+        component: "ItemMediaPreview",
+        itemId,
+        ext,
+        src,
+        errorMessage: "FontFace API unavailable",
+      });
       onLoadingChangeRef.current?.(false);
       setFailed(true);
       onErrorRef.current?.();
@@ -192,6 +235,14 @@ function FontPreview({
       })
       .catch(() => {
         if (cancelled) return;
+        logPreviewFailure({
+          source: "font-preview",
+          component: "ItemMediaPreview",
+          itemId,
+          ext,
+          src,
+          errorMessage: "FontFace.load failed",
+        });
         setFailed(true);
         onLoadingChangeRef.current?.(false);
         onErrorRef.current?.();
@@ -203,7 +254,7 @@ function FontPreview({
         void document.fonts.delete(loadedFont);
       }
     };
-  }, [family, src]);
+  }, [ext, family, itemId, src]);
 
   if (failed) {
     return <p className="quick-look-unsupported">フォントを読み込めませんでした</p>;

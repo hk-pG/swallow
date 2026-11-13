@@ -12,6 +12,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { reportDiagnosticError } from "../../../shared/diagnostic-log";
 import { useLatest } from "../../../shared/useLatest";
 import {
   createSmartFolder,
@@ -62,7 +63,7 @@ export function useSmartFolders({ libraryPath, setView }: Options): SmartFolders
       applyLibrary(next);
       return next;
     } catch (e) {
-      console.error(e);
+      reportDiagnosticError("useSmartFolders.reload", e);
       return null;
     }
   }, [libraryPath, applyLibrary]);

@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { reportDiagnosticError } from "../../../shared/diagnostic-log";
 import { useLatest } from "../../../shared/useLatest";
 import {
   addItemTags,
@@ -69,7 +70,7 @@ export function useTags({ libraryPath, invalidateItems, setView }: Options): Tag
       applyLibraryTags(tags);
       return tags;
     } catch (e) {
-      console.error(e);
+      reportDiagnosticError("useTags.reload", e);
       return null;
     }
   }, [libraryPath, applyLibraryTags]);

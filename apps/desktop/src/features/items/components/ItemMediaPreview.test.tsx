@@ -1,7 +1,12 @@
-import { act, cleanup, render, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  createCollectingDiagnosticLogger,
+  resetDiagnosticLogger,
+  setDiagnosticLogger,
+} from "../../../shared/diagnostic-log";
 import { ItemMediaPreview } from "./ItemMediaPreview";
 
 const baseItem = {
@@ -34,6 +39,35 @@ describe("ItemMediaPreview", () => {
     );
     expect(html).toContain("<img");
     expect(html).toContain("quick-look-image-fit");
+  });
+
+  it("logs structured fields when video preview fails", () => {
+    const sink: Parameters<typeof createCollectingDiagnosticLogger>[0] = [];
+    setDiagnosticLogger(createCollectingDiagnosticLogger(sink));
+    const { container } = render(
+      <ItemMediaPreview
+        libraryPath="/lib"
+        item={{ ...baseItem, ext: "mp4" }}
+        scaleMode="fit"
+        fileLabel="asset.mp4"
+      />,
+    );
+    const video = container.querySelector("video");
+    expect(video).toBeTruthy();
+    Object.defineProperty(video, "error", {
+      configurable: true,
+      value: { code: 4, message: "MEDIA_ERR_SRC_NOT_SUPPORTED" },
+    });
+    fireEvent.error(video as HTMLVideoElement);
+    expect(sink).toHaveLength(1);
+    expect(sink[0]?.fields).toMatchObject({
+      source: "video-preview",
+      itemId: "01ITEM",
+      ext: "mp4",
+      mediaErrorCode: 4,
+      urlScheme: "thumb",
+    });
+    resetDiagnosticLogger();
   });
 
   it("renders video element for mp4", () => {

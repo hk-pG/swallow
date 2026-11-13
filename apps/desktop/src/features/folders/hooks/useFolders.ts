@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { reportDiagnosticError } from "../../../shared/diagnostic-log";
 import { useLatest } from "../../../shared/useLatest";
 import {
   assignItems,
@@ -60,7 +61,7 @@ export function useFolders({ libraryPath, invalidateItems, setView }: Options): 
       setFolders(next);
       return next;
     } catch (e) {
-      console.error(e);
+      reportDiagnosticError("useFolders.reload", e);
       return null;
     }
   }, [libraryPath]);
