@@ -1,4 +1,4 @@
-import type { ItemMetadata } from "@swallow/shared";
+import { COLOR_LABEL_SWATCH, type ItemMetadata } from "@swallow/shared";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SWALLOW_ITEM_DRAG_MIME } from "../../../shared/itemDrag";
@@ -42,6 +42,25 @@ function sample(id: string): ItemMetadata {
     colorLabel: null,
   };
 }
+
+describe("ItemGrid color label", () => {
+  it("shows the color label swatch on the thumbnail when set", () => {
+    const item = { ...sample("a"), colorLabel: "green" as const };
+    const { container } = render(
+      <ItemGrid
+        libraryPath="/lib"
+        items={[item]}
+        selection={EMPTY_SELECTION}
+        onSelect={() => {}}
+        onSelectAll={() => {}}
+        onClearSelection={() => {}}
+      />,
+    );
+    const swatch = container.querySelector(".grid-color-label");
+    expect(swatch).toBeTruthy();
+    expect((swatch as HTMLElement).style.background).toBe(COLOR_LABEL_SWATCH.green);
+  });
+});
 
 describe("ItemGrid context menu", () => {
   it("opens the custom menu on right-click and selects the item", () => {
