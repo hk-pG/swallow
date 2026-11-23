@@ -26,6 +26,13 @@ updates:
       cargo:
         patterns:
           - "*"
+    # RUSTSEC-2024-0429 / GHSA-wrw7-89jp-8q8g。
+    # glib 0.18.5 は tauri の gtk-rs 0.18（Linux のみ）経由の推移依存で、
+    # 脆弱な VariantStrIter は呼んでいない。
+    # stable Tauri が gtk 0.19 / glib >= 0.20 に移ったらこの ignore を外す。
+    ignore:
+      - dependency-name: "glib"
+        versions: ["<0.20.0"]
 
   - package-ecosystem: github-actions
     directory: /
