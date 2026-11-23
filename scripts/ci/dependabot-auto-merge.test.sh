@@ -219,15 +219,22 @@ make_fake_bin "$tmpdir/bad-repo"
 [[ "$(cat "$tmpdir/bad-repo/mock/api_n")" == "0" ]] || fail "bad repo called gh"
 
 # ワークフローは書き込み権限付きで PR ヘッドを実行しない。
+# トリガーは pull_request。チェックアウトはベース SHA。
 [[ -f "$workflow" ]] || fail "workflow missing"
-grep -q 'pull_request_target:' "$workflow" || fail "expected pull_request_target"
-if grep -Eq '^[[:space:]]*pull_request:' "$workflow"; then
-  fail "workflow must not use pull_request (read-only token)"
+if grep -Eq '^[[:space:]]*pull_request_target:' "$workflow"; then
+  fail "workflow must not use pull_request_target"
+fi
+if ! grep -Eq '^[[:space:]]*pull_request:' "$workflow"; then
+  fail "expected pull_request trigger"
 fi
 grep -q '25dd0e34f4fe68f24cc83900b1fe3fe149efef98' "$workflow" || fail "fetch-metadata not pinned"
 grep -q '3d3c42e5aac5ba805825da76410c181273ba90b1' "$workflow" || fail "checkout not pinned"
 # shellcheck disable=SC2016 # workflow 式は展開せず、文字列として探す
-grep -q 'ref: ${{ github.sha }}' "$workflow" || fail "checkout must use base github.sha"
+grep -q 'ref: ${{ github.event.pull_request.base.sha }}' "$workflow" || fail "checkout must use base sha"
+# shellcheck disable=SC2016 # workflow 式は展開せず、文字列として探す
+if grep -F -q 'ref: ${{ github.sha }}' "$workflow"; then
+  fail "checkout must not use github.sha"
+fi
 if grep -Eq 'ref:.*head' "$workflow"; then
   fail "checkout ref must not follow the PR head"
 fi

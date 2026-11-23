@@ -1,11 +1,14 @@
 name: Dependabot auto-merge
 
-# Dependabot 起点の pull_request は GITHUB_TOKEN が読み取り専用で、マージできない。
-# pull_request_target はベースブランチのこのファイルと、書き込み可能なトークンで動く。
+# public リポジトリでは 2026-12-02 UTC から pull_request_target が既定で実行されない。
+# トリガーは pull_request。Dependabot 起点の実行は、ジョブに書いた permissions を
+# GITHUB_TOKEN に付ける（無指定のときは読み取り専用のまま）。
+# merge ジョブの contents: write と pull-requests: write で squash マージできる。
+# チェックアウトは pull_request.base.sha。pull_request の github.sha はマージコミットなので使わない。
 # グループ更新の update-type は、含まれる更新のうち最も高い semver（major > minor > patch）。
 # major が 1 つでも入っていれば patch / minor の条件に合わず、自動マージしない。
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
 
 # 既定は読み取りのみ。書き込みはマージするジョブだけに付ける。
@@ -53,12 +56,12 @@ jobs:
       pull-requests: write
       checks: read
     steps:
-      # pull_request_target の github.sha はベースブランチの先端であり、PR ヘッドではない。
-      # PR のコードは取らない。資格情報も残さない。
+      # pull_request の github.sha は PR のマージコミットで、PR の変更を含む。
+      # ベースの SHA を明示して PR のコードは取らない。資格情報も残さない。
       - name: ベースブランチをチェックアウトする
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ github.event.pull_request.base.sha }}
           persist-credentials: false
 
       - name: CI の checks 成功後に squash マージする
