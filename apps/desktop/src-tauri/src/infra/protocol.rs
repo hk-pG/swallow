@@ -88,6 +88,23 @@ fn respond(encoded: &str, full: bool, range_header: Option<&str>) -> Response<Ve
         }
     };
 
+    if range_header.is_none() {
+        return match thumbnail::read_within_item_dir(&item_dir, &preview.path) {
+            Ok(body) => {
+                let file_len = body.len() as u64;
+                ok_response(preview.mime, body, file_len, StatusCode::OK, None)
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
+                log_thumb_forbidden(encoded, full, "permission denied reading preview asset");
+                status(StatusCode::FORBIDDEN)
+            }
+            Err(e) => {
+                log_thumb_read_error(encoded, full, e.to_string());
+                status(StatusCode::NOT_FOUND)
+            }
+        };
+    }
+
     let mut file = match thumbnail::open_validated_preview_file(&item_dir, &preview.path) {
         Ok((file, _)) => file,
         Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
@@ -107,28 +124,14 @@ fn respond(encoded: &str, full: bool, range_header: Option<&str>) -> Response<Ve
         }
     };
 
-    if let Some(range_value) = range_header {
-        return respond_with_range_on_file(
-            encoded,
-            full,
-            range_value,
-            file_len,
-            &mut file,
-            preview.mime,
-        );
-    }
-
-    match thumbnail::read_entire_from_file(&mut file) {
-        Ok(body) => ok_response(preview.mime, body, file_len, StatusCode::OK, None),
-        Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
-            log_thumb_forbidden(encoded, full, "permission denied reading preview asset");
-            status(StatusCode::FORBIDDEN)
-        }
-        Err(e) => {
-            log_thumb_read_error(encoded, full, e.to_string());
-            status(StatusCode::NOT_FOUND)
-        }
-    }
+    respond_with_range_on_file(
+        encoded,
+        full,
+        range_header.unwrap(),
+        file_len,
+        &mut file,
+        preview.mime,
+    )
 }
 
 fn respond_with_range_on_file(

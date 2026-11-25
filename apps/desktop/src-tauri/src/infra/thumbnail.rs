@@ -171,16 +171,6 @@ pub fn read_within_item_dir(item_dir: &Path, path: &Path) -> io::Result<Vec<u8>>
 }
 
 /// Reads `start..=end_inclusive` without loading the full file into memory.
-pub fn read_within_item_dir_range(
-    item_dir: &Path,
-    path: &Path,
-    start: u64,
-    end_inclusive: u64,
-) -> io::Result<Vec<u8>> {
-    let (mut file, _) = open_validated_preview_file(item_dir, path)?;
-    read_range_from_file(&mut file, start, end_inclusive)
-}
-
 pub fn read_entire_from_file(file: &mut fs::File) -> io::Result<Vec<u8>> {
     use std::io::{Read, Seek, SeekFrom};
     let mut body = Vec::new();
