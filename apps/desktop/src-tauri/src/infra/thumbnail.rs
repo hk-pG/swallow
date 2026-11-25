@@ -164,6 +164,42 @@ pub fn is_item_dir(path: &Path) -> bool {
 /// component with `O_NOFOLLOW` / Windows reparse-point flags so a TOCTOU swap to a
 /// symlink cannot be followed.
 pub fn read_within_item_dir(item_dir: &Path, path: &Path) -> io::Result<Vec<u8>> {
+    let (mut file, _) = open_validated_preview_file(item_dir, path)?;
+    let mut body = Vec::new();
+    file.read_to_end(&mut body)?;
+    Ok(body)
+}
+
+/// Reads `start..=end_inclusive` without loading the full file into memory.
+pub fn read_entire_from_file(file: &mut fs::File) -> io::Result<Vec<u8>> {
+    use std::io::{Read, Seek, SeekFrom};
+    let mut body = Vec::new();
+    file.seek(SeekFrom::Start(0))?;
+    file.read_to_end(&mut body)?;
+    Ok(body)
+}
+
+pub fn read_range_from_file(
+    file: &mut fs::File,
+    start: u64,
+    end_inclusive: u64,
+) -> io::Result<Vec<u8>> {
+    use std::io::{Read, Seek, SeekFrom};
+
+    file.seek(SeekFrom::Start(start))?;
+    let len = end_inclusive
+        .checked_sub(start)
+        .and_then(|d| d.checked_add(1))
+        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "invalid byte range"))?;
+    let len_usize = usize::try_from(len)
+        .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "range too large"))?;
+    let mut body = vec![0u8; len_usize];
+    file.read_exact(&mut body)?;
+    Ok(body)
+}
+
+/// Opens a regular file under `item_dir` after layout and symlink checks.
+pub fn open_validated_preview_file(item_dir: &Path, path: &Path) -> io::Result<(fs::File, u64)> {
     let item_meta = fs::symlink_metadata(item_dir)?;
     if item_meta.file_type().is_symlink() || !item_meta.is_dir() {
         return Err(io::Error::new(
@@ -193,7 +229,7 @@ pub fn read_within_item_dir(item_dir: &Path, path: &Path) -> io::Result<Vec<u8>>
         ));
     }
 
-    let mut file = open_nofollow(path)?;
+    let file = open_nofollow(path)?;
     let meta = file.metadata()?;
     if !meta.is_file() {
         return Err(io::Error::new(
@@ -201,9 +237,7 @@ pub fn read_within_item_dir(item_dir: &Path, path: &Path) -> io::Result<Vec<u8>>
             "preview path is not a file",
         ));
     }
-    let mut body = Vec::new();
-    file.read_to_end(&mut body)?;
-    Ok(body)
+    Ok((file, meta.len()))
 }
 
 /// Open `path` without following a final-component symlink / reparse point.

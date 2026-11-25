@@ -36,7 +36,12 @@ fn range_log_key(encoded_path: &str, full: bool) -> String {
 }
 
 /// Logs at most once per item (and `full` flag) per app session to limit WKWebView Range noise.
-pub fn log_thumb_range_request_once(encoded_path: &str, full: bool) -> bool {
+pub fn log_thumb_range_outcome_once(
+    encoded_path: &str,
+    full: bool,
+    http_status: u16,
+    range_served: Option<&str>,
+) -> bool {
     let key = range_log_key(encoded_path, full);
     let Ok(mut set) = RANGE_REQUEST_LOGGED.lock() else {
         return false;
@@ -48,7 +53,7 @@ pub fn log_thumb_range_request_once(encoded_path: &str, full: bool) -> bool {
         set.clear();
     }
     set.insert(key);
-    log_thumb_range_request(encoded_path, full);
+    log_thumb_range_served(encoded_path, full, http_status, range_served);
     true
 }
 
@@ -91,9 +96,18 @@ pub fn thumb_fields_for_encoded(
     fields
 }
 
-fn log_thumb_range_request(encoded_path: &str, full: bool) {
-    let fields = thumb_fields_for_encoded(encoded_path, full, true);
-    log_event(Level::Debug, "thumb range request (unsupported)", &fields);
+fn log_thumb_range_served(
+    encoded_path: &str,
+    full: bool,
+    http_status: u16,
+    range_served: Option<&str>,
+) {
+    let mut fields = thumb_fields_for_encoded(encoded_path, full, true);
+    fields.insert("httpStatus".into(), json!(http_status));
+    if let Some(range) = range_served {
+        fields.insert("rangeServed".into(), json!(range));
+    }
+    log_event(Level::Debug, "thumb range request served", &fields);
 }
 
 pub fn log_thumb_bad_request(reason: &str, encoded_path: &str, full: bool) {
@@ -170,15 +184,25 @@ mod tests {
             percent_encoding::NON_ALPHANUMERIC,
         )
         .to_string();
-        assert!(log_thumb_range_request_once(&encoded, true));
-        assert!(!log_thumb_range_request_once(&encoded, true));
-        assert!(log_thumb_range_request_once(&encoded, false));
+        assert!(log_thumb_range_outcome_once(
+            &encoded,
+            true,
+            206,
+            Some("0-1")
+        ));
+        assert!(!log_thumb_range_outcome_once(
+            &encoded,
+            true,
+            206,
+            Some("0-1")
+        ));
+        assert!(log_thumb_range_outcome_once(&encoded, false, 416, None));
         reset_range_request_log_for_tests();
     }
 
     #[test]
     fn logging_helpers_do_not_panic() {
-        log_thumb_range_request_once("bad%", false);
+        log_thumb_range_outcome_once("bad%", false, 416, None);
         log_thumb_bad_request("invalid utf-8", "bad%", false);
         log_thumb_forbidden("x", true, "not item dir");
         log_thumb_not_found("x", false);
