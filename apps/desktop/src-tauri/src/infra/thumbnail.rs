@@ -177,9 +177,25 @@ pub fn read_within_item_dir_range(
     start: u64,
     end_inclusive: u64,
 ) -> io::Result<Vec<u8>> {
+    let (mut file, _) = open_validated_preview_file(item_dir, path)?;
+    read_range_from_file(&mut file, start, end_inclusive)
+}
+
+pub fn read_entire_from_file(file: &mut fs::File) -> io::Result<Vec<u8>> {
+    use std::io::{Read, Seek, SeekFrom};
+    let mut body = Vec::new();
+    file.seek(SeekFrom::Start(0))?;
+    file.read_to_end(&mut body)?;
+    Ok(body)
+}
+
+pub fn read_range_from_file(
+    file: &mut fs::File,
+    start: u64,
+    end_inclusive: u64,
+) -> io::Result<Vec<u8>> {
     use std::io::{Read, Seek, SeekFrom};
 
-    let (mut file, _) = open_validated_preview_file(item_dir, path)?;
     file.seek(SeekFrom::Start(start))?;
     let len = end_inclusive
         .checked_sub(start)

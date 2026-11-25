@@ -88,8 +88,8 @@ fn respond(encoded: &str, full: bool, range_header: Option<&str>) -> Response<Ve
         }
     };
 
-    let file_len = match thumbnail::open_validated_preview_file(&item_dir, &preview.path) {
-        Ok((_, len)) => len,
+    let mut file = match thumbnail::open_validated_preview_file(&item_dir, &preview.path) {
+        Ok((file, _)) => file,
         Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
             log_thumb_forbidden(encoded, full, "permission denied reading preview asset");
             return status(StatusCode::FORBIDDEN);
@@ -99,20 +99,26 @@ fn respond(encoded: &str, full: bool, range_header: Option<&str>) -> Response<Ve
             return status(StatusCode::NOT_FOUND);
         }
     };
+    let file_len = match file.metadata() {
+        Ok(m) => m.len(),
+        Err(e) => {
+            log_thumb_read_error(encoded, full, e.to_string());
+            return status(StatusCode::NOT_FOUND);
+        }
+    };
 
     if let Some(range_value) = range_header {
-        return respond_with_range(
+        return respond_with_range_on_file(
             encoded,
             full,
             range_value,
             file_len,
-            &item_dir,
-            &preview.path,
+            &mut file,
             preview.mime,
         );
     }
 
-    match thumbnail::read_within_item_dir(&item_dir, &preview.path) {
+    match thumbnail::read_entire_from_file(&mut file) {
         Ok(body) => ok_response(preview.mime, body, file_len, StatusCode::OK, None),
         Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
             log_thumb_forbidden(encoded, full, "permission denied reading preview asset");
@@ -125,24 +131,18 @@ fn respond(encoded: &str, full: bool, range_header: Option<&str>) -> Response<Ve
     }
 }
 
-fn respond_with_range(
+fn respond_with_range_on_file(
     encoded: &str,
     full: bool,
     range_value: &str,
     file_len: u64,
-    item_dir: &std::path::Path,
-    path: &std::path::Path,
+    file: &mut std::fs::File,
     mime: &str,
 ) -> Response<Vec<u8>> {
     match http_range::parse_bytes_range(range_value, file_len) {
         RangeParseResult::Satisfied(range) => {
             let range_label = format!("{}-{}", range.start, range.end_inclusive);
-            match thumbnail::read_within_item_dir_range(
-                item_dir,
-                path,
-                range.start,
-                range.end_inclusive,
-            ) {
+            match thumbnail::read_range_from_file(file, range.start, range.end_inclusive) {
                 Ok(body) => {
                     log_thumb_range_outcome_once(encoded, full, 206, Some(&range_label));
                     ok_response(
@@ -167,6 +167,17 @@ fn respond_with_range(
             log_thumb_range_outcome_once(encoded, full, 416, None);
             range_error_response(file_len)
         }
+        RangeParseResult::Ignore => match thumbnail::read_entire_from_file(file) {
+            Ok(body) => ok_response(mime, body, file_len, StatusCode::OK, None),
+            Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
+                log_thumb_forbidden(encoded, full, "permission denied reading preview asset");
+                status(StatusCode::FORBIDDEN)
+            }
+            Err(e) => {
+                log_thumb_read_error(encoded, full, e.to_string());
+                status(StatusCode::NOT_FOUND)
+            }
+        },
     }
 }
 
@@ -194,6 +205,7 @@ fn ok_response(
 fn range_error_response(total_len: u64) -> Response<Vec<u8>> {
     Response::builder()
         .status(StatusCode::RANGE_NOT_SATISFIABLE)
+        .header("Accept-Ranges", "bytes")
         .header("Content-Range", content_range_unsatisfiable(total_len))
         .body(Vec::new())
         .unwrap_or_else(|_| status(StatusCode::RANGE_NOT_SATISFIABLE))
@@ -323,6 +335,24 @@ mod tests {
 
         let response = respond(&encoded, true, Some("bytes=0-"));
         assert_eq!(response.status(), StatusCode::RANGE_NOT_SATISFIABLE);
+    }
+
+    #[test]
+    fn respond_range_ignored_returns_full_file() {
+        let library = tempfile::tempdir().unwrap();
+        let item = sample_item("I", "clip", "mp4");
+        let dir = write_item(library.path(), &item);
+        let payload: Vec<u8> = (0u8..50).collect();
+        fs::write(dir.join("clip.mp4"), &payload).unwrap();
+        let encoded = encode_dir(&dir);
+
+        let response = respond(&encoded, true, Some("items=0-49"));
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(response.body().as_slice(), payload.as_slice());
+
+        let response = respond(&encoded, true, Some("bytes=40-10"));
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(response.body().as_slice(), payload.as_slice());
     }
 
     #[cfg(unix)]
